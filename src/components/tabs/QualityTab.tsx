@@ -21,12 +21,11 @@ interface QualityDimension {
 
 function completeness(p: DepotPosition): number {
   let s = 0;
-  if (p.yield > 0)   s += 20;
-  if (p.cagr5j > 0)  s += 20;
-  if (p.isin)         s += 15;
-  if (p.prio)         s += 15;
-  if (p.ausschuettungsmonate) s += 15;
-  if (p.ratingScore > 0) s += 15;
+  if (p.yield > 0)             s += 25;
+  if (p.isin)                   s += 20;
+  if (p.prio)                   s += 20;
+  if (p.ausschuettungsmonate)  s += 20;
+  if (p.ratingScore > 0)       s += 15;
   return s;
 }
 
@@ -34,21 +33,19 @@ export function QualityTab({ positions }: Props) {
   const all    = positions;
   const active = positions.filter((p) => p.wert > 0);
 
-  // Data completeness
-  const withYield    = all.filter((p) => p.yield > 0).length;
-  const withCagr     = all.filter((p) => p.cagr5j > 0).length;
-  const withIsin     = all.filter((p) => !!p.isin).length;
-  const withPrio     = all.filter((p) => !!p.prio).length;
-  const withMonths   = all.filter((p) => !!p.ausschuettungsmonate).length;
-  const withRating   = all.filter((p) => p.ratingScore > 0).length;
+  // Data completeness (CAGR excluded — 0,00 % is a valid value, indistinguishable from empty)
+  const withYield   = all.filter((p) => p.yield > 0).length;
+  const withIsin    = all.filter((p) => !!p.isin).length;
+  const withPrio    = all.filter((p) => !!p.prio).length;
+  const withMonths  = all.filter((p) => !!p.ausschuettungsmonate).length;
+  const withRating  = all.filter((p) => p.ratingScore > 0).length;
 
   const completenessRows = [
-    { label: 'Yield vorhanden',         count: withYield,  total: all.length },
-    { label: 'CAGR 5J vorhanden',       count: withCagr,   total: all.length },
-    { label: 'ISIN vorhanden',          count: withIsin,   total: all.length },
-    { label: 'Priorität gesetzt',       count: withPrio,   total: all.length },
-    { label: 'Ausschüttungsmonate',     count: withMonths, total: all.length },
-    { label: 'Rating-Score vorhanden',  count: withRating, total: all.length },
+    { label: 'Yield vorhanden',        count: withYield,  total: all.length },
+    { label: 'ISIN vorhanden',         count: withIsin,   total: all.length },
+    { label: 'Priorität gesetzt',      count: withPrio,   total: all.length },
+    { label: 'Ausschüttungsmonate',    count: withMonths, total: all.length },
+    { label: 'Rating-Score vorhanden', count: withRating, total: all.length },
   ].map((r) => ({ ...r, pct: (r.count / r.total) * 100 }));
 
   const avgCompleteness = completenessRows.reduce((s, r) => s + r.pct, 0) / completenessRows.length;
@@ -103,11 +100,6 @@ export function QualityTab({ positions }: Props) {
       label: 'Prioritäten-Abdeckung',
       score: (withPrio / all.length) * 100,
       detail: `${withPrio} von ${all.length} Positionen mit Prio`,
-    },
-    {
-      label: 'CAGR-Abdeckung',
-      score: (withCagr / all.length) * 100,
-      detail: `${withCagr} von ${all.length} mit CAGR-Daten`,
     },
     {
       label: 'Rating-Abdeckung',
@@ -265,8 +257,8 @@ export function QualityTab({ positions }: Props) {
                 }},
               { key: 'yield',       label: 'Yield',  align: 'right',
                 render: (v) => <span className={`font-mono tabular-nums ${(v as number) === 0 ? 'text-red-400' : ''}`}>{fmtPct(v as number)}</span> },
-              { key: 'cagr5j',      label: 'CAGR',   align: 'right',
-                render: (v) => <span className={`font-mono tabular-nums ${(v as number) === 0 ? 'text-red-400' : ''}`}>{fmtPct(v as number)}</span> },
+              { key: 'cagr5j', label: 'CAGR', align: 'right',
+                render: (v) => <span className="font-mono tabular-nums">{fmtPct(v as number)}</span> },
               { key: 'prio',        label: 'Prio',   align: 'center',
                 render: (v) => <span className={!v ? 'text-red-400 font-semibold' : ''}>{String(v || '—')}</span> },
               { key: 'ratingScore', label: 'Rating', align: 'right',
