@@ -44,7 +44,7 @@ export function ProjectionTab({ positions }: Props) {
   const afterYear5 = data5[5];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Current state */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Aktueller Depotwert" value={fmt(totals.totalWert)} sub="Stand jetzt" color="blue" />
@@ -54,7 +54,7 @@ export function ProjectionTab({ positions }: Props) {
       </div>
 
       {/* Parameters */}
-      <div className="rounded-xl border dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
         <h3 className="text-sm font-semibold mb-4">Annahmen (editierbar)</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
@@ -101,19 +101,19 @@ export function ProjectionTab({ positions }: Props) {
           { label: 'Nach 3 Jahren', data: afterYear3 },
           { label: 'Nach 5 Jahren', data: afterYear5 },
         ].map(({ label, data }) => (
-          <div key={label} className="rounded-xl border dark:border-gray-700 p-4">
+          <div key={label} className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
             <div className="text-xs font-semibold uppercase opacity-60 mb-2">{label}</div>
             <div className="space-y-1.5">
               <div>
-                <div className="text-xs opacity-50">Depotwert</div>
+                <div className="text-xs text-slate-400 dark:text-zinc-500">Depotwert</div>
                 <div className="text-lg font-bold">{fmt(data?.portfolioValue)}</div>
               </div>
               <div>
-                <div className="text-xs opacity-50">Jährl. Dividende</div>
+                <div className="text-xs text-slate-400 dark:text-zinc-500">Jährl. Dividende</div>
                 <div className="text-lg font-bold text-green-600 dark:text-green-400">{fmt(data?.annualDividend)}</div>
               </div>
               <div>
-                <div className="text-xs opacity-50">Monatl. Dividende</div>
+                <div className="text-xs text-slate-400 dark:text-zinc-500">Monatl. Dividende</div>
                 <div className="text-base font-semibold">{fmt((data?.annualDividend ?? 0) / 12)}</div>
               </div>
             </div>
@@ -122,8 +122,8 @@ export function ProjectionTab({ positions }: Props) {
       </div>
 
       {/* Chart */}
-      <div className="rounded-xl border dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold mb-3">5-Jahres-Projektion</h3>
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-4">5-Jahres-Projektion</h3>
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={data5}>
             <defs>
@@ -136,10 +136,10 @@ export function ProjectionTab({ positions }: Props) {
                 <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-            <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-            <YAxis yAxisId="left" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
-            <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} />
+            <XAxis dataKey="year" tick={{ fontSize: 12, fill: '#64748b' }} />
+            <YAxis yAxisId="left" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+            <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#94a3b8' }} />
             <Tooltip formatter={(v: unknown, name: unknown) => [fmt(v as number), name === 'portfolioValue' ? 'Depotwert' : 'Jährl. Dividende']} labelFormatter={(l) => `Jahr: ${l}`} />
             <Legend formatter={(v) => v === 'portfolioValue' ? 'Depotwert (€)' : 'Jährl. Dividende (€)'} />
             <Area yAxisId="left" type="monotone" dataKey="portfolioValue" stroke="#3b82f6" fill="url(#colorPortfolio)" strokeWidth={2} />
@@ -149,20 +149,20 @@ export function ProjectionTab({ positions }: Props) {
       </div>
 
       {/* Scenario Comparison */}
-      <div className="rounded-xl border dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold mb-3">Szenarien-Vergleich (5 Jahre)</h3>
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-4">Szenarien-Vergleich (5 Jahre)</h3>
         <div className="grid grid-cols-3 gap-3">
           {scenarios.map((s) => (
             <div
               key={s.label}
               className={`rounded-lg border p-3 ${
-                s.label === 'Konservativ' ? 'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/10' :
-                s.label === 'Realistisch' ? 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/10' :
-                'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10'
+                s.label === 'Konservativ' ? 'border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20' :
+                s.label === 'Realistisch' ? 'border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20' :
+                'border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20'
               }`}
             >
               <div className="text-xs font-bold uppercase opacity-60 mb-2">{s.label}</div>
-              <div className="text-xs opacity-50">Div-Wachstum: {s.dividendGrowthRate}% | Kurs: {s.capitalGrowthRate}%</div>
+              <div className="text-xs text-slate-400 dark:text-zinc-500">Div-Wachstum: {s.dividendGrowthRate}% | Kurs: {s.capitalGrowthRate}%</div>
               <div className="mt-2 space-y-1">
                 <div className="text-sm font-bold">{fmt(s.result?.portfolioValue)}</div>
                 <div className="text-xs text-green-600 dark:text-green-400 font-semibold">{fmt(s.result?.annualDividend)} / Jahr</div>
@@ -173,7 +173,7 @@ export function ProjectionTab({ positions }: Props) {
         </div>
       </div>
 
-      <div className="text-xs text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
+      <div className="text-xs text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 rounded-xl px-4 py-3 leading-relaxed">
         ℹ️ Alle Projektionen sind Modellrechnungen auf Basis der eingegebenen Annahmen und der aktuellen Depotzusammensetzung. Sie stellen keine Garantie für zukünftige Erträge dar. Steuern und Kosten sind nicht berücksichtigt.
       </div>
     </div>

@@ -39,7 +39,7 @@ export function CAGRTab({ positions }: Props) {
   const top10Chowder = byChowder.slice(0, 10);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="grid grid-cols-3 gap-3">
         <KPICard title="Ø CAGR 5J (aktive)" value={fmtPct(avgCagr)} sub="Ø Dividendenwachstum" color="blue" />
         <KPICard title="Ø Yield (aktive)" value={fmtPct(avgYield)} sub="Ø Ausschüttungsrendite" color="green" />
@@ -47,16 +47,16 @@ export function CAGRTab({ positions }: Props) {
       </div>
 
       {/* Scatter Yield vs CAGR */}
-      <div className="rounded-xl border dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold mb-1">Yield vs. CAGR – Positionierungsmatrix</h3>
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-1">Yield vs. CAGR – Positionierungsmatrix</h3>
         <p className="text-xs text-gray-500 mb-3">Oben rechts = Ideal (hoher Yield + starkes Wachstum). Punktgröße ~ Depotwert.</p>
         <ResponsiveContainer width="100%" height={320}>
           <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.2} />
-            <XAxis dataKey="x" name="Yield %" type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`}>
+            <XAxis dataKey="x" name="Yield %" type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v) => `${v}%`}>
               <Label value="Yield %" position="insideBottom" offset={-10} fontSize={11} />
             </XAxis>
-            <YAxis dataKey="y" name="CAGR 5J %" type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`}>
+            <YAxis dataKey="y" name="CAGR 5J %" type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v) => `${v}%`}>
               <Label value="CAGR 5J %" position="insideLeft" angle={-90} offset={10} fontSize={11} />
             </YAxis>
             <Tooltip
@@ -65,7 +65,7 @@ export function CAGRTab({ positions }: Props) {
                 if (!payload?.length) return null;
                 const d = payload[0].payload;
                 return (
-                  <div className="bg-white dark:bg-gray-800 border dark:border-gray-600 rounded-lg px-3 py-2 text-xs shadow-lg">
+                  <div className="bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-lg px-3 py-2 text-xs shadow-lg">
                     <p className="font-bold">{d.symbol} – {d.name}</p>
                     <p>Yield: {d.x.toFixed(2)}% | CAGR: {d.y.toFixed(2)}%</p>
                     <p>Chowder: {d.chowder.toFixed(1)}</p>
@@ -98,13 +98,13 @@ export function CAGRTab({ positions }: Props) {
       </div>
 
       {/* Chowder Chart */}
-      <div className="rounded-xl border dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold mb-1">Top 10 Chowder Score (Yield + CAGR)</h3>
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-1">Top 10 Chowder Score (Yield + CAGR)</h3>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={top10Chowder} margin={{ bottom: 30 }}>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-            <XAxis dataKey="symbol" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" interval={0} />
-            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v.toFixed(0)}`} />
+            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} />
+            <XAxis dataKey="symbol" tick={{ fontSize: 11, fill: '#94a3b8' }} angle={-35} textAnchor="end" interval={0} />
+            <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v) => `${v.toFixed(0)}`} />
             <Tooltip formatter={(v: unknown) => [(v as number).toFixed(1), 'Chowder Score']} />
             <Bar dataKey="chowderScore" radius={[4, 4, 0, 0]}>
               {top10Chowder.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
@@ -114,8 +114,8 @@ export function CAGRTab({ positions }: Props) {
       </div>
 
       {/* Full CAGR Table */}
-      <div className="rounded-xl border dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold mb-3">CAGR & Wachstums-Ranking</h3>
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-4">CAGR & Wachstums-Ranking</h3>
         <SortableTable
           data={byCagr}
           rowKey={(r) => r.symbol}

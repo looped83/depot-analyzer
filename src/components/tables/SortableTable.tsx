@@ -52,43 +52,37 @@ export function SortableTable<T>({ data, columns, pageSize = 25, filterKeys, row
   const slice = sorted.slice(page * pageSize, (page + 1) * pageSize);
 
   const handleSort = (key: string) => {
-    if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortKey(key);
-      setSortDir('asc');
-    }
+    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(key); setSortDir('asc'); }
     setPage(0);
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       {filterKeys && (
         <input
-          className="w-full max-w-sm border rounded-lg px-3 py-1.5 text-sm bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
-          placeholder="Suchen..."
+          className="w-full max-w-xs text-sm bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 placeholder-slate-300 dark:placeholder-zinc-600 text-slate-800 dark:text-zinc-200"
+          placeholder="Suchen …"
           value={filter}
           onChange={(e) => { setFilter(e.target.value); setPage(0); }}
         />
       )}
-      <div className="overflow-x-auto rounded-xl border dark:border-gray-700">
+      <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-800 text-left">
+            <tr className="border-b border-slate-100 dark:border-zinc-800">
               {columns.map((col) => (
                 <th
                   key={String(col.key)}
-                  className={`px-3 py-2 font-semibold cursor-pointer select-none whitespace-nowrap border-b dark:border-gray-700 ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : ''}`}
+                  className={`px-4 py-3 text-xs font-medium text-slate-400 dark:text-zinc-500 cursor-pointer select-none whitespace-nowrap uppercase tracking-wider ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
                   style={{ width: col.width }}
                   onClick={() => handleSort(String(col.key))}
                 >
                   <span className="inline-flex items-center gap-1">
                     {col.label}
-                    {sortKey === col.key ? (
-                      sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
-                    ) : (
-                      <ChevronsUpDown size={12} className="opacity-30" />
-                    )}
+                    {sortKey === col.key
+                      ? sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />
+                      : <ChevronsUpDown size={11} className="opacity-25" />}
                   </span>
                 </th>
               ))}
@@ -96,11 +90,11 @@ export function SortableTable<T>({ data, columns, pageSize = 25, filterKeys, row
           </thead>
           <tbody>
             {slice.map((row) => (
-              <tr key={rowKey(row)} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 border-b dark:border-gray-700/50 last:border-0">
+              <tr key={rowKey(row)} className="border-b border-slate-50 dark:border-zinc-800/60 last:border-0 hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition-colors">
                 {columns.map((col) => (
                   <td
                     key={String(col.key)}
-                    className={`px-3 py-2 ${col.align === 'right' ? 'text-right tabular-nums' : col.align === 'center' ? 'text-center' : ''}`}
+                    className={`px-4 py-3 text-slate-700 dark:text-zinc-300 ${col.align === 'right' ? 'text-right tabular-nums' : col.align === 'center' ? 'text-center' : ''}`}
                   >
                     {col.render
                       ? col.render(get(row, String(col.key)), row)
@@ -111,20 +105,26 @@ export function SortableTable<T>({ data, columns, pageSize = 25, filterKeys, row
             ))}
             {slice.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-6 text-center text-gray-400">Keine Einträge gefunden</td>
+                <td colSpan={columns.length} className="px-4 py-10 text-center text-slate-300 dark:text-zinc-600 text-sm">
+                  Keine Einträge gefunden
+                </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
       {pages > 1 && (
-        <div className="flex items-center gap-2 justify-end text-sm">
-          <span className="text-gray-500">{sorted.length} Einträge</span>
+        <div className="flex items-center gap-1.5 justify-end">
+          <span className="text-xs text-slate-400 dark:text-zinc-500 mr-2">{sorted.length} Einträge</span>
           {Array.from({ length: pages }).map((_, i) => (
             <button
               key={i}
               onClick={() => setPage(i)}
-              className={`w-7 h-7 rounded ${page === i ? 'bg-blue-600 text-white' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200'}`}
+              className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors ${
+                page === i
+                  ? 'bg-blue-600 text-white'
+                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800'
+              }`}
             >
               {i + 1}
             </button>
