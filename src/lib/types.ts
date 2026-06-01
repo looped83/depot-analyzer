@@ -67,4 +67,7 @@ export type TabId =
   | 'projection'
   | 'diversification'
   | 'safety'
-  | 'watchlist';
+  | 'watchlist'
+  | 'goal'
+  | 'rebalancing'
+  | 'quality';
