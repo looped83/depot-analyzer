@@ -45,6 +45,7 @@ export function PrioBadge({ prio }: { prio: string | null }) {
     B: 'text-blue-600 dark:text-blue-400',
     C: 'text-amber-600 dark:text-amber-400',
     D: 'text-orange-600 dark:text-orange-400',
+    E: 'text-red-500 dark:text-red-400',
   };
   return <span className={`text-xs font-bold ${map[prio] ?? ''}`}>{prio}</span>;
 }

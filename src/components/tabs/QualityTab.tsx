@@ -71,7 +71,7 @@ export function QualityTab({ positions }: Props) {
   }));
 
   // Prio distribution
-  const prioDistrib = ['A', 'B', 'C', 'D', '—'].map((prio) => ({
+  const prioDistrib = ['A', 'B', 'C', 'D', 'E', '—'].map((prio) => ({
     name: `Prio ${prio}`,
     value: all.filter((p) => (p.prio ?? '—') === prio).length,
   })).filter((d) => d.value > 0);
