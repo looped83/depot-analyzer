@@ -11,12 +11,16 @@ import { ProjectionTab } from './tabs/ProjectionTab';
 import { DiversificationTab } from './tabs/DiversificationTab';
 import { SafetyTab } from './tabs/SafetyTab';
 import { WatchlistTab } from './tabs/WatchlistTab';
+import { GoalTab } from './tabs/GoalTab';
+import { RebalancingTab } from './tabs/RebalancingTab';
+import { QualityTab } from './tabs/QualityTab';
 import { computeTotals } from '../lib/calculations';
 import { fmt } from '../lib/format';
 import {
   LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
   Calendar, Trophy, Lightbulb, LineChart,
   Download, Moon, Sun, Upload, PieChart, ShieldCheck, Bookmark,
+  Target, Sliders, Star,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -35,6 +39,9 @@ const TABS: Tab[] = [
   { id: 'diversification', label: 'Diversifikation', icon: <PieChart     size={13} /> },
   { id: 'safety',          label: 'Sicherheit',      icon: <ShieldCheck  size={13} /> },
   { id: 'watchlist',       label: 'Watchlist',       icon: <Bookmark     size={13} /> },
+  { id: 'goal',            label: 'Zielplanung',     icon: <Target       size={13} /> },
+  { id: 'rebalancing',     label: 'Rebalancing',     icon: <Sliders      size={13} /> },
+  { id: 'quality',         label: 'Qualität',        icon: <Star         size={13} /> },
 ];
 
 interface Props {
@@ -218,6 +225,9 @@ export function Dashboard({ positions, filename, onReset, darkMode, onToggleDark
         {activeTab === 'diversification' && <DiversificationTab positions={positions} />}
         {activeTab === 'safety'          && <SafetyTab          positions={positions} />}
         {activeTab === 'watchlist'       && <WatchlistTab       positions={positions} />}
+        {activeTab === 'goal'            && <GoalTab            positions={positions} />}
+        {activeTab === 'rebalancing'     && <RebalancingTab     positions={positions} />}
+        {activeTab === 'quality'         && <QualityTab         positions={positions} />}
       </main>
 
       <footer className="max-w-screen-xl mx-auto px-6 py-6 text-xs text-slate-300 dark:text-zinc-600 text-center">
