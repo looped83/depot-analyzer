@@ -13,26 +13,22 @@ import { fmt } from '../lib/format';
 import {
   LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
   Calendar, Trophy, Lightbulb, LineChart,
-  Download, Moon, Sun, Upload, FileSpreadsheet,
+  Download, Moon, Sun, Upload,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-interface Tab {
-  id: TabId;
-  label: string;
-  icon: React.ReactNode;
-}
+interface Tab { id: TabId; label: string; icon: React.ReactNode }
 
 const TABS: Tab[] = [
-  { id: 'overview', label: 'Depot', icon: <LayoutDashboard size={14} /> },
-  { id: 'dividends', label: 'Dividenden', icon: <TrendingUp size={14} /> },
-  { id: 'cagr', label: 'Wachstum', icon: <BarChart2 size={14} /> },
-  { id: 'savings', label: 'Sparpläne', icon: <PiggyBank size={14} /> },
-  { id: 'calendar', label: 'Kalender', icon: <Calendar size={14} /> },
-  { id: 'rankings', label: 'Rankings', icon: <Trophy size={14} /> },
-  { id: 'findings', label: 'Findings', icon: <Lightbulb size={14} /> },
-  { id: 'projection', label: 'Ausblick', icon: <LineChart size={14} /> },
+  { id: 'overview',   label: 'Depot',      icon: <LayoutDashboard size={13} /> },
+  { id: 'dividends',  label: 'Dividenden', icon: <TrendingUp size={13} /> },
+  { id: 'cagr',       label: 'Wachstum',   icon: <BarChart2 size={13} /> },
+  { id: 'savings',    label: 'Sparpläne',  icon: <PiggyBank size={13} /> },
+  { id: 'calendar',   label: 'Kalender',   icon: <Calendar size={13} /> },
+  { id: 'rankings',   label: 'Rankings',   icon: <Trophy size={13} /> },
+  { id: 'findings',   label: 'Findings',   icon: <Lightbulb size={13} /> },
+  { id: 'projection', label: 'Ausblick',   icon: <LineChart size={13} /> },
 ];
 
 interface Props {
@@ -56,24 +52,19 @@ export function Dashboard({ positions, filename, onReset, darkMode, onToggleDark
       const canvas = await html2canvas(contentRef.current, {
         scale: 1.5,
         useCORS: true,
-        backgroundColor: darkMode ? '#030712' : '#f9fafb',
+        backgroundColor: darkMode ? '#09090b' : '#ffffff',
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      pdf.setFontSize(14);
+      pdf.setFontSize(12);
       pdf.text(`Depot-Analyse – ${filename}`, 14, 12);
-      pdf.setFontSize(9);
-      pdf.text(`Erstellt am ${new Date().toLocaleDateString('de-DE')} | Gesamtwert: ${fmt(totals.totalWert)} | Depot-Yield: ${totals.weightedYield.toFixed(2)}%`, 14, 20);
-
-      // Add the captured screenshot
-      const startY = 25;
-      const availHeight = pdf.internal.pageSize.getHeight() - startY - 10;
-      const scaledHeight = Math.min(pdfHeight, availHeight);
+      pdf.setFontSize(8);
+      pdf.text(`${new Date().toLocaleDateString('de-DE')} · ${fmt(totals.totalWert)} · Yield ${totals.weightedYield.toFixed(2)}%`, 14, 19);
+      const startY = 24;
+      const scaledHeight = Math.min(pdfHeight, pdf.internal.pageSize.getHeight() - startY - 8);
       pdf.addImage(imgData, 'PNG', 0, startY, pdfWidth, scaledHeight);
-
       pdf.save(`depot-analyse-${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (e) {
       console.error('PDF export failed', e);
@@ -94,95 +85,134 @@ export function Dashboard({ positions, filename, onReset, darkMode, onToggleDark
     const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `depot-analyse-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
+    Object.assign(document.createElement('a'), { href: url, download: `depot-analyse-${new Date().toISOString().slice(0, 10)}.csv` }).click();
     URL.revokeObjectURL(url);
   };
 
+  const Btn = ({ onClick, children, primary, disabled }: { onClick: () => void; children: React.ReactNode; primary?: boolean; disabled?: boolean }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 ${
+        primary
+          ? 'bg-blue-600 hover:bg-blue-700 text-white'
+          : 'bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300'
+      }`}
+    >
+      {children}
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b dark:border-gray-800 shadow-sm">
-        <div className="max-w-screen-2xl mx-auto px-4 py-2 flex items-center gap-3">
-          <FileSpreadsheet size={20} className="text-blue-600 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="font-bold text-sm truncate">Depot Analyzer</div>
-            <div className="text-xs text-gray-500 truncate">{filename} · {positions.length} Positionen · {fmt(totals.totalWert)}</div>
+      <header className="sticky top-0 z-50 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border-b border-slate-100 dark:border-zinc-800">
+        <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-center gap-4">
+          {/* Logo */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center">
+              <span className="text-white text-[10px] font-bold">D</span>
+            </div>
+            <span className="text-sm font-semibold text-slate-900 dark:text-white hidden sm:block">
+              Depot Analyzer
+            </span>
           </div>
 
-          {/* Quick KPIs */}
-          <div className="hidden md:flex items-center gap-4 text-xs">
-            <div><span className="opacity-50">Yield: </span><span className="font-semibold">{totals.weightedYield.toFixed(2)}%</span></div>
-            <div><span className="opacity-50">Jährl. Div: </span><span className="font-semibold text-green-600 dark:text-green-400">{fmt(totals.totalAnnualDiv)}</span></div>
-            <div><span className="opacity-50">Monatl. Ø: </span><span className="font-semibold">{fmt(totals.totalMonthlyDiv)}</span></div>
+          <div className="h-4 w-px bg-slate-200 dark:bg-zinc-700 hidden sm:block" />
+
+          {/* File info */}
+          <span className="text-xs text-slate-400 dark:text-zinc-500 truncate hidden sm:block max-w-[160px]">
+            {filename}
+          </span>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Live KPIs */}
+          <div className="hidden lg:flex items-center gap-5 text-xs">
+            <div className="text-center">
+              <div className="text-slate-400 dark:text-zinc-500">Depotwert</div>
+              <div className="font-semibold text-slate-800 dark:text-zinc-200">{fmt(totals.totalWert)}</div>
+            </div>
+            <div className="h-6 w-px bg-slate-100 dark:bg-zinc-800" />
+            <div className="text-center">
+              <div className="text-slate-400 dark:text-zinc-500">Yield</div>
+              <div className="font-semibold text-emerald-600 dark:text-emerald-400">{totals.weightedYield.toFixed(2)} %</div>
+            </div>
+            <div className="h-6 w-px bg-slate-100 dark:bg-zinc-800" />
+            <div className="text-center">
+              <div className="text-slate-400 dark:text-zinc-500">Dividende / Jahr</div>
+              <div className="font-semibold text-slate-800 dark:text-zinc-200">{fmt(totals.totalAnnualDiv)}</div>
+            </div>
+            <div className="h-6 w-px bg-slate-100 dark:bg-zinc-800" />
+            <div className="text-center">
+              <div className="text-slate-400 dark:text-zinc-500">Ø / Monat</div>
+              <div className="font-semibold text-slate-800 dark:text-zinc-200">{fmt(totals.totalMonthlyDiv)}</div>
+            </div>
           </div>
 
+          <div className="flex-1 hidden lg:block" />
+
+          {/* Actions */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={exportCSV}
-              className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            >
-              <Download size={12} /> CSV
-            </button>
-            <button
-              onClick={exportPDF}
-              disabled={exporting}
-              className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
-            >
-              {exporting ? <span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" /> : <Download size={12} />}
+            <Btn onClick={exportCSV}><Download size={12} />CSV</Btn>
+            <Btn onClick={exportPDF} primary disabled={exporting}>
+              {exporting
+                ? <span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                : <Download size={12} />}
               PDF
-            </button>
+            </Btn>
             <button
               onClick={onToggleDark}
-              className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
             >
               {darkMode ? <Sun size={14} /> : <Moon size={14} />}
             </button>
             <button
               onClick={onReset}
-              className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
               title="Neue Datei laden"
+              className="p-1.5 rounded-lg text-slate-400 dark:text-zinc-500 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <Upload size={14} />
             </button>
           </div>
         </div>
 
-        {/* Tab bar */}
-        <div className="max-w-screen-2xl mx-auto px-4 flex gap-1 overflow-x-auto pb-px">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+        {/* Tabs */}
+        <div className="max-w-screen-xl mx-auto px-6">
+          <div className="flex gap-0 overflow-x-auto no-scrollbar">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-1.5 px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-all ${
+                  activeTab === tab.id
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-zinc-300'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      {/* Content */}
-      <main ref={contentRef} className="max-w-screen-2xl mx-auto px-4 py-6">
-        {activeTab === 'overview' && <OverviewTab positions={positions} />}
-        {activeTab === 'dividends' && <DividendTab positions={positions} />}
-        {activeTab === 'cagr' && <CAGRTab positions={positions} />}
-        {activeTab === 'savings' && <SavingsTab positions={positions} />}
-        {activeTab === 'calendar' && <CalendarTab positions={positions} />}
-        {activeTab === 'rankings' && <RankingTab positions={positions} />}
-        {activeTab === 'findings' && <FindingsTab positions={positions} />}
-        {activeTab === 'projection' && <ProjectionTab positions={positions} />}
+      {/* Page content */}
+      <main ref={contentRef} className="max-w-screen-xl mx-auto px-6 py-8">
+        {activeTab === 'overview'   && <OverviewTab   positions={positions} />}
+        {activeTab === 'dividends'  && <DividendTab   positions={positions} />}
+        {activeTab === 'cagr'       && <CAGRTab        positions={positions} />}
+        {activeTab === 'savings'    && <SavingsTab     positions={positions} />}
+        {activeTab === 'calendar'   && <CalendarTab    positions={positions} />}
+        {activeTab === 'rankings'   && <RankingTab     positions={positions} />}
+        {activeTab === 'findings'   && <FindingsTab    positions={positions} />}
+        {activeTab === 'projection' && <ProjectionTab  positions={positions} />}
       </main>
 
-      <footer className="max-w-screen-2xl mx-auto px-4 py-4 text-xs text-gray-400 text-center">
-        Depot Analyzer – Rein informative Darstellung, keine Finanzberatung. Alle Daten stammen aus der hochgeladenen Excel-Datei.
+      <footer className="max-w-screen-xl mx-auto px-6 py-6 text-xs text-slate-300 dark:text-zinc-600 text-center">
+        Depot Analyzer · Rein informative Darstellung, keine Finanzberatung.
       </footer>
     </div>
   );

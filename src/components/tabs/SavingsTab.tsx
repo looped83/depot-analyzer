@@ -54,7 +54,7 @@ export function SavingsTab({ positions }: Props) {
   const bySpar = [...saved].sort((a, b) => b.sparbetrag - a.sparbetrag);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Gesamte Sparrate" value={`${totalSpar} €`} sub="Pro Zyklus" color="blue" />
         <KPICard title="Aktive Sparpläne" value={String(saved.length)} sub={`von ${positions.length} Positionen`} color="teal" />
@@ -64,8 +64,8 @@ export function SavingsTab({ positions }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Broker Pie */}
-        <div className="rounded-xl border dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold mb-3">Sparrate je Broker</h3>
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-4">Sparrate je Broker</h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={byBroker} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={30} paddingAngle={2}>
@@ -78,13 +78,13 @@ export function SavingsTab({ positions }: Props) {
         </div>
 
         {/* Zyklus Bar */}
-        <div className="rounded-xl border dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold mb-3">Sparrate je Zyklus</h3>
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-4">Sparrate je Zyklus</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={byZyklus} margin={{ bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
+              <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+              <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
               <Tooltip formatter={(v: unknown) => [`${v} €`, 'Sparbetrag']} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                 {byZyklus.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
@@ -122,8 +122,8 @@ export function SavingsTab({ positions }: Props) {
       )}
 
       {/* Full savings table */}
-      <div className="rounded-xl border dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold mb-3">Sparplan-Ranking – Kapitalfluss</h3>
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-4">Sparplan-Ranking – Kapitalfluss</h3>
         <SortableTable
           data={bySpar}
           rowKey={(r) => r.symbol}

@@ -34,7 +34,7 @@ export function DividendTab({ positions }: Props) {
   const lowYield = active.filter((p) => p.yield > 0 && p.yield < 1.5);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Jährl. Dividende" value={fmt(totals.totalAnnualDiv)} sub="Brutto gesamt" color="green" />
         <KPICard title="Ø Monatliche Dividende" value={fmt(totals.totalMonthlyDiv)} sub="Jahresdividende / 12" color="green" />
@@ -43,8 +43,8 @@ export function DividendTab({ positions }: Props) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl border dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold mb-1">Income vs. Growth</h3>
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-1">Income vs. Growth</h3>
           <div className="flex gap-4 mt-2">
             <div className="flex-1">
               <div className="text-xs opacity-60">Income / High Yield</div>
@@ -58,21 +58,21 @@ export function DividendTab({ positions }: Props) {
             </div>
           </div>
         </div>
-        <div className="rounded-xl border dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold mb-1">Yield-Ausreißer</h3>
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-1">Yield-Ausreißer</h3>
           <div className="text-xs opacity-60 mt-2">High Yield (&gt;6%): {highYield.map((p) => p.symbol).join(', ') || '—'}</div>
           <div className="text-xs opacity-60 mt-1">Low Yield (&lt;1.5%): {lowYield.map((p) => p.symbol).join(', ') || '—'}</div>
         </div>
       </div>
 
       {/* Top Dividend Contributors */}
-      <div className="rounded-xl border dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold mb-3">Top Dividendenbeiträger (Jährlich)</h3>
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-4">Top Dividendenbeiträger (Jährlich)</h3>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={top15} margin={{ bottom: 30 }}>
-            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.3} />
-            <XAxis dataKey="symbol" tick={{ fontSize: 11 }} angle={-35} textAnchor="end" interval={0} />
-            <YAxis tickFormatter={(v) => `${v.toFixed(0)}€`} tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} />
+            <XAxis dataKey="symbol" tick={{ fontSize: 11, fill: '#94a3b8' }} angle={-35} textAnchor="end" interval={0} />
+            <YAxis tickFormatter={(v) => `${v.toFixed(0)}€`} tick={{ fontSize: 11, fill: '#94a3b8' }} />
             <Tooltip formatter={(v: unknown) => [fmt(v as number), 'Jährliche Dividende']} />
             <Bar dataKey="annualDividend" radius={[4, 4, 0, 0]}>
               {top15.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
@@ -82,8 +82,8 @@ export function DividendTab({ positions }: Props) {
       </div>
 
       {/* Full dividend table */}
-      <div className="rounded-xl border dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold mb-3">Dividendenanalyse – Alle Positionen</h3>
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-4">Dividendenanalyse – Alle Positionen</h3>
         <SortableTable
           data={byDiv}
           rowKey={(r) => r.symbol}
@@ -118,8 +118,8 @@ export function DividendTab({ positions }: Props) {
       </div>
 
       {/* Yield Ranking */}
-      <div className="rounded-xl border dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold mb-3">Yield-Ranking</h3>
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 mb-4">Yield-Ranking</h3>
         <SortableTable
           data={byYield}
           rowKey={(r) => r.symbol}

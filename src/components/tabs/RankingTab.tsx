@@ -16,18 +16,18 @@ interface RankingSection {
 
 function Badge({ text, color }: { text: string; color: string }) {
   return (
-    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${color}`}>{text}</span>
+    <span className={`text-xs font-medium px-2 py-0.5 rounded-lg ${color}`}>{text}</span>
   );
 }
 
 function RankCard({ section }: { section: RankingSection }) {
   return (
-    <div className={`rounded-xl border p-4 ${section.color}`}>
+    <div className={`rounded-2xl border p-5 ${section.color} shadow-sm`}>
       <div className="flex items-center gap-2 mb-3">
         <span>{section.icon}</span>
         <div>
           <h3 className="text-sm font-bold">{section.title}</h3>
-          <p className="text-xs opacity-60">{section.description}</p>
+          <p className="text-xs text-current opacity-50 leading-relaxed">{section.description}</p>
         </div>
       </div>
       <div className="space-y-1.5">
@@ -54,7 +54,7 @@ export function RankingTab({ positions }: Props) {
       title: 'Best Overall Dividend Score',
       description: '40% Yield + 40% CAGR + 10% Freq + 10% Prio/Status',
       icon: <Trophy size={16} className="text-yellow-600" />,
-      color: 'border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/10',
+      color: 'border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20',
       items: [...positions].sort((a, b) => b.dividendScore - a.dividendScore).map((p) => ({
         pos: p,
         value: String(p.dividendScore),
@@ -66,7 +66,7 @@ export function RankingTab({ positions }: Props) {
       title: 'Highest Yield',
       description: 'Positionen mit der höchsten Dividendenrendite',
       icon: <DollarSign size={16} className="text-green-600" />,
-      color: 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10',
+      color: 'border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20',
       items: [...active].sort((a, b) => b.yield - a.yield).map((p) => ({
         pos: p,
         value: fmtPct(p.yield),
@@ -78,7 +78,7 @@ export function RankingTab({ positions }: Props) {
       title: 'Highest CAGR 5J',
       description: 'Stärkstes historisches Dividendenwachstum',
       icon: <TrendingUp size={16} className="text-blue-600" />,
-      color: 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/10',
+      color: 'border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20',
       items: [...active].filter((p) => p.cagr5j > 0).sort((a, b) => b.cagr5j - a.cagr5j).map((p) => ({
         pos: p,
         value: fmtPct(p.cagr5j),
@@ -89,7 +89,7 @@ export function RankingTab({ positions }: Props) {
       title: 'Best Yield/CAGR Mix (Chowder)',
       description: 'Yield + CAGR 5J kombiniert',
       icon: <Star size={16} className="text-purple-600" />,
-      color: 'border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/10',
+      color: 'border-violet-100 dark:border-violet-900/40 bg-violet-50/50 dark:bg-violet-950/20',
       items: [...active].sort((a, b) => b.chowderScore - a.chowderScore).map((p) => ({
         pos: p,
         value: p.chowderScore.toFixed(1),
@@ -100,7 +100,7 @@ export function RankingTab({ positions }: Props) {
       title: 'Highest Dividend Contribution',
       description: 'Größte absolute Dividendenzahler',
       icon: <DollarSign size={16} className="text-teal-600" />,
-      color: 'border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/10',
+      color: 'border-teal-100 dark:border-teal-900/40 bg-teal-50/50 dark:bg-teal-950/20',
       items: [...active].sort((a, b) => b.annualDividend - a.annualDividend).map((p) => ({
         pos: p,
         value: fmt(p.annualDividend),
@@ -112,7 +112,7 @@ export function RankingTab({ positions }: Props) {
       title: 'Best Sparplan Candidate',
       description: 'Hoher Score + Aufbau-Status + untergewichtet',
       icon: <TrendingUp size={16} className="text-emerald-600" />,
-      color: 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/10',
+      color: 'border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-950/20',
       items: positions
         .filter((p) => p.status === 'Aufbau' && p.prio && ['A', 'B'].includes(p.prio))
         .sort((a, b) => {
@@ -132,7 +132,7 @@ export function RankingTab({ positions }: Props) {
       title: 'Possible Overweight',
       description: 'Positionen mit hohem Portfoliogewicht',
       icon: <AlertTriangle size={16} className="text-orange-600" />,
-      color: 'border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/10',
+      color: 'border-orange-100 dark:border-orange-900/40 bg-orange-50/50 dark:bg-orange-950/20',
       items: [...active].sort((a, b) => b.portfolioWeight - a.portfolioWeight).slice(0, 10).map((p) => ({
         pos: p,
         value: `${p.portfolioWeight.toFixed(1)}%`,
@@ -144,7 +144,7 @@ export function RankingTab({ positions }: Props) {
       title: 'Possible Underweight',
       description: 'Qualitätsposition mit niedrigem Gewicht',
       icon: <Search size={16} className="text-indigo-600" />,
-      color: 'border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/10',
+      color: 'border-indigo-100 dark:border-indigo-900/40 bg-indigo-50/50 dark:bg-indigo-950/20',
       items: positions
         .filter((p) => p.dividendScore >= 60 && p.portfolioWeight < 3 && p.status === 'Aufbau')
         .sort((a, b) => b.dividendScore - a.dividendScore)
@@ -159,7 +159,7 @@ export function RankingTab({ positions }: Props) {
       title: 'Watchlist / Review Needed',
       description: 'Beobachten + Verkauf + niedrige Scores',
       icon: <AlertTriangle size={16} className="text-red-600" />,
-      color: 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10',
+      color: 'border-red-100 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20',
       items: positions
         .filter((p) => p.status === 'Beobachten' || p.status === 'Verkauf' || (p.wert > 0 && p.dividendScore < 35))
         .sort((a, b) => a.dividendScore - b.dividendScore)

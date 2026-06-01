@@ -1,16 +1,44 @@
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    background: #fafafa;
+    color: #0f172a;
+  }
+
+  .dark body {
+    background: #09090b;
+    color: #f8fafc;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+  }
 }
 
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
-  -webkit-font-smoothing: antialiased;
+/* Tabbar scrollbar hide */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Smooth transition for dark mode */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
 }
 
-#root {
-  width: 100%;
-  min-height: 100vh;
-}
+/* But not for transforms/opacity (would affect charts) */
+svg *, rect, circle, path, line { transition: none; }

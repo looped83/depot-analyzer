@@ -8,29 +8,29 @@ interface Props { positions: DepotPosition[] }
 const categoryConfig = {
   success: {
     icon: <CheckCircle size={16} />,
-    bg: 'bg-green-50 dark:bg-green-900/20',
-    border: 'border-green-200 dark:border-green-800',
-    text: 'text-green-800 dark:text-green-300',
-    iconColor: 'text-green-600 dark:text-green-400',
+    bg: 'bg-emerald-50/60 dark:bg-emerald-950/30',
+    border: 'border-emerald-100 dark:border-emerald-900/60',
+    text: 'text-emerald-800 dark:text-emerald-300',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
   },
   info: {
     icon: <Info size={16} />,
-    bg: 'bg-blue-50 dark:bg-blue-900/20',
-    border: 'border-blue-200 dark:border-blue-800',
+    bg: 'bg-blue-50/60 dark:bg-blue-950/30',
+    border: 'border-blue-100 dark:border-blue-900/60',
     text: 'text-blue-800 dark:text-blue-300',
     iconColor: 'text-blue-600 dark:text-blue-400',
   },
   warning: {
     icon: <AlertTriangle size={16} />,
-    bg: 'bg-yellow-50 dark:bg-yellow-900/20',
-    border: 'border-yellow-200 dark:border-yellow-800',
-    text: 'text-yellow-800 dark:text-yellow-300',
-    iconColor: 'text-yellow-600 dark:text-yellow-400',
+    bg: 'bg-amber-50/60 dark:bg-amber-950/30',
+    border: 'border-amber-100 dark:border-amber-900/60',
+    text: 'text-amber-800 dark:text-amber-300',
+    iconColor: 'text-amber-600 dark:text-amber-400',
   },
   danger: {
     icon: <XCircle size={16} />,
-    bg: 'bg-red-50 dark:bg-red-900/20',
-    border: 'border-red-200 dark:border-red-800',
+    bg: 'bg-red-50/60 dark:bg-red-950/30',
+    border: 'border-red-100 dark:border-red-900/60',
     text: 'text-red-800 dark:text-red-300',
     iconColor: 'text-red-600 dark:text-red-400',
   },
@@ -39,16 +39,16 @@ const categoryConfig = {
 function FindingCard({ finding }: { finding: Finding }) {
   const cfg = categoryConfig[finding.category];
   return (
-    <div className={`rounded-xl border p-4 ${cfg.bg} ${cfg.border}`}>
+    <div className={`rounded-2xl border p-5 ${cfg.bg} ${cfg.border}`}>
       <div className={`flex items-start gap-2 ${cfg.iconColor}`}>
         <span className="mt-0.5 shrink-0">{cfg.icon}</span>
         <div className="flex-1">
-          <h3 className={`font-semibold text-sm ${cfg.text}`}>{finding.title}</h3>
+          <h3 className={`font-semibold text-sm ${cfg.text} leading-snug`}>{finding.title}</h3>
           <p className="text-sm mt-1 text-gray-700 dark:text-gray-300 leading-relaxed">{finding.detail}</p>
           {finding.symbols && finding.symbols.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {finding.symbols.map((sym) => (
-                <span key={sym} className="text-xs bg-white/60 dark:bg-gray-700/60 px-2 py-0.5 rounded-full font-mono">{sym}</span>
+                <span key={sym} className="text-xs bg-white/80 dark:bg-zinc-800/80 border border-slate-100 dark:border-zinc-700 px-2 py-0.5 rounded-full font-mono text-slate-600 dark:text-zinc-400">{sym}</span>
               ))}
             </div>
           )}
@@ -69,10 +69,10 @@ export function FindingsTab({ positions }: Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="grid grid-cols-4 gap-3">
         {(['danger', 'warning', 'info', 'success'] as const).map((cat) => (
-          <div key={cat} className={`rounded-xl border p-3 text-center ${categoryConfig[cat].bg} ${categoryConfig[cat].border}`}>
+          <div key={cat} className={`rounded-2xl border p-4 text-center ${categoryConfig[cat].bg} ${categoryConfig[cat].border}`}>
             <div className={`text-2xl font-bold ${categoryConfig[cat].text}`}>{grouped[cat].length}</div>
             <div className={`text-xs opacity-70 ${categoryConfig[cat].text}`}>
               {cat === 'danger' ? 'Kritisch' : cat === 'warning' ? 'Warnung' : cat === 'info' ? 'Info' : 'Positiv'}
