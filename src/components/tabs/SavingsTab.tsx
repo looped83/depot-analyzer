@@ -121,6 +121,7 @@ export function SavingsTab({ positions }: Props) {
                     v === 'B' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' :
                     v === 'C' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' :
                     v === 'D' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300' :
+                    v === 'E' ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' :
                     'bg-slate-100 dark:bg-zinc-700 text-slate-500 dark:text-zinc-400'
                   }`}>{String(v || '—')}</span>
                 )},

@@ -3,7 +3,7 @@ export interface DepotPosition {
   symbol: string;
   name: string;
   status: 'Aufbau' | 'Erledigt' | 'Beobachten' | 'Verkauf' | string;
-  prio: 'A' | 'B' | 'C' | 'D' | null;
+  prio: 'A' | 'B' | 'C' | 'D' | 'E' | null;
   broker: string;
   wert: number;
   yield: number;       // Yield % (raw decimal or percentage – stored as percent, e.g. 2.24)

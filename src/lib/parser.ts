@@ -106,7 +106,7 @@ export function parseExcel(file: File): Promise<DepotPosition[]> {
             symbol,
             name: str(row[iName], symbol),
             status: str(row[iStatus], 'Aufbau'),
-            prio: (['A', 'B', 'C', 'D'].includes(str(row[iPrio])) ? str(row[iPrio]) : null) as DepotPosition['prio'],
+            prio: (['A', 'B', 'C', 'D', 'E'].includes(str(row[iPrio])) ? str(row[iPrio]) : null) as DepotPosition['prio'],
             broker: str(row[iBroker], 'Unbekannt'),
             wert: num(row[iWert]),
             yield: num(row[iYield]),

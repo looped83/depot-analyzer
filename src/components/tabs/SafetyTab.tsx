@@ -33,10 +33,11 @@ function safetyScore(p: DepotPosition): number {
   else if (p.yield <= 9)   score -= 10;
   else score -= 20;
 
-  if (p.prio === 'A')   score += 10;
-  else if (p.prio === 'B') score += 5;
-  else if (p.prio === 'C') score -= 5;
-  else if (p.prio === 'D') score -= 10;
+  if (p.prio === 'A')        score += 10;
+  else if (p.prio === 'B')  score += 5;
+  else if (p.prio === 'C')  score -= 5;
+  else if (p.prio === 'D')  score -= 10;
+  else if (p.prio === 'E')  score -= 20;
 
   if (p.status === 'Beobachten') score -= 10;
   if (p.status === 'Verkauf')    score -= 20;

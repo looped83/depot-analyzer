@@ -56,7 +56,7 @@ export function computeDividendScore(
   const normFreq = maxFreq > 0 ? freqScore / maxFreq : 0;
 
   // Prio score: A=1.0, B=0.75, C=0.5, D=0.25, null=0.4
-  const prioMap: Record<string, number> = { A: 1.0, B: 0.75, C: 0.5, D: 0.25 };
+  const prioMap: Record<string, number> = { A: 1.0, B: 0.75, C: 0.5, D: 0.25, E: 0.1 };
   const prioScore = prio ? (prioMap[prio] ?? 0.4) : 0.4;
 
   // Status modifier
