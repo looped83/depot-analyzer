@@ -8,12 +8,15 @@ import { CalendarTab } from './tabs/CalendarTab';
 import { RankingTab } from './tabs/RankingTab';
 import { FindingsTab } from './tabs/FindingsTab';
 import { ProjectionTab } from './tabs/ProjectionTab';
+import { DiversificationTab } from './tabs/DiversificationTab';
+import { SafetyTab } from './tabs/SafetyTab';
+import { WatchlistTab } from './tabs/WatchlistTab';
 import { computeTotals } from '../lib/calculations';
 import { fmt } from '../lib/format';
 import {
   LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
   Calendar, Trophy, Lightbulb, LineChart,
-  Download, Moon, Sun, Upload,
+  Download, Moon, Sun, Upload, PieChart, ShieldCheck, Bookmark,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -28,7 +31,10 @@ const TABS: Tab[] = [
   { id: 'calendar',   label: 'Kalender',   icon: <Calendar size={13} /> },
   { id: 'rankings',   label: 'Rankings',   icon: <Trophy size={13} /> },
   { id: 'findings',   label: 'Findings',   icon: <Lightbulb size={13} /> },
-  { id: 'projection', label: 'Ausblick',   icon: <LineChart size={13} /> },
+  { id: 'projection',      label: 'Ausblick',        icon: <LineChart    size={13} /> },
+  { id: 'diversification', label: 'Diversifikation', icon: <PieChart     size={13} /> },
+  { id: 'safety',          label: 'Sicherheit',      icon: <ShieldCheck  size={13} /> },
+  { id: 'watchlist',       label: 'Watchlist',       icon: <Bookmark     size={13} /> },
 ];
 
 interface Props {
@@ -208,7 +214,10 @@ export function Dashboard({ positions, filename, onReset, darkMode, onToggleDark
         {activeTab === 'calendar'   && <CalendarTab    positions={positions} />}
         {activeTab === 'rankings'   && <RankingTab     positions={positions} />}
         {activeTab === 'findings'   && <FindingsTab    positions={positions} />}
-        {activeTab === 'projection' && <ProjectionTab  positions={positions} />}
+        {activeTab === 'projection'      && <ProjectionTab      positions={positions} />}
+        {activeTab === 'diversification' && <DiversificationTab positions={positions} />}
+        {activeTab === 'safety'          && <SafetyTab          positions={positions} />}
+        {activeTab === 'watchlist'       && <WatchlistTab       positions={positions} />}
       </main>
 
       <footer className="max-w-screen-xl mx-auto px-6 py-6 text-xs text-slate-300 dark:text-zinc-600 text-center">
