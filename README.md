@@ -5,7 +5,6 @@ Ein professionelles lokales Web-Tool für die Analyse eines Dividenden-Depots.
 ## Schnellstart
 
 ```bash
-cd depot-app
 npm install
 npm run dev
 ```
