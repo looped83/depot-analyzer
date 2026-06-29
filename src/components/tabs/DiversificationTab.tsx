@@ -88,14 +88,39 @@ export function DiversificationTab({ positions }: Props) {
 
   const clumps = sorted.filter((p) => p.portfolioWeight > 5);
 
+  const divGrade = hhi < 500 ? 'A+' : hhi < 800 ? 'A' : hhi < 1200 ? 'B+' : hhi < 1800 ? 'B' : hhi < 2500 ? 'C' : 'D';
+  const divGradeColor = divGrade.startsWith('A') ? 'text-emerald-600 dark:text-emerald-400'
+    : divGrade.startsWith('B') ? 'text-blue-600 dark:text-blue-400'
+    : divGrade.startsWith('C') ? 'text-amber-500' : 'text-red-500';
+
+  const top3DivContrib = [...active].sort((a, b) => b.dividendContribution - a.dividendContribution).slice(0, 3);
+  const top3DivPct = top3DivContrib.reduce((s, p) => s + p.dividendContribution, 0);
+
+  const brokerCount = new Set(active.map(p => p.broker)).size;
+  const typCount = new Set(active.map(p => p.typ)).size;
+  const katCount = new Set(active.map(p => p.kategorie)).size;
+
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KPICard title="Aktive Positionen"  value={String(active.length)}        sub="Positionen im Depot" />
-        <KPICard title="HHI Konzentration"  value={hhi.toFixed(0)}               sub={hhiLabel} />
+        <KPICard title="HHI"                value={hhi.toFixed(0)}               sub={hhiLabel} />
+        <KPICard title="Div. Grade"         value={divGrade}                     sub={hhiLabel} />
         <KPICard title="Top 5 Gewicht"      value={fmtPct(top5Weight)}           sub="Anteil am Depot" />
-        <KPICard title="Top 10 Gewicht"     value={fmtPct(top10Weight)}          sub="Anteil am Depot" />
+        <KPICard title="Broker"             value={String(brokerCount)}           sub={`${typCount} Typen · ${katCount} Kategorien`} />
+        <KPICard title="Top 3 Div-Anteil"   value={`${top3DivPct.toFixed(0)} %`} sub={top3DivContrib.map(p => p.symbol).join(', ')} />
       </div>
+
+      {/* Dependency warning */}
+      {top3DivPct > 50 && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-950/20 p-4">
+          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">Einkommensabhängigkeit</p>
+          <p className="text-xs text-amber-600/70 dark:text-amber-300/60">
+            {top3DivContrib.map(p => p.symbol).join(', ')} liefern {top3DivPct.toFixed(0)} % deiner Dividende.
+            Bei einer Kürzung einer dieser Positionen würde dein Einkommen deutlich sinken.
+          </p>
+        </div>
+      )}
 
       {/* Treemap */}
       <Card title="Depot-Übersicht – Gewichtung & Kategorie"

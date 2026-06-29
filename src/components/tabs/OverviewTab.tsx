@@ -3,9 +3,11 @@ import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, Cart
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
 import { Card, StatusBadge, PrioBadge } from '../Card';
-import { computeTotals } from '../../lib/calculations';
+import { computeTotals, computeMonthlyCalendar } from '../../lib/calculations';
+import { computeHealthScore, generateRecommendations, computeFreibetrag } from '../../lib/insights';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct } from '../../lib/format';
+import { AlertTriangle, Zap } from 'lucide-react';
 
 const PALETTE = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f97316','#ec4899','#84cc16','#ef4444','#6366f1'];
 interface Props { positions: DepotPosition[] }
@@ -26,12 +28,30 @@ const Tip = ({ active, payload }: { active?: boolean; payload?: { name: string; 
 
 export function OverviewTab({ positions }: Props) {
   const totals = computeTotals(positions);
+  const health = computeHealthScore(positions);
+  const recommendations = generateRecommendations(positions);
+  const freibetrag = computeFreibetrag(positions);
+  const calendar = computeMonthlyCalendar(positions);
   const byWert = [...positions].sort((a, b) => b.wert - a.wert);
+  const active = positions.filter(p => p.wert > 0);
   const top10  = byWert.slice(0, 10);
   const top5W  = top10.slice(0, 5).reduce((s, p) => s + p.portfolioWeight, 0);
   const top10W = top10.reduce((s, p) => s + p.portfolioWeight, 0);
   const aufbau = positions.filter((p) => p.status === 'Aufbau');
   const erledigt = positions.filter((p) => p.status === 'Erledigt');
+  const beobachten = positions.filter((p) => p.status === 'Beobachten' && p.wert > 0);
+  const verkauf = positions.filter((p) => p.status === 'Verkauf' && p.wert > 0);
+
+  const monthlyPayers = active.filter(p => p.ausschuettungsfrequenz === 'monatlich').length;
+  const quarterlyPayers = active.filter(p => p.ausschuettungsfrequenz === 'quartalsweise').length;
+
+  const netDiv = freibetrag.annualDiv - freibetrag.taxAmount;
+  const monthsWithIncome = calendar.filter(m => m.expectedIncome > 0).length;
+
+  const topActions = recommendations.filter(r => r.priority === 'high').slice(0, 3);
+  const healthColor = health.overall >= 70 ? 'text-emerald-600 dark:text-emerald-400'
+    : health.overall >= 50 ? 'text-amber-500' : 'text-red-500';
+  const healthBg = health.overall >= 70 ? 'from-emerald-500' : health.overall >= 50 ? 'from-amber-500' : 'from-red-500';
 
   return (
     <div className="space-y-5">
@@ -44,12 +64,92 @@ export function OverviewTab({ positions }: Props) {
         <KPICard title="Sparrate"         value={`${totals.totalSparbetrag} €`} sub="Pro Zyklus" />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* Portfolio Health Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 flex items-center gap-4">
+          <div className="relative w-16 h-16 shrink-0">
+            <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
+              <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="3" className="stroke-slate-100 dark:stroke-zinc-800" />
+              <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="3"
+                strokeDasharray={`${health.overall * 0.975} 100`}
+                strokeLinecap="round"
+                className={health.overall >= 70 ? 'stroke-emerald-500' : health.overall >= 50 ? 'stroke-amber-500' : 'stroke-red-500'} />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className={`text-sm font-bold ${healthColor}`}>{health.overall.toFixed(0)}</span>
+            </div>
+          </div>
+          <div>
+            <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Portfolio Health</div>
+            <div className={`text-lg font-bold ${healthColor}`}>
+              {health.overall >= 80 ? 'Ausgezeichnet' : health.overall >= 65 ? 'Gut' : health.overall >= 50 ? 'Befriedigend' : 'Verbesserungsbedarf'}
+            </div>
+            <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
+              {health.dimensions.filter(d => d.score >= 70).length} / {health.dimensions.length} Dimensionen im grünen Bereich
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Netto-Dividende (nach Steuer)</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{fmt(netDiv)} <span className="text-sm font-normal text-slate-400 dark:text-zinc-500">/ Jahr</span></div>
+          <div className="text-xs text-slate-400 dark:text-zinc-500 mt-1">
+            {fmt(netDiv / 12)} / Monat · {freibetrag.remaining > 0
+              ? <span className="text-emerald-600 dark:text-emerald-400">{fmt(freibetrag.remaining)} Freibetrag frei</span>
+              : <span className="text-amber-500">{fmt(freibetrag.taxAmount)} Steuer/Jahr</span>
+            }
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Cashflow-Abdeckung</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{monthsWithIncome} <span className="text-sm font-normal text-slate-400 dark:text-zinc-500">/ 12 Monate</span></div>
+          <div className="text-xs text-slate-400 dark:text-zinc-500 mt-1">
+            {monthlyPayers} monatl. · {quarterlyPayers} quartalsw. Zahler
+          </div>
+          {monthsWithIncome < 12 && (
+            <div className="mt-1.5 w-full h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(monthsWithIncome / 12) * 100}%` }} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Urgent Actions */}
+      {topActions.length > 0 && (
+        <div className="rounded-2xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap size={14} className="text-amber-600 dark:text-amber-400" />
+            <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Nächste Schritte ({recommendations.filter(r => r.priority === 'high').length} wichtig)</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            {topActions.map(action => (
+              <div key={action.id} className="flex items-start gap-2 bg-white/60 dark:bg-zinc-800/60 rounded-xl p-3">
+                <AlertTriangle size={13} className="text-amber-500 mt-0.5 shrink-0" />
+                <div>
+                  <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">{action.title}</div>
+                  <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">{action.impact}</div>
+                  {action.symbols && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {action.symbols.slice(0, 4).map(s => (
+                        <span key={s} className="text-[10px] font-mono bg-amber-100/80 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded">{s}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Status Overview + Concentration */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className={top5W > 50 ? 'border-amber-200 dark:border-amber-800/50' : ''}>
-          <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Konzentrationsrisiko Top 5</div>
+          <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Top 5 Konzentration</div>
           <div className="text-3xl font-semibold text-slate-900 dark:text-white">{top5W.toFixed(1)} %</div>
           <div className={`mt-1 text-xs ${top5W > 50 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-zinc-500'}`}>
-            {top5W > 50 ? '⚠ Erhöhtes Klumpenrisiko' : '✓ Im normalen Bereich'}
+            {top5W > 50 ? 'Erhöhtes Klumpenrisiko' : 'Im normalen Bereich'}
           </div>
         </Card>
         <Card>
@@ -57,6 +157,20 @@ export function OverviewTab({ positions }: Props) {
           <div className="text-3xl font-semibold text-slate-900 dark:text-white">{top10W.toFixed(1)} %</div>
           <div className="mt-1 text-xs text-slate-400 dark:text-zinc-500">von {positions.length} Positionen</div>
         </Card>
+        {beobachten.length > 0 && (
+          <Card className="border-amber-200 dark:border-amber-800/50">
+            <div className="text-xs font-medium text-amber-500 uppercase tracking-wider mb-2">Unter Beobachtung</div>
+            <div className="text-3xl font-semibold text-amber-600 dark:text-amber-400">{beobachten.length}</div>
+            <div className="mt-1 text-xs text-amber-500/70">{fmt(beobachten.reduce((s, p) => s + p.wert, 0))} gebunden</div>
+          </Card>
+        )}
+        {verkauf.length > 0 && (
+          <Card className="border-red-200 dark:border-red-800/50">
+            <div className="text-xs font-medium text-red-500 uppercase tracking-wider mb-2">Zum Verkauf</div>
+            <div className="text-3xl font-semibold text-red-600 dark:text-red-400">{verkauf.length}</div>
+            <div className="mt-1 text-xs text-red-500/70">{fmt(verkauf.reduce((s, p) => s + p.wert, 0))} freisetzbar</div>
+          </Card>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

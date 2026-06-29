@@ -66,14 +66,33 @@ export function WatchlistTab({ positions }: Props) {
     { key: 'broker',    label: 'Broker',   align: 'center' as const },
   ];
 
+  const sellWert = sellList.reduce((s, p) => s + p.wert, 0);
+  const avgCandidateYield = candidates.length > 0 ? candidates.reduce((s, p) => s + p.yield, 0) / candidates.length : 0;
+  const potentialDivFromSell = sellWert > 0 && topCandidates.length > 0
+    ? sellWert * (topCandidates.reduce((s, p) => s + p.yield, 0) / topCandidates.length / 100)
+    : 0;
+
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Kaufkandidaten"    value={String(candidates.length)}  sub="Noch nicht im Depot" />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KPICard title="Kaufkandidaten"    value={String(candidates.length)}    sub="Noch nicht im Depot" />
         <KPICard title="Prio A/B Pipeline" value={String(topCandidates.length)} sub="Hochwertige Kandidaten" />
-        <KPICard title="Beobachtungsliste" value={String(watchList.length)}   sub="Im Depot, unter Beobachtung" />
-        <KPICard title="Verkaufskandidaten" value={String(sellList.length)}   sub="Zum Verkauf markiert" />
+        <KPICard title="Ø Yield Kandidaten" value={fmtPct(avgCandidateYield)}   sub="Durchschnitt Watchlist" />
+        <KPICard title="Beobachtungsliste" value={String(watchList.length)}     sub="Im Depot, unter Beobachtung" />
+        <KPICard title="Verkaufskandidaten" value={String(sellList.length)}     sub="Zum Verkauf markiert" />
+        <KPICard title="Reinvest-Potenzial" value={sellWert > 0 ? fmt(potentialDivFromSell) : '—'} sub={sellWert > 0 ? `${fmt(sellWert)} umschichtbar` : 'Keine Verkäufe'} />
       </div>
+
+      {/* Reinvestment opportunity */}
+      {sellList.length > 0 && topCandidates.length > 0 && (
+        <div className="rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/50 dark:bg-emerald-950/20 p-4">
+          <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-1">Umschichtungs-Potenzial</p>
+          <p className="text-xs text-emerald-600/70 dark:text-emerald-300/60">
+            Durch Verkauf von {sellList.map(p => p.symbol).join(', ')} werden {fmt(sellWert)} frei.
+            Reinvestiert in Top-Kandidaten ergibt das ca. {fmt(potentialDivFromSell)} zusätzliche Dividende pro Jahr.
+          </p>
+        </div>
+      )}
 
       {/* Capital needed for top candidates */}
       {topCandidates.length > 0 && (
