@@ -200,5 +200,106 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
     });
   }
 
+  // Einkommensabhängigkeit: Top 3 Positionen liefern >50% der Dividende
+  const sortedByDivContrib = [...active].sort((a, b) => b.dividendContribution - a.dividendContribution);
+  const top3DivPct = sortedByDivContrib.slice(0, 3).reduce((s, p) => s + p.dividendContribution, 0);
+  if (top3DivPct > 50) {
+    findings.push({
+      id: 'income-dependency',
+      category: 'warning',
+      title: 'Einkommensabhängigkeit: Top 3 liefern >50 % der Dividende',
+      detail: `${sortedByDivContrib.slice(0, 3).map(p => `${p.symbol} (${p.dividendContribution.toFixed(1)}%)`).join(', ')} liefern zusammen ${top3DivPct.toFixed(1)}% der gesamten Dividende. Eine Kürzung bei einer dieser Positionen hätte starken Einfluss auf dein Einkommen.`,
+      symbols: sortedByDivContrib.slice(0, 3).map(p => p.symbol),
+    });
+  }
+
+  // Cashflow-Stabilität
+  const monthlyIncomes = calendar.map(m => m.expectedIncome);
+  const variance = monthlyIncomes.reduce((s, v) => s + (v - avgMonthlyIncome) ** 2, 0) / 12;
+  const cv = avgMonthlyIncome > 0 ? Math.sqrt(variance) / avgMonthlyIncome : 1;
+  if (cv < 0.25) {
+    findings.push({
+      id: 'cashflow-stable',
+      category: 'success',
+      title: 'Gleichmäßiger Cashflow',
+      detail: `Dein monatlicher Dividenden-Cashflow ist gut verteilt (Variationskoeffizient: ${(cv * 100).toFixed(0)}%). Du erhältst in jedem Monat ähnlich hohe Einkünfte.`,
+    });
+  } else if (cv > 0.6) {
+    findings.push({
+      id: 'cashflow-unstable',
+      category: 'warning',
+      title: 'Ungleichmäßiger Cashflow',
+      detail: `Dein monatlicher Dividenden-Cashflow schwankt stark (Variationskoeffizient: ${(cv * 100).toFixed(0)}%). Monatliche Zahler oder Quartalsweise Zahler mit verschiedenen Ausschüttungsmonaten können das glätten.`,
+    });
+  }
+
+  // Sparerpauschbetrag Check
+  if (totals.totalAnnualDiv > 1000) {
+    const taxable = totals.totalAnnualDiv - 1000;
+    const taxAmount = taxable * 0.26375;
+    findings.push({
+      id: 'freibetrag-exceeded',
+      category: 'info',
+      title: 'Sparerpauschbetrag überschritten',
+      detail: `Deine jährliche Bruttodividende (${totals.totalAnnualDiv.toFixed(0)} €) übersteigt den Freibetrag von 1.000 €. Ca. ${taxAmount.toFixed(0)} € Steuern fallen an (KapESt + SolZ 26,375 %).`,
+    });
+  } else if (totals.totalAnnualDiv > 800) {
+    findings.push({
+      id: 'freibetrag-near',
+      category: 'success',
+      title: 'Sparerpauschbetrag fast ausgeschöpft',
+      detail: `Deine jährliche Dividende (${totals.totalAnnualDiv.toFixed(0)} €) nähert sich dem Freibetrag von 1.000 €. Noch ${(1000 - totals.totalAnnualDiv).toFixed(0)} € sind steuerfrei.`,
+    });
+  }
+
+  // Chowder Score Champions & Schwächen
+  const chowderChamps = active.filter(p => p.chowderScore >= 15).sort((a, b) => b.chowderScore - a.chowderScore);
+  if (chowderChamps.length > 0) {
+    findings.push({
+      id: 'chowder-champions',
+      category: 'success',
+      title: `${chowderChamps.length} Position(en) mit exzellentem Chowder Score (≥ 15)`,
+      detail: `${chowderChamps.slice(0, 5).map(p => `${p.symbol} (${p.chowderScore.toFixed(1)})`).join(', ')}. Der Chowder Score (Yield + CAGR) zeigt eine ideale Kombination aus Einkommen und Wachstum.`,
+      symbols: chowderChamps.slice(0, 5).map(p => p.symbol),
+    });
+  }
+
+  const chowderWeak = active.filter(p => p.chowderScore > 0 && p.chowderScore < 6).sort((a, b) => a.chowderScore - b.chowderScore);
+  if (chowderWeak.length > 0) {
+    findings.push({
+      id: 'chowder-weak',
+      category: 'warning',
+      title: `${chowderWeak.length} Position(en) mit schwachem Chowder Score (< 6)`,
+      detail: `${chowderWeak.slice(0, 5).map(p => `${p.symbol} (${p.chowderScore.toFixed(1)})`).join(', ')}. Niedriger Chowder bedeutet weder hohe Ausschüttung noch starkes Wachstum.`,
+      symbols: chowderWeak.slice(0, 5).map(p => p.symbol),
+    });
+  }
+
+  // Diversifikation nach Typ
+  const typMap = new Map<string, number>();
+  for (const p of active) typMap.set(p.typ, (typMap.get(p.typ) ?? 0) + p.wert);
+  const etfPct = ((typMap.get('ETF') ?? 0) / totals.totalWert) * 100;
+  const aktiePct = ((typMap.get('Aktie') ?? 0) / totals.totalWert) * 100;
+  if (etfPct > 0 && aktiePct > 0) {
+    findings.push({
+      id: 'typ-mix',
+      category: 'success',
+      title: 'Guter Mix: Einzelaktien & ETFs',
+      detail: `Dein Depot enthält ${aktiePct.toFixed(0)}% Einzelaktien und ${etfPct.toFixed(0)}% ETFs. Die Kombination bietet gezielte Auswahl und breite Streuung.`,
+    });
+  }
+
+  // Monatliche Zahler
+  const monthlyPayers = active.filter(p => p.ausschuettungsfrequenz === 'monatlich');
+  if (monthlyPayers.length >= 3) {
+    findings.push({
+      id: 'monthly-payers',
+      category: 'success',
+      title: `${monthlyPayers.length} monatliche Dividendenzahler`,
+      detail: `${monthlyPayers.map(p => p.symbol).join(', ')} zahlen monatlich aus und sorgen für regelmäßigen Cashflow. Das stabilisiert dein passives Einkommen.`,
+      symbols: monthlyPayers.map(p => p.symbol),
+    });
+  }
+
   return findings;
 }

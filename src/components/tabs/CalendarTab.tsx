@@ -100,7 +100,14 @@ export function CalendarTab({ positions }: Props) {
                 'border-blue-100 dark:border-blue-900/40 bg-blue-50/60 dark:bg-blue-950/20'
               }`}
             >
-              <div className="text-xs font-semibold uppercase tracking-wider opacity-60">{month.label}</div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold uppercase tracking-wider opacity-60">{month.label}</div>
+                {month.expectedIncome > 0 && (
+                  <div className="text-xs text-slate-300 dark:text-zinc-600">
+                    {((month.expectedIncome / avgIncome) * 100).toFixed(0)} % Ø
+                  </div>
+                )}
+              </div>
               <div className="text-lg font-bold mt-0.5">{fmt(month.expectedIncome)}</div>
               <div className="mt-1.5 flex flex-wrap gap-1">
                 {month.positions.slice(0, 8).map((sym) => (
@@ -114,6 +121,59 @@ export function CalendarTab({ positions }: Props) {
           ))}
         </div>
       </Card>
+
+      {/* Cashflow-Stabilität */}
+      {(() => {
+        const monthlyValues = calendar.map(m => m.expectedIncome);
+        const stdDev = Math.sqrt(monthlyValues.reduce((s, v) => s + (v - avgIncome) ** 2, 0) / 12);
+        const cv = avgIncome > 0 ? (stdDev / avgIncome * 100) : 0;
+        const weakMonths = calendar.filter(m => m.expectedIncome < avgIncome * 0.5 && m.expectedIncome > 0);
+        const emptyMonths = calendar.filter(m => m.expectedIncome === 0);
+
+        return (
+          <Card title="Cashflow-Analyse" sub="Stabilität und Optimierungspotenzial">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+              <div className="rounded-xl border border-slate-100 dark:border-zinc-800 p-3 text-center">
+                <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Variationskoeff.</div>
+                <div className={`text-lg font-bold ${cv < 30 ? 'text-emerald-600 dark:text-emerald-400' : cv < 60 ? 'text-amber-500' : 'text-red-500'}`}>
+                  {cv.toFixed(0)} %
+                </div>
+                <div className="text-xs text-slate-300 dark:text-zinc-600">{cv < 30 ? 'Sehr stabil' : cv < 60 ? 'Mäßig' : 'Instabil'}</div>
+              </div>
+              <div className="rounded-xl border border-slate-100 dark:border-zinc-800 p-3 text-center">
+                <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Schwache Monate</div>
+                <div className="text-lg font-bold text-slate-800 dark:text-zinc-200">{weakMonths.length}</div>
+                <div className="text-xs text-slate-300 dark:text-zinc-600">&lt; 50 % vom Ø</div>
+              </div>
+              <div className="rounded-xl border border-slate-100 dark:border-zinc-800 p-3 text-center">
+                <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Leere Monate</div>
+                <div className="text-lg font-bold text-slate-800 dark:text-zinc-200">{emptyMonths.length}</div>
+                <div className="text-xs text-slate-300 dark:text-zinc-600">Keine Dividende</div>
+              </div>
+              <div className="rounded-xl border border-slate-100 dark:border-zinc-800 p-3 text-center">
+                <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Spanne</div>
+                <div className="text-lg font-bold text-slate-800 dark:text-zinc-200">{fmt(maxMonth.expectedIncome - (minMonth?.expectedIncome ?? 0))}</div>
+                <div className="text-xs text-slate-300 dark:text-zinc-600">Max – Min</div>
+              </div>
+            </div>
+
+            {(weakMonths.length > 0 || emptyMonths.length > 0) && (
+              <div className="mt-3 rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-3">
+                <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">Empfehlung</p>
+                <p className="text-xs text-blue-600/80 dark:text-blue-300/70 leading-relaxed">
+                  {emptyMonths.length > 0
+                    ? `In ${emptyMonths.map(m => m.label).join(', ')} erhältst du keine Dividende. `
+                    : ''}
+                  {weakMonths.length > 0
+                    ? `${weakMonths.map(m => m.label).join(', ')} ${weakMonths.length === 1 ? 'hat' : 'haben'} besonders niedrige Cashflows. `
+                    : ''}
+                  Monatliche Zahler (REITs, BDCs, ausgewählte ETFs) oder quartalsweise Zahler mit passenden Ausschüttungsmonaten können die Lücken füllen.
+                </p>
+              </div>
+            )}
+          </Card>
+        );
+      })()}
     </div>
   );
 }

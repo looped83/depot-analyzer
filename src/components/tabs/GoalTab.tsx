@@ -13,9 +13,14 @@ import { AXIS, GRID } from '../../lib/chartTheme';
 interface Props { positions: DepotPosition[] }
 
 const MILESTONES = [
+  { label: 'Streaming-Abo',   monthly: 15  },
   { label: 'Handy-Rechnung',  monthly: 50  },
+  { label: 'Strom & Internet',monthly: 120 },
   { label: 'Lebensmittel',    monthly: 300 },
+  { label: 'Auto (Rate/Vers.)',monthly: 500 },
   { label: 'Miete (anteilig)',monthly: 800 },
+  { label: 'Urlaub (Ø/Mon.)', monthly: 250 },
+  { label: 'Teilzeit möglich',monthly: 1200 },
   { label: 'Halbfinanzfrei',  monthly: 1500 },
   { label: 'Vollfinanzfrei',  monthly: 3000 },
 ];
@@ -153,28 +158,98 @@ export function GoalTab({ positions }: Props) {
       {/* Milestones */}
       <Card title="Meilensteine – Wann ist was gedeckt?">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-2">
-          {milestones.map((m) => (
-            <div key={m.label} className={`rounded-xl border p-3 text-center ${
-              m.reached
-                ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/20'
-                : 'border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900'
-            }`}>
-              <div className={`text-xs font-semibold mb-1 ${m.reached ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-zinc-400'}`}>
-                {m.label}
+          {milestones.map((m) => {
+            const pct = Math.min(100, (currentMonthly / m.monthly) * 100);
+            return (
+              <div key={m.label} className={`rounded-xl border p-3 text-center ${
+                m.reached
+                  ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/20'
+                  : 'border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900'
+              }`}>
+                <div className={`text-xs font-semibold mb-1 ${m.reached ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-zinc-400'}`}>
+                  {m.label}
+                </div>
+                <div className="text-base font-bold text-slate-800 dark:text-zinc-200">{fmt(m.monthly)}</div>
+                {!m.reached && (
+                  <div className="w-full h-1 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden mt-1.5">
+                    <div className="h-full rounded-full bg-blue-500" style={{ width: `${pct}%` }} />
+                  </div>
+                )}
+                <div className="text-xs mt-1">
+                  {m.reached
+                    ? <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Erreicht</span>
+                    : m.hitYear
+                      ? <span className="text-slate-400 dark:text-zinc-500">ca. {m.hitYear} · {pct.toFixed(0)} %</span>
+                      : <span className="text-slate-300 dark:text-zinc-600">offen · {pct.toFixed(0)} %</span>
+                  }
+                </div>
               </div>
-              <div className="text-base font-bold text-slate-800 dark:text-zinc-200">{fmt(m.monthly)}</div>
-              <div className="text-xs mt-1">
-                {m.reached
-                  ? <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Bereits erreicht</span>
-                  : m.hitYear
-                    ? <span className="text-slate-400 dark:text-zinc-500">ca. {m.hitYear}</span>
-                    : <span className="text-slate-300 dark:text-zinc-600">offen</span>
-                }
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
+
+      {/* Szenario-Vergleich */}
+      <Card title="Szenario-Vergleich – 3 Wege zum Ziel" sub="Konservativ / Realistisch / Optimistisch im Vergleich">
+        <div className="mt-3">
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart margin={{ top: 4, right: 20, bottom: 0, left: 0 }}
+              data={(() => {
+                const conservative = computeProjection(positions, { ...params, dividendGrowthRate: 3, capitalGrowthRate: 3 }, 20);
+                const realistic = computeProjection(positions, params, 20);
+                const optimistic = computeProjection(positions, { ...params, dividendGrowthRate: 8, capitalGrowthRate: 10 }, 20);
+                return conservative.map((c, i) => ({
+                  year: c.year,
+                  konservativ: Math.round(c.annualDividend / 12),
+                  realistisch: Math.round((realistic[i]?.annualDividend ?? 0) / 12),
+                  optimistisch: Math.round((optimistic[i]?.annualDividend ?? 0) / 12),
+                }));
+              })()}>
+              <defs>
+                <linearGradient id="gradOpt" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid {...GRID} />
+              <XAxis dataKey="year" {...AXIS} />
+              <YAxis {...AXIS} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <ReferenceLine y={goalMonthly} stroke="#10b981" strokeDasharray="5 4" strokeWidth={2}
+                label={{ value: `Ziel ${fmt(goalMonthly)}`, position: 'right', fontSize: 10, fill: '#10b981' }} />
+              <Tooltip
+                formatter={(v: unknown, name: unknown) => [fmt(v as number), String(name)]}
+                labelFormatter={l => `Jahr: ${l}`}
+                contentStyle={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: 12, fontSize: 12 }}
+              />
+              <Area type="monotone" dataKey="optimistisch" stroke="#10b981" fill="url(#gradOpt)" strokeWidth={1.5} />
+              <Area type="monotone" dataKey="realistisch" stroke="#3b82f6" fill="none" strokeWidth={2} />
+              <Area type="monotone" dataKey="konservativ" stroke="#f59e0b" fill="none" strokeWidth={1.5} strokeDasharray="4 3" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex gap-4 justify-center mt-2 text-xs text-slate-500 dark:text-zinc-400">
+          <span><span className="inline-block w-3 h-0.5 bg-amber-500 mr-1 align-middle" />Konservativ (3 %/3 %)</span>
+          <span><span className="inline-block w-3 h-0.5 bg-blue-500 mr-1 align-middle" />Realistisch</span>
+          <span><span className="inline-block w-3 h-0.5 bg-emerald-500 mr-1 align-middle" />Optimistisch (8 %/10 %)</span>
+        </div>
+      </Card>
+
+      {/* Handlungsempfehlung */}
+      {yearsToGoal !== null && yearsToGoal > 3 && (
+        <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+          <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">Tipp: Schneller zum Ziel</p>
+          <p className="text-xs text-blue-600/80 dark:text-blue-300/70 leading-relaxed">
+            {(() => {
+              const faster = computeProjection(positions, { ...params, monthlySavings: savings + 100 }, 30);
+              const fasterHit = faster.find(d => d.annualDividend >= goalAnnual);
+              const fasterYears = fasterHit ? fasterHit.year - new Date().getFullYear() : null;
+              return fasterYears && fasterYears < yearsToGoal
+                ? `Mit 100 € mehr Sparrate pro Monat (${savings + 100} € statt ${savings} €) erreichst du dein Ziel bereits in ${fasterYears} Jahren – ${yearsToGoal - fasterYears} Jahre früher.`
+                : `Erhöhe deine Sparrate oder den Anteil an Dividendenwachstumswerten, um schneller zum Ziel zu kommen.`;
+            })()}
+          </p>
+        </div>
+      )}
 
       {/* Year-by-year table */}
       <Card title="Jahresübersicht (10 Jahre)">
