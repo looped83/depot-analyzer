@@ -7,7 +7,7 @@ import type { DepotPosition } from '../../lib/types';
 import { computeProjection, computeTotals } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
-import { fmt } from '../../lib/format';
+import { fmt, fmtNum } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -60,10 +60,10 @@ export function GoalTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Aktuell / Monat"   value={fmt(currentMonthly)}   sub="Monatliche Dividende" />
-        <KPICard title="Ziel / Monat"      value={fmt(goalMonthly)}      sub="Einstellbar" />
-        <KPICard title="Fortschritt"        value={`${progress.toFixed(1)} %`} sub="Zum Monatsziel" />
-        <KPICard title="Noch fehlend"      value={fmt(remaining)}        sub="Pro Monat" />
+        <KPICard title="Aktuell / Monat"   value={fmt(currentMonthly)}   sub="Monatliche Dividende" info="Deine aktuelle monatliche Brutto-Dividende aus allen aktiven Positionen." />
+        <KPICard title="Ziel / Monat"      value={fmt(goalMonthly)}      sub="Einstellbar" info="Dein gewünschtes monatliches Dividendenziel – über den Regler anpassbar." />
+        <KPICard title="Fortschritt"        value={`${fmtNum(progress, 1)} %`} sub="Zum Monatsziel" info="Wie viel Prozent deines Monatsziels du bereits erreicht hast." />
+        <KPICard title="Noch fehlend"      value={fmt(remaining)}        sub="Pro Monat" info="Differenz zwischen deinem Ziel und der aktuellen monatlichen Dividende." />
       </div>
 
       {/* Goal input + progress */}
@@ -128,7 +128,7 @@ export function GoalTab({ positions }: Props) {
               </defs>
               <CartesianGrid {...GRID} />
               <XAxis dataKey="year" {...AXIS} />
-              <YAxis {...AXIS} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis {...AXIS} tickFormatter={(v) => `${fmtNum(v / 1000)}k`} />
               <ReferenceLine y={goalMonthly} stroke="#10b981" strokeDasharray="5 4" strokeWidth={2}
                 label={{ value: `Ziel ${fmt(goalMonthly)}`, position: 'right', fontSize: 10, fill: '#10b981' }} />
               <Tooltip
@@ -179,8 +179,8 @@ export function GoalTab({ positions }: Props) {
                   {m.reached
                     ? <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Erreicht</span>
                     : m.hitYear
-                      ? <span className="text-slate-400 dark:text-zinc-500">ca. {m.hitYear} · {pct.toFixed(0)} %</span>
-                      : <span className="text-slate-300 dark:text-zinc-600">offen · {pct.toFixed(0)} %</span>
+                      ? <span className="text-slate-400 dark:text-zinc-500">ca. {m.hitYear} · {fmtNum(pct)} %</span>
+                      : <span className="text-slate-300 dark:text-zinc-600">offen · {fmtNum(pct)} %</span>
                   }
                 </div>
               </div>
@@ -213,7 +213,7 @@ export function GoalTab({ positions }: Props) {
               </defs>
               <CartesianGrid {...GRID} />
               <XAxis dataKey="year" {...AXIS} />
-              <YAxis {...AXIS} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis {...AXIS} tickFormatter={v => `${fmtNum(v / 1000)}k`} />
               <ReferenceLine y={goalMonthly} stroke="#10b981" strokeDasharray="5 4" strokeWidth={2}
                 label={{ value: `Ziel ${fmt(goalMonthly)}`, position: 'right', fontSize: 10, fill: '#10b981' }} />
               <Tooltip
@@ -278,7 +278,7 @@ export function GoalTab({ positions }: Props) {
                           <div className="h-full rounded-full bg-blue-500" style={{ width: `${pct}%` }} />
                         </div>
                         <span className={pct >= 100 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : ''}>
-                          {pct.toFixed(0)} %
+                          {fmtNum(pct)} %
                         </span>
                       </div>
                     </td>

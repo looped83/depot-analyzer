@@ -10,13 +10,24 @@ export const fmt = (v: number | null | undefined, decimals = 0): string => {
 
 export const fmtPct = (v: number | null | undefined, decimals = 2): string => {
   if (v === null || v === undefined) return '—';
-  return `${v.toFixed(decimals)} %`;
+  return new Intl.NumberFormat('de-DE', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(v) + ' %';
 };
 
-export const fmtNum = (v: number | null | undefined, decimals = 2): string => {
+export const fmtNum = (v: number | null | undefined, decimals = 0): string => {
   if (v === null || v === undefined) return '—';
   return new Intl.NumberFormat('de-DE', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
+  }).format(v);
+};
+
+export const fmtInt = (v: number | null | undefined): string => {
+  if (v === null || v === undefined) return '—';
+  return new Intl.NumberFormat('de-DE', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   }).format(v);
 };

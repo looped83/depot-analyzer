@@ -3,7 +3,7 @@ import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
 import { SortableTable } from '../tables/SortableTable';
-import { fmt, fmtPct } from '../../lib/format';
+import { fmt, fmtPct, fmtNum } from '../../lib/format';
 
 interface Props { positions: DepotPosition[] }
 
@@ -60,7 +60,7 @@ export function WatchlistTab({ positions }: Props) {
     { key: 'yield',  label: 'Yield',   align: 'right' as const, render: (v: unknown) => fmtPct(v as number) },
     { key: 'cagr5j', label: 'CAGR 5J', align: 'right' as const, render: (v: unknown) => fmtPct(v as number) },
     { key: 'chowderScore', label: 'Chowder', align: 'right' as const,
-      render: (v: unknown) => <span className="font-mono tabular-nums">{(v as number).toFixed(1)}</span> },
+      render: (v: unknown) => <span className="font-mono tabular-nums">{fmtNum(v as number, 1)}</span> },
     { key: 'typ',       label: 'Typ',      align: 'center' as const },
     { key: 'kategorie', label: 'Kategorie' },
     { key: 'broker',    label: 'Broker',   align: 'center' as const },
@@ -75,12 +75,12 @@ export function WatchlistTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard title="Kaufkandidaten"    value={String(candidates.length)}    sub="Noch nicht im Depot" />
-        <KPICard title="Prio A/B Pipeline" value={String(topCandidates.length)} sub="Hochwertige Kandidaten" />
-        <KPICard title="Ø Yield Kandidaten" value={fmtPct(avgCandidateYield)}   sub="Durchschnitt Watchlist" />
-        <KPICard title="Beobachtungsliste" value={String(watchList.length)}     sub="Im Depot, unter Beobachtung" />
-        <KPICard title="Verkaufskandidaten" value={String(sellList.length)}     sub="Zum Verkauf markiert" />
-        <KPICard title="Reinvest-Potenzial" value={sellWert > 0 ? fmt(potentialDivFromSell) : '—'} sub={sellWert > 0 ? `${fmt(sellWert)} umschichtbar` : 'Keine Verkäufe'} />
+        <KPICard title="Kaufkandidaten"    value={String(candidates.length)}    sub="Noch nicht im Depot" info="Positionen mit Wert = 0, die als potenzielle Käufe vorgemerkt sind." />
+        <KPICard title="Prio A/B Pipeline" value={String(topCandidates.length)} sub="Hochwertige Kandidaten" info="Kandidaten mit Priorität A oder B – besonders empfehlenswert." />
+        <KPICard title="Ø Yield Kandidaten" value={fmtPct(avgCandidateYield)}   sub="Durchschnitt Watchlist" info="Durchschnittliche Dividendenrendite aller Kaufkandidaten." />
+        <KPICard title="Beobachtungsliste" value={String(watchList.length)}     sub="Im Depot, unter Beobachtung" info="Aktive Positionen mit Status 'Beobachten' – ggf. reduzieren oder halten." />
+        <KPICard title="Verkaufskandidaten" value={String(sellList.length)}     sub="Zum Verkauf markiert" info="Positionen mit Status 'Verkauf' – Kapital kann in stärkere Positionen umgeschichtet werden." />
+        <KPICard title="Reinvest-Potenzial" value={sellWert > 0 ? fmt(potentialDivFromSell) : '—'} sub={sellWert > 0 ? `${fmt(sellWert)} umschichtbar` : 'Keine Verkäufe'} info="Geschätzte zusätzliche Dividende bei Umschichtung von Verkaufskandidaten in Top-Kandidaten." />
       </div>
 
       {/* Reinvestment opportunity */}

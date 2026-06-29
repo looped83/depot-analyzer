@@ -6,7 +6,7 @@ import type { DepotPosition } from '../../lib/types';
 import { computeMonthlyCalendar } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
-import { fmt } from '../../lib/format';
+import { fmt, fmtNum } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -64,7 +64,7 @@ export function CalendarTab({ positions }: Props) {
             <BarChart data={calendar} margin={{ bottom: 10, top: 4, right: 20 }}>
               <CartesianGrid {...GRID} vertical={false} />
               <XAxis dataKey="label" {...AXIS} />
-              <YAxis {...AXIS} tickFormatter={(v) => `${v.toFixed(0)}€`} />
+              <YAxis {...AXIS} tickFormatter={(v) => `${fmtNum(v)}€`} />
               <Tooltip
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
@@ -104,7 +104,7 @@ export function CalendarTab({ positions }: Props) {
                 <div className="text-xs font-semibold uppercase tracking-wider opacity-60">{month.label}</div>
                 {month.expectedIncome > 0 && (
                   <div className="text-xs text-slate-300 dark:text-zinc-600">
-                    {((month.expectedIncome / avgIncome) * 100).toFixed(0)} % Ø
+                    {fmtNum((month.expectedIncome / avgIncome) * 100)} % Ø
                   </div>
                 )}
               </div>
@@ -136,7 +136,7 @@ export function CalendarTab({ positions }: Props) {
               <div className="rounded-xl border border-slate-100 dark:border-zinc-800 p-3 text-center">
                 <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Variationskoeff.</div>
                 <div className={`text-lg font-bold ${cv < 30 ? 'text-emerald-600 dark:text-emerald-400' : cv < 60 ? 'text-amber-500' : 'text-red-500'}`}>
-                  {cv.toFixed(0)} %
+                  {fmtNum(cv)} %
                 </div>
                 <div className="text-xs text-slate-300 dark:text-zinc-600">{cv < 30 ? 'Sehr stabil' : cv < 60 ? 'Mäßig' : 'Instabil'}</div>
               </div>

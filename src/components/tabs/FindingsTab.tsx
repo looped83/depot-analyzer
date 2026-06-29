@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import type { DepotPosition } from '../../lib/types';
 import { generateFindings, type Finding } from '../../lib/findings';
 import { computeTotals, computeMonthlyCalendar } from '../../lib/calculations';
-import { fmt } from '../../lib/format';
+import { fmt, fmtNum } from '../../lib/format';
 import { AlertTriangle, CheckCircle, Info, XCircle } from 'lucide-react';
 
 interface Props { positions: DepotPosition[] }
@@ -98,16 +98,16 @@ export function FindingsTab({ positions }: Props) {
         <div className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
           <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Einkommensabhängigkeit</div>
           <div className={`text-lg font-bold ${top3DivPct > 60 ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
-            Top 3 = {top3DivPct.toFixed(0)} %
+            Top 3 = {fmtNum(top3DivPct)} %
           </div>
           <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
-            {top3Div.map(p => p.symbol).join(', ')} liefern {top3DivPct.toFixed(0)} % der Dividende
+            {top3Div.map(p => p.symbol).join(', ')} liefern {fmtNum(top3DivPct)} % der Dividende
           </div>
         </div>
         <div className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
           <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Cashflow-Stabilität</div>
           <div className={`text-lg font-bold ${stabilityScore > 70 ? 'text-emerald-600 dark:text-emerald-400' : stabilityScore > 40 ? 'text-amber-500' : 'text-red-500'}`}>
-            {stabilityScore.toFixed(0)} / 100
+            {fmtNum(stabilityScore)} / 100
           </div>
           <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
             {stabilityScore > 70 ? 'Gleichmäßig verteilt' : stabilityScore > 40 ? 'Schwankend' : 'Stark unregelmäßig'}
@@ -116,7 +116,7 @@ export function FindingsTab({ positions }: Props) {
         <div className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
           <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Freibetrag-Status</div>
           <div className={`text-lg font-bold ${totals.totalAnnualDiv >= 1000 ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
-            {Math.min(100, (totals.totalAnnualDiv / 1000 * 100)).toFixed(0)} %
+            {fmtNum(Math.min(100, totals.totalAnnualDiv / 1000 * 100))} %
           </div>
           <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
             {totals.totalAnnualDiv >= 1000
