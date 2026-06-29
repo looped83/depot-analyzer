@@ -169,8 +169,111 @@ export function ProjectionTab({ positions }: Props) {
         </div>
       </Card>
 
+      {/* Inflationsbereinigte Projektion */}
+      <Card title="Inflationsbereinigte Projektion (5 Jahre)" sub="Reale Kaufkraft bei 2,5 % Inflation">
+        <div className="grid grid-cols-3 gap-3 mt-2">
+          {[
+            { label: 'Nach 1 Jahr', data: afterYear1, y: 1 },
+            { label: 'Nach 3 Jahren', data: afterYear3, y: 3 },
+            { label: 'Nach 5 Jahren', data: afterYear5, y: 5 },
+          ].map(({ label, data, y }) => {
+            const inflFactor = Math.pow(1.025, y);
+            const realDiv = (data?.annualDividend ?? 0) / inflFactor;
+            const realValue = (data?.portfolioValue ?? 0) / inflFactor;
+            return (
+              <div key={label} className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2">{label} (real)</div>
+                <div className="space-y-1.5">
+                  <div>
+                    <div className="text-xs text-slate-400 dark:text-zinc-500">Realer Depotwert</div>
+                    <div className="text-lg font-bold text-slate-700 dark:text-zinc-300">{fmt(realValue)}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-400 dark:text-zinc-500">Reale Jahresdividende</div>
+                    <div className="text-base font-semibold text-emerald-600 dark:text-emerald-400">{fmt(realDiv)}</div>
+                  </div>
+                  <div className="text-xs text-slate-300 dark:text-zinc-600">
+                    Kaufkraftverlust: -{((1 - 1/inflFactor) * 100).toFixed(1)} %
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Was wäre wenn */}
+      <Card title="Was wäre wenn?" sub="Vergleich: Wie verändert sich das Ergebnis nach 5 Jahren?">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+          {[
+            { label: '+100 € Sparrate/Monat', params: { ...params, monthlySavings: params.monthlySavings + 100 } },
+            { label: '+200 € Sparrate/Monat', params: { ...params, monthlySavings: params.monthlySavings + 200 } },
+            { label: '+2 % Dividendenwachstum', params: { ...params, dividendGrowthRate: params.dividendGrowthRate + 2 } },
+          ].map(scenario => {
+            const result = computeProjection(positions, scenario.params, 5);
+            const r5 = result[5];
+            const diffValue = (r5?.portfolioValue ?? 0) - (afterYear5?.portfolioValue ?? 0);
+            const diffDiv = (r5?.annualDividend ?? 0) - (afterYear5?.annualDividend ?? 0);
+            return (
+              <div key={scenario.label} className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+                <div className="text-xs font-bold text-blue-700 dark:text-blue-400 mb-2">{scenario.label}</div>
+                <div className="space-y-1.5">
+                  <div>
+                    <div className="text-xs text-slate-400 dark:text-zinc-500">Depotwert (5J)</div>
+                    <div className="text-base font-bold text-slate-800 dark:text-zinc-200">{fmt(r5?.portfolioValue)}</div>
+                    <div className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">+{fmt(diffValue)} mehr</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-slate-400 dark:text-zinc-500">Jahresdividende (5J)</div>
+                    <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{fmt(r5?.annualDividend)}</div>
+                    <div className="text-xs text-emerald-500/70">+{fmt(diffDiv)} mehr</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Freiheits-Countdown */}
+      {(() => {
+        const proj30 = computeProjection(positions, params, 30);
+        const targets = [500, 1000, 1500, 2000, 2500, 3000];
+        const countdowns = targets.map(target => {
+          const hit = proj30.find(d => d.annualDividend / 12 >= target);
+          return { target, hitYear: hit?.year ?? null };
+        });
+        return (
+          <Card title="Freiheits-Countdown" sub="Wann erreichst du welche monatliche Dividende?">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-2">
+              {countdowns.map(c => {
+                const currentMonthlyDiv = totals.totalMonthlyDiv;
+                const reached = currentMonthlyDiv >= c.target;
+                return (
+                  <div key={c.target} className={`rounded-xl border p-3 text-center ${
+                    reached ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/20'
+                      : 'border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900'
+                  }`}>
+                    <div className="text-sm font-bold text-slate-800 dark:text-zinc-200">{fmt(c.target)}</div>
+                    <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">/Monat</div>
+                    <div className="text-xs mt-1.5">
+                      {reached
+                        ? <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Erreicht</span>
+                        : c.hitYear
+                          ? <span className="text-blue-600 dark:text-blue-400 font-semibold">ca. {c.hitYear}</span>
+                          : <span className="text-slate-300 dark:text-zinc-600">&gt;30 Jahre</span>
+                      }
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })()}
+
       <p className="text-xs text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 rounded-xl px-4 py-3 leading-relaxed">
-        Alle Projektionen sind Modellrechnungen auf Basis der eingegebenen Annahmen und der aktuellen Depotzusammensetzung. Sie stellen keine Garantie für zukünftige Erträge dar. Steuern und Kosten sind nicht berücksichtigt.
+        Alle Projektionen sind Modellrechnungen auf Basis der eingegebenen Annahmen und der aktuellen Depotzusammensetzung. Sie stellen keine Garantie für zukünftige Erträge dar. Steuern und Kosten sind nicht berücksichtigt. Inflationsannahme: 2,5 %/Jahr.
       </p>
     </div>
   );

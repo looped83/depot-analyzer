@@ -64,6 +64,8 @@ export type TabId =
   | 'calendar'
   | 'rankings'
   | 'findings'
+  | 'depot-check'
+  | 'motivation'
   | 'projection'
   | 'diversification'
   | 'safety'

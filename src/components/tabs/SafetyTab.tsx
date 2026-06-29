@@ -176,6 +176,42 @@ export function SafetyTab({ positions }: Props) {
         ))}
       </div>
 
+      {/* Stresstest */}
+      <Card title="Portfolio-Stresstest" sub="Was passiert bei einer Dividendenkürzung der Top 5 Positionen?">
+        <div className="grid grid-cols-3 gap-3 mt-3">
+          {[
+            { label: 'Aktuell', pct: 0 },
+            { label: '-20 % Kürzung', pct: 20 },
+            { label: '-50 % Kürzung', pct: 50 },
+          ].map(({ label, pct }) => {
+            const top5 = [...active].sort((a, b) => b.annualDividend - a.annualDividend).slice(0, 5);
+            const top5Div = top5.reduce((s, p) => s + p.annualDividend, 0);
+            const totalDiv = active.reduce((s, p) => s + p.annualDividend, 0);
+            const lost = top5Div * (pct / 100);
+            const remaining = totalDiv - lost;
+            return (
+              <div key={label} className={`rounded-xl border p-4 text-center ${
+                pct === 0 ? 'border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20'
+                : pct <= 20 ? 'border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20'
+                : 'border-red-100 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20'
+              }`}>
+                <div className="text-xs font-semibold uppercase tracking-wider opacity-60 mb-1">{label}</div>
+                <div className={`text-xl font-bold ${pct === 0 ? 'text-emerald-600 dark:text-emerald-400' : pct <= 20 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {fmt(remaining)} /Jahr
+                </div>
+                <div className="text-xs opacity-50 mt-0.5">{fmt(remaining / 12)} /Monat</div>
+                {pct > 0 && <div className="text-xs opacity-40 mt-1">-{fmt(lost)} Verlust</div>}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2 text-xs text-slate-400 dark:text-zinc-500">
+          Betroffene Top 5: {[...active].sort((a, b) => b.annualDividend - a.annualDividend).slice(0, 5).map(p =>
+            <span key={p.symbol} className="font-mono bg-slate-50 dark:bg-zinc-800 px-1.5 py-0.5 rounded mx-0.5">{p.symbol}</span>
+          )}
+        </div>
+      </Card>
+
       {/* Safety ranking table */}
       <Card title="Safety Ranking – Alle aktiven Positionen" pad={false}>
         <div className="px-5 pb-5">
