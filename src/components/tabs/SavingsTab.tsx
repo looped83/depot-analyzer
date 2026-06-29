@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, Legend,
+  PieChart, Pie, Legend, AreaChart, Area,
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
@@ -18,6 +18,7 @@ const ZYKLUS_LABEL: Record<number, string> = { 0: 'Kein Sparplan', 1: 'Zyklus 1'
 export function SavingsTab({ positions }: Props) {
   const saved = positions.filter((p) => p.sparbetrag > 0);
   const totalSpar = positions.reduce((s, p) => s + p.sparbetrag, 0);
+  const totalWert = positions.reduce((s, p) => s + p.wert, 0);
 
   const brokerMap = new Map<string, number>();
   for (const p of saved) {
@@ -39,14 +40,148 @@ export function SavingsTab({ positions }: Props) {
 
   const bySpar = [...saved].sort((a, b) => b.sparbetrag - a.sparbetrag);
 
+  const active = positions.filter(p => p.wert > 0);
+  const aufbauPositions = positions.filter(p => p.status === 'Aufbau');
+  const aufbauSaved = aufbauPositions.filter(p => p.sparbetrag > 0);
+  const prioAPositions = positions.filter(p => p.prio === 'A');
+  const prioASaved = prioAPositions.filter(p => p.sparbetrag > 0);
+
+  const sparPerPrio = saved.reduce((acc, p) => {
+    const prio = p.prio ?? 'Keine';
+    acc.set(prio, (acc.get(prio) ?? 0) + p.sparbetrag);
+    return acc;
+  }, new Map<string, number>());
+
+  const prioASpar = sparPerPrio.get('A') ?? 0;
+  const prioBSpar = sparPerPrio.get('B') ?? 0;
+  const highPrioPct = totalSpar > 0 ? ((prioASpar + prioBSpar) / totalSpar * 100) : 0;
+
+  const efficiencyScore = Math.min(100, Math.round(
+    (aufbauPositions.length > 0 ? (aufbauSaved.length / aufbauPositions.length) * 30 : 30) +
+    (prioAPositions.length > 0 ? (prioASaved.length / prioAPositions.length) * 30 : 30) +
+    (highPrioPct > 60 ? 20 : highPrioPct > 30 ? 10 : 0) +
+    (saved.length >= 5 ? 10 : saved.length >= 3 ? 5 : 0) +
+    (overweight.length === 0 ? 10 : 0)
+  ));
+
+  const avgYieldSaved = saved.length > 0 ? saved.reduce((s, p) => s + p.yield, 0) / saved.length : 0;
+  const futureYears = [1, 3, 5, 10];
+  const growthRate = 0.06;
+  const futureProjection = futureYears.map(y => {
+    let value = 0;
+    for (let m = 0; m < y * 12; m++) {
+      value = (value + totalSpar) * (1 + growthRate / 12);
+    }
+    const addedDiv = value * (avgYieldSaved / 100);
+    return { year: y, label: `${y}J`, value, addedDiv };
+  });
+
+  const growthChart = Array.from({ length: 61 }, (_, m) => {
+    let v = 0;
+    for (let i = 0; i < m; i++) v = (v + totalSpar) * (1 + growthRate / 12);
+    return { month: m, value: v, label: m % 12 === 0 ? `${m / 12}J` : '' };
+  }).filter((_, i) => i % 3 === 0);
+
+  const noSparHighPrio = positions.filter(p =>
+    p.prio && ['A', 'B'].includes(p.prio) && p.status === 'Aufbau' && p.sparbetrag === 0
+  );
+
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Gesamte Sparrate"   value={`${totalSpar} €`}                                       sub="Pro Zyklus" />
-        <KPICard title="Aktive Sparpläne"   value={String(saved.length)}                                   sub={`von ${positions.length} Positionen`} />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KPICard title="Gesamte Sparrate"   value={`${totalSpar} €`}           sub="Pro Zyklus" />
+        <KPICard title="Aktive Sparpläne"   value={String(saved.length)}       sub={`von ${positions.length} Positionen`} />
         <KPICard title="Ø Sparbetrag"       value={`${saved.length > 0 ? (totalSpar / saved.length).toFixed(0) : 0} €`} sub="Pro Position" />
-        <KPICard title="Reinvestition/Jahr" value={fmt(totalSpar * 12)}                                    sub="Hochrechnung (12 Monate)" />
+        <KPICard title="Reinvestition/Jahr" value={fmt(totalSpar * 12)}        sub="Hochrechnung (12 Monate)" />
+        <KPICard title="Sparquote"          value={totalWert > 0 ? `${((totalSpar * 12 / totalWert) * 100).toFixed(1)} %` : '—'} sub="Jährl. Sparrate / Depotwert" />
+        <KPICard title="Effizienz-Score"    value={`${efficiencyScore}`}        sub={efficiencyScore >= 70 ? 'Gut ausgerichtet' : 'Optimierbar'} />
       </div>
+
+      {/* Sparplan Efficiency */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Aufbau-Abdeckung</div>
+          <div className="flex items-end gap-2">
+            <span className={`text-2xl font-bold ${aufbauSaved.length === aufbauPositions.length ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'}`}>
+              {aufbauSaved.length} / {aufbauPositions.length}
+            </span>
+            <span className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Aufbau-Positionen bespart</span>
+          </div>
+          <div className="mt-2 w-full h-2 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-full bg-emerald-500 rounded-full"
+              style={{ width: `${aufbauPositions.length > 0 ? (aufbauSaved.length / aufbauPositions.length * 100) : 0}%` }} />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Prio-A Abdeckung</div>
+          <div className="flex items-end gap-2">
+            <span className={`text-2xl font-bold ${prioASaved.length === prioAPositions.length ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'}`}>
+              {prioASaved.length} / {prioAPositions.length}
+            </span>
+            <span className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Prio-A-Positionen bespart</span>
+          </div>
+          <div className="mt-2 w-full h-2 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-full bg-blue-500 rounded-full"
+              style={{ width: `${prioAPositions.length > 0 ? (prioASaved.length / prioAPositions.length * 100) : 0}%` }} />
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+          <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Fokus auf High-Prio</div>
+          <div className="flex items-end gap-2">
+            <span className={`text-2xl font-bold ${highPrioPct > 60 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'}`}>
+              {highPrioPct.toFixed(0)} %
+            </span>
+            <span className="text-xs text-slate-400 dark:text-zinc-500 mb-1">des Kapitals in Prio A/B</span>
+          </div>
+          <div className="mt-2 w-full h-2 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-full bg-violet-500 rounded-full" style={{ width: `${highPrioPct}%` }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Future Value Projection */}
+      {totalSpar > 0 && (
+        <Card title="Sparplan-Zukunftsprojektion" sub={`Bei ${totalSpar} €/Monat und 6 % durchschn. Wachstum`}>
+          <div className="grid grid-cols-4 gap-3 mt-3 mb-3">
+            {futureProjection.map(f => (
+              <div key={f.year} className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-3 text-center">
+                <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">In {f.year} {f.year === 1 ? 'Jahr' : 'Jahren'}</div>
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{fmt(f.value)}</div>
+                <div className="text-xs text-slate-400 dark:text-zinc-500">+ {fmt(f.addedDiv)} Div/Jahr</div>
+              </div>
+            ))}
+          </div>
+          <ResponsiveContainer width="100%" height={180}>
+            <AreaChart data={growthChart} margin={{ top: 4, right: 20, bottom: 10 }}>
+              <CartesianGrid {...GRID} vertical={false} />
+              <XAxis dataKey="month" {...AXIS} tickFormatter={(v) => `${(v / 12).toFixed(0)}J`}
+                ticks={[0, 12, 24, 36, 48, 60]} />
+              <YAxis {...AXIS} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(v as number)} labelFormatter={(l) => `Monat ${l}`} />} />
+              <Area type="monotone" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.15} strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
+      {/* Optimization suggestions */}
+      {noSparHighPrio.length > 0 && (
+        <div className="rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+          <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2">Optimierung: Prio A/B ohne Sparplan ({noSparHighPrio.length})</p>
+          <p className="text-xs text-blue-600/70 dark:text-blue-300/60 mb-2">
+            Diese hoch priorisierten Aufbau-Positionen werden nicht bespart. Ein Sparplan würde den Vermögensaufbau beschleunigen.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {noSparHighPrio.map(p => (
+              <span key={p.symbol} className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full font-mono">
+                {p.symbol} (Prio {p.prio}) · Yield {fmtPct(p.yield)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card title="Sparrate je Broker">

@@ -1,10 +1,11 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { computeTotals } from '../../lib/calculations';
+import { computeFreibetrag } from '../../lib/insights';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct } from '../../lib/format';
 import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
@@ -13,6 +14,7 @@ interface Props { positions: DepotPosition[] }
 
 export function DividendTab({ positions }: Props) {
   const totals   = computeTotals(positions);
+  const freibetragInfo = computeFreibetrag(positions);
   const active   = positions.filter((p) => p.wert > 0);
   const byDiv    = [...active].sort((a, b) => b.annualDividend - a.annualDividend);
   const byYield  = [...active].sort((a, b) => b.yield - a.yield);
@@ -25,16 +27,66 @@ export function DividendTab({ positions }: Props) {
   const highYield = active.filter((p) => p.yield > 6);
   const lowYield  = active.filter((p) => p.yield > 0 && p.yield < 1.5);
 
+  const netAnnualDiv = freibetragInfo.annualDiv - freibetragInfo.taxAmount;
+  const divPerThousand = totals.totalWert > 0 ? (totals.totalAnnualDiv / totals.totalWert) * 1000 : 0;
+  const weightedChowder = totals.totalWert > 0
+    ? active.reduce((s, p) => s + p.chowderScore * (p.wert / totals.totalWert), 0) : 0;
+
+  const topGrowers = [...active].filter(p => p.cagr5j > 0).sort((a, b) => b.cagr5j - a.cagr5j).slice(0, 5);
+  const divChampions = [...active].filter(p => p.chowderScore >= 12).sort((a, b) => b.chowderScore - a.chowderScore);
+
+  const freqDistrib = [
+    { name: 'Monatlich', value: active.filter(p => p.ausschuettungsfrequenz === 'monatlich').reduce((s, p) => s + p.annualDividend, 0) },
+    { name: 'Quartalsweise', value: active.filter(p => p.ausschuettungsfrequenz === 'quartalsweise').reduce((s, p) => s + p.annualDividend, 0) },
+    { name: 'Jährlich', value: active.filter(p => p.ausschuettungsfrequenz === 'jährlich').reduce((s, p) => s + p.annualDividend, 0) },
+  ].filter(d => d.value > 0);
+
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Jährl. Dividende"   value={fmt(totals.totalAnnualDiv)}    sub="Brutto gesamt" />
-        <KPICard title="Ø Monatl. Dividende" value={fmt(totals.totalMonthlyDiv)}   sub="Jahresdividende / 12" />
-        <KPICard title="Depot-Yield (gew.)"  value={fmtPct(totals.weightedYield)}  sub="Gewichteter Ø-Yield" />
-        <KPICard title="Yield-on-Portfolio"  value={fmtPct(totals.weightedYield)}  sub="Ertrag / Gesamtkapital" />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KPICard title="Brutto / Jahr"       value={fmt(totals.totalAnnualDiv)}    sub="Vor Steuern" />
+        <KPICard title="Netto / Jahr"         value={fmt(netAnnualDiv)}             sub={freibetragInfo.taxAmount > 0 ? `${fmt(freibetragInfo.taxAmount)} Steuer` : 'Kein Steuerabzug'} />
+        <KPICard title="Netto / Monat"        value={fmt(netAnnualDiv / 12)}        sub="Nach Steuer" />
+        <KPICard title="Depot-Yield"          value={fmtPct(totals.weightedYield)}  sub="Gewichtet" />
+        <KPICard title="Dividende je 1.000 €" value={fmt(divPerThousand)}           sub="Effizienz-Kennzahl" />
+        <KPICard title="Ø Chowder Score"      value={weightedChowder.toFixed(1)}    sub={weightedChowder >= 12 ? 'Gut' : 'Ausbaufähig'} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {/* Tax and Freibetrag overview */}
+      <div className="rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Steuer & Sparerpauschbetrag</div>
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${
+            freibetragInfo.remaining > 0 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
+          }`}>{freibetragInfo.remaining > 0 ? `${fmt(freibetragInfo.remaining)} frei` : 'Ausgeschöpft'}</span>
+        </div>
+        <div className="w-full h-3 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-2">
+          <div className={`h-full rounded-full transition-all ${
+            freibetragInfo.remaining > 0 ? 'bg-emerald-500' : 'bg-amber-500'
+          }`} style={{ width: `${Math.min(100, (freibetragInfo.used / freibetragInfo.freibetrag) * 100)}%` }} />
+        </div>
+        <div className="grid grid-cols-4 gap-3 text-center text-xs">
+          <div>
+            <div className="text-slate-400 dark:text-zinc-500">Brutto</div>
+            <div className="font-semibold text-slate-700 dark:text-zinc-300">{fmt(freibetragInfo.annualDiv)}</div>
+          </div>
+          <div>
+            <div className="text-slate-400 dark:text-zinc-500">Freibetrag</div>
+            <div className="font-semibold text-emerald-600 dark:text-emerald-400">{fmt(freibetragInfo.used)}</div>
+          </div>
+          <div>
+            <div className="text-slate-400 dark:text-zinc-500">Steuerpflichtig</div>
+            <div className="font-semibold text-slate-700 dark:text-zinc-300">{fmt(freibetragInfo.taxable)}</div>
+          </div>
+          <div>
+            <div className="text-slate-400 dark:text-zinc-500">KapESt + SolZ</div>
+            <div className="font-semibold text-red-500">{fmt(freibetragInfo.taxAmount)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card title="Income vs. Growth">
           <div className="flex gap-6 mt-1">
             {[
@@ -48,6 +100,26 @@ export function DividendTab({ positions }: Props) {
                   {totals.totalAnnualDiv > 0 ? ((val / totals.totalAnnualDiv) * 100).toFixed(1) : 0} % der Dividende
                 </p>
               </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card title="Dividende nach Frequenz">
+          <ResponsiveContainer width="100%" height={120}>
+            <PieChart>
+              <Pie data={freqDistrib} dataKey="value" nameKey="name"
+                cx="50%" cy="50%" outerRadius={45} innerRadius={22} paddingAngle={2} strokeWidth={0}>
+                {freqDistrib.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} fillOpacity={0.85} />)}
+              </Pie>
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(v as number)} />} />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="flex justify-center gap-3 text-xs text-slate-400 dark:text-zinc-500">
+            {freqDistrib.map((d, i) => (
+              <span key={d.name} className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full" style={{ background: PALETTE[i % PALETTE.length] }} />
+                {d.name}
+              </span>
             ))}
           </div>
         </Card>
@@ -69,6 +141,41 @@ export function DividendTab({ positions }: Props) {
           </div>
         </Card>
       </div>
+
+      {/* Dividend Growth Stars */}
+      {topGrowers.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Card title="Top Dividendenwachstum (CAGR 5J)" sub="Positionen mit stärkstem historischem Wachstum">
+            <div className="space-y-2 mt-2">
+              {topGrowers.map((p, i) => (
+                <div key={p.symbol} className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-300 dark:text-zinc-600 w-4">{i + 1}</span>
+                  <span className="text-xs font-mono font-semibold text-slate-800 dark:text-zinc-200 w-12">{p.symbol}</span>
+                  <div className="flex-1 h-2 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full"
+                      style={{ width: `${Math.min(100, (p.cagr5j / (topGrowers[0]?.cagr5j || 1)) * 100)}%` }} />
+                  </div>
+                  <span className="text-xs font-mono font-semibold text-blue-600 dark:text-blue-400 w-14 text-right">{fmtPct(p.cagr5j)}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+          <Card title={`Chowder Champions (${divChampions.length})`} sub="Yield + CAGR > 12 = starke Gesamtrendite">
+            {divChampions.length > 0 ? (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {divChampions.map(p => (
+                  <div key={p.symbol} className="flex items-center gap-1.5 bg-violet-50/60 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 rounded-lg px-2.5 py-1.5">
+                    <span className="text-xs font-mono font-bold text-violet-800 dark:text-violet-300">{p.symbol}</span>
+                    <span className="text-[10px] text-violet-500 dark:text-violet-400">{p.chowderScore.toFixed(1)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2">Keine Positionen mit Chowder &ge; 12</p>
+            )}
+          </Card>
+        </div>
+      )}
 
       <Card title="Top Dividendenbeiträger – Jährlich">
         <ResponsiveContainer width="100%" height={260}>

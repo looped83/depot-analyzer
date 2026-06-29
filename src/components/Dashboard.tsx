@@ -17,6 +17,7 @@ import { QualityTab } from './tabs/QualityTab';
 import { DepotCheckTab } from './tabs/DepotCheckTab';
 import { MotivationTab } from './tabs/MotivationTab';
 import { computeTotals } from '../lib/calculations';
+import { computeHealthScore, generateRecommendations } from '../lib/insights';
 import { fmt } from '../lib/format';
 import {
   LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
@@ -61,6 +62,9 @@ export function Dashboard({ positions, filename, onReset, darkMode, onToggleDark
   const [exporting, setExporting] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const totals = computeTotals(positions);
+  const health = computeHealthScore(positions);
+  const recommendations = generateRecommendations(positions);
+  const urgentCount = recommendations.filter(r => r.priority === 'high').length;
 
   const exportPDF = async () => {
     if (!contentRef.current) return;
@@ -166,6 +170,22 @@ export function Dashboard({ positions, filename, onReset, darkMode, onToggleDark
               <div className="text-slate-400 dark:text-zinc-500">Ø / Monat</div>
               <div className="font-semibold text-slate-800 dark:text-zinc-200">{fmt(totals.totalMonthlyDiv)}</div>
             </div>
+            <div className="h-6 w-px bg-slate-100 dark:bg-zinc-800" />
+            <div className="text-center">
+              <div className="text-slate-400 dark:text-zinc-500">Health</div>
+              <div className={`font-semibold ${health.overall >= 70 ? 'text-emerald-600 dark:text-emerald-400' : health.overall >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                {health.overall.toFixed(0)}
+              </div>
+            </div>
+            {urgentCount > 0 && (
+              <>
+                <div className="h-6 w-px bg-slate-100 dark:bg-zinc-800" />
+                <button onClick={() => setActiveTab('depot-check')} className="text-center hover:opacity-80 transition-opacity">
+                  <div className="text-red-400 dark:text-red-500">Aktionen</div>
+                  <div className="font-semibold text-red-600 dark:text-red-400">{urgentCount}</div>
+                </button>
+              </>
+            )}
           </div>
 
           <div className="flex-1 hidden lg:block" />

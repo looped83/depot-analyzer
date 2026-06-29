@@ -115,14 +115,87 @@ export function QualityTab({ positions }: Props) {
 
   const overallQuality = dimensions.reduce((s, d) => s + d.score, 0) / dimensions.length;
 
+  const grade = overallQuality >= 85 ? 'A+' : overallQuality >= 75 ? 'A'
+    : overallQuality >= 65 ? 'B+' : overallQuality >= 55 ? 'B'
+    : overallQuality >= 45 ? 'C+' : overallQuality >= 35 ? 'C' : 'D';
+  const gradeColor = grade.startsWith('A') ? 'text-emerald-600 dark:text-emerald-400'
+    : grade.startsWith('B') ? 'text-blue-600 dark:text-blue-400'
+    : grade.startsWith('C') ? 'text-amber-500' : 'text-red-500';
+  const gradeBg = grade.startsWith('A') ? 'from-emerald-500/10 to-emerald-500/5 border-emerald-200 dark:border-emerald-800/50'
+    : grade.startsWith('B') ? 'from-blue-500/10 to-blue-500/5 border-blue-200 dark:border-blue-800/50'
+    : grade.startsWith('C') ? 'from-amber-500/10 to-amber-500/5 border-amber-200 dark:border-amber-800/50'
+    : 'from-red-500/10 to-red-500/5 border-red-200 dark:border-red-800/50';
+
+  const weakDimensions = dimensions.filter(d => d.score < 50).sort((a, b) => a.score - b.score);
+  const strongDimensions = dimensions.filter(d => d.score >= 75).sort((a, b) => b.score - a.score);
+
+  const incompleteActive = withCompleteness.filter(p => p.wert > 0 && p.completenessScore < 60);
+
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Grade + KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className={`rounded-2xl border bg-gradient-to-br ${gradeBg} p-5 text-center flex flex-col items-center justify-center`}>
+          <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Portfolio-Note</div>
+          <div className={`text-4xl font-black ${gradeColor}`}>{grade}</div>
+        </div>
         <KPICard title="Gesamtqualität"       value={`${overallQuality.toFixed(0)} / 100`} sub="Ø aller Dimensionen" />
         <KPICard title="Datenvollständigkeit" value={`${avgCompleteness.toFixed(0)} %`}     sub="Ø über alle Felder" />
         <KPICard title="Gew. D-Score"         value={weightedQuality.toFixed(1)}            sub="Nach Depotwert gewichtet" />
         <KPICard title="Positionen gesamt"    value={String(all.length)}                    sub={`davon ${active.length} aktiv`} />
       </div>
+
+      {/* Quick quality summary */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {strongDimensions.length > 0 && (
+          <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 p-4">
+            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2">Stärken ({strongDimensions.length})</p>
+            <div className="space-y-1">
+              {strongDimensions.map(d => (
+                <div key={d.label} className="flex items-center justify-between text-xs">
+                  <span className="text-emerald-700 dark:text-emerald-300">{d.label}</span>
+                  <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{d.score.toFixed(0)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {weakDimensions.length > 0 && (
+          <div className="rounded-xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 p-4">
+            <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">Verbesserungspotenzial ({weakDimensions.length})</p>
+            <div className="space-y-1">
+              {weakDimensions.map(d => (
+                <div key={d.label} className="flex items-center justify-between text-xs">
+                  <span className="text-amber-700 dark:text-amber-300">{d.label}</span>
+                  <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">{d.score.toFixed(0)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Incomplete active positions callout */}
+      {incompleteActive.length > 0 && (
+        <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+          <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">
+            {incompleteActive.length} aktive Positionen mit unvollständigen Daten
+          </p>
+          <p className="text-xs text-blue-600/70 dark:text-blue-300/60 mb-2">
+            Ergänze fehlende Daten (ISIN, Priorität, Ausschüttungsmonate) für genauere Analysen.
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {incompleteActive.slice(0, 10).map(p => (
+              <span key={p.symbol} className="text-[10px] font-mono bg-blue-100/80 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">
+                {p.symbol} ({p.completenessScore}%)
+              </span>
+            ))}
+            {incompleteActive.length > 10 && (
+              <span className="text-[10px] text-blue-400">+{incompleteActive.length - 10} weitere</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Quality scorecard */}
       <Card title="Qualitäts-Scorecard">

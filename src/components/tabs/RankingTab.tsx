@@ -171,11 +171,59 @@ export function RankingTab({ positions }: Props) {
     },
   ];
 
+  const avgScore = active.length > 0 ? active.reduce((s, p) => s + p.dividendScore, 0) / active.length : 0;
+  const topPerformers = active.filter(p => p.dividendScore >= 70 && p.chowderScore >= 12);
+  const hiddenGems = active.filter(p => p.dividendScore >= 60 && p.portfolioWeight < 2 && p.prio && ['A', 'B'].includes(p.prio))
+    .sort((a, b) => b.dividendScore - a.dividendScore);
+  const improvementCandidates = active.filter(p => p.dividendScore < 35 && p.wert > 0)
+    .sort((a, b) => a.dividendScore - b.dividendScore);
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-500 dark:text-gray-400">
         Transparentes Scoring: <span className="font-mono">Dividend Score = 40% norm. Yield + 40% norm. CAGR + 10% Ausschüttungsfrequenz + 10% Priorität/Status</span>
       </p>
+
+      {/* Summary KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-center">
+          <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Ø Dividend Score</div>
+          <div className={`text-2xl font-bold ${avgScore >= 60 ? 'text-emerald-600 dark:text-emerald-400' : avgScore >= 40 ? 'text-amber-500' : 'text-red-500'}`}>{avgScore.toFixed(0)}</div>
+        </div>
+        <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 text-center">
+          <div className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Top Performer</div>
+          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{topPerformers.length}</div>
+          <div className="text-xs text-emerald-500/60">Score &ge;70 & Chowder &ge;12</div>
+        </div>
+        <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4 text-center">
+          <div className="text-xs text-blue-600 dark:text-blue-400 mb-1">Hidden Gems</div>
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{hiddenGems.length}</div>
+          <div className="text-xs text-blue-500/60">Untergewichtet & stark</div>
+        </div>
+        <div className="rounded-xl border border-red-100 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 p-4 text-center">
+          <div className="text-xs text-red-500 mb-1">Schwach</div>
+          <div className="text-2xl font-bold text-red-500">{improvementCandidates.length}</div>
+          <div className="text-xs text-red-400/60">Score &lt;35</div>
+        </div>
+      </div>
+
+      {/* Hidden Gems highlight */}
+      {hiddenGems.length > 0 && (
+        <div className="rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+          <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-2">Hidden Gems – Starke Positionen mit geringem Gewicht</p>
+          <p className="text-xs text-blue-600/70 dark:text-blue-300/60 mb-2">
+            Diese Positionen haben hohe Scores aber wenig Depotgewicht. Aufstocken könnte die Portfolio-Qualität verbessern.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {hiddenGems.slice(0, 8).map(p => (
+              <span key={p.symbol} className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full font-mono">
+                {p.symbol} Score {p.dividendScore} · {p.portfolioWeight.toFixed(1)} %
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sections.map((s) => (
           <RankCard key={s.id} section={s} />
