@@ -18,7 +18,7 @@ import { DepotCheckTab } from './tabs/DepotCheckTab';
 import { MotivationTab } from './tabs/MotivationTab';
 import { computeTotals } from '../lib/calculations';
 import { computeHealthScore, generateRecommendations } from '../lib/insights';
-import { fmt } from '../lib/format';
+import { fmt, fmtPct, fmtNum } from '../lib/format';
 import {
   LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
   Calendar, Trophy, Lightbulb, LineChart,
@@ -82,7 +82,7 @@ export function Dashboard({ positions, filename, onReset, darkMode, onToggleDark
       pdf.setFontSize(12);
       pdf.text(`Depot-Analyse – ${filename}`, 14, 12);
       pdf.setFontSize(8);
-      pdf.text(`${new Date().toLocaleDateString('de-DE')} · ${fmt(totals.totalWert)} · Yield ${totals.weightedYield.toFixed(2)}%`, 14, 19);
+      pdf.text(`${new Date().toLocaleDateString('de-DE')} · ${fmt(totals.totalWert)} · Yield ${fmtPct(totals.weightedYield)}`, 14, 19);
       const startY = 24;
       const scaledHeight = Math.min(pdfHeight, pdf.internal.pageSize.getHeight() - startY - 8);
       pdf.addImage(imgData, 'PNG', 0, startY, pdfWidth, scaledHeight);
@@ -158,7 +158,7 @@ export function Dashboard({ positions, filename, onReset, darkMode, onToggleDark
             <div className="h-6 w-px bg-slate-100 dark:bg-zinc-800" />
             <div className="text-center">
               <div className="text-slate-400 dark:text-zinc-500">Yield</div>
-              <div className="font-semibold text-emerald-600 dark:text-emerald-400">{totals.weightedYield.toFixed(2)} %</div>
+              <div className="font-semibold text-emerald-600 dark:text-emerald-400">{fmtPct(totals.weightedYield)}</div>
             </div>
             <div className="h-6 w-px bg-slate-100 dark:bg-zinc-800" />
             <div className="text-center">
@@ -174,7 +174,7 @@ export function Dashboard({ positions, filename, onReset, darkMode, onToggleDark
             <div className="text-center">
               <div className="text-slate-400 dark:text-zinc-500">Health</div>
               <div className={`font-semibold ${health.overall >= 70 ? 'text-emerald-600 dark:text-emerald-400' : health.overall >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
-                {health.overall.toFixed(0)}
+                {fmtNum(health.overall)}
               </div>
             </div>
             {urgentCount > 0 && (

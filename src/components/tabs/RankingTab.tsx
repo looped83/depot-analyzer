@@ -1,6 +1,6 @@
 import React from 'react';
 import type { DepotPosition } from '../../lib/types';
-import { fmt, fmtPct } from '../../lib/format';
+import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { Trophy, TrendingUp, DollarSign, Star, AlertTriangle, Search } from 'lucide-react';
 
 interface Props { positions: DepotPosition[] }
@@ -92,7 +92,7 @@ export function RankingTab({ positions }: Props) {
       color: 'border-violet-100 dark:border-violet-900/40 bg-violet-50/50 dark:bg-violet-950/20',
       items: [...active].sort((a, b) => b.chowderScore - a.chowderScore).map((p) => ({
         pos: p,
-        value: p.chowderScore.toFixed(1),
+        value: fmtNum(p.chowderScore, 1),
       })),
     },
     {
@@ -104,7 +104,7 @@ export function RankingTab({ positions }: Props) {
       items: [...active].sort((a, b) => b.annualDividend - a.annualDividend).map((p) => ({
         pos: p,
         value: fmt(p.annualDividend),
-        badge: `${p.dividendContribution.toFixed(0)}%`,
+        badge: `${fmtNum(p.dividendContribution)}%`,
       })),
     },
     {
@@ -135,8 +135,8 @@ export function RankingTab({ positions }: Props) {
       color: 'border-orange-100 dark:border-orange-900/40 bg-orange-50/50 dark:bg-orange-950/20',
       items: [...active].sort((a, b) => b.portfolioWeight - a.portfolioWeight).slice(0, 10).map((p) => ({
         pos: p,
-        value: `${p.portfolioWeight.toFixed(1)}%`,
-        badge: p.sparbetrag > 0 ? `+${p.sparbetrag}€` : undefined,
+        value: `${fmtNum(p.portfolioWeight, 1)}%`,
+        badge: p.sparbetrag > 0 ? `+${fmtNum(p.sparbetrag)}€` : undefined,
       })),
     },
     {
@@ -150,7 +150,7 @@ export function RankingTab({ positions }: Props) {
         .sort((a, b) => b.dividendScore - a.dividendScore)
         .map((p) => ({
           pos: p,
-          value: `${p.portfolioWeight.toFixed(1)}%`,
+          value: `${fmtNum(p.portfolioWeight, 1)}%`,
           badge: `Score: ${p.dividendScore}`,
         })),
     },
@@ -188,7 +188,7 @@ export function RankingTab({ positions }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-center">
           <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Ø Dividend Score</div>
-          <div className={`text-2xl font-bold ${avgScore >= 60 ? 'text-emerald-600 dark:text-emerald-400' : avgScore >= 40 ? 'text-amber-500' : 'text-red-500'}`}>{avgScore.toFixed(0)}</div>
+          <div className={`text-2xl font-bold ${avgScore >= 60 ? 'text-emerald-600 dark:text-emerald-400' : avgScore >= 40 ? 'text-amber-500' : 'text-red-500'}`}>{fmtNum(avgScore)}</div>
         </div>
         <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 text-center">
           <div className="text-xs text-emerald-600 dark:text-emerald-400 mb-1">Top Performer</div>
@@ -217,7 +217,7 @@ export function RankingTab({ positions }: Props) {
           <div className="flex flex-wrap gap-2">
             {hiddenGems.slice(0, 8).map(p => (
               <span key={p.symbol} className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full font-mono">
-                {p.symbol} Score {p.dividendScore} · {p.portfolioWeight.toFixed(1)} %
+                {p.symbol} Score {p.dividendScore} · {fmtNum(p.portfolioWeight, 1)} %
               </span>
             ))}
           </div>

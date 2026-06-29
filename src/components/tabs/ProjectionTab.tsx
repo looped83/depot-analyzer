@@ -7,7 +7,7 @@ import type { DepotPosition, ProjectionParams } from '../../lib/types';
 import { computeProjection, computeTotals } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
-import { fmt } from '../../lib/format';
+import { fmt, fmtNum, fmtPct } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -47,10 +47,10 @@ export function ProjectionTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Aktueller Depotwert"     value={fmt(totals.totalWert)}          sub="Stand jetzt" />
-        <KPICard title="Jährl. Dividende (jetzt)" value={fmt(totals.totalAnnualDiv)}    sub="Aktuelle Projektion" />
-        <KPICard title="Monatliche Sparrate"      value={`${params.monthlySavings} €`}  sub="Editierbar" />
-        <KPICard title="Depot-Yield"              value={`${totals.weightedYield.toFixed(2)} %`} sub="Gewichtet" />
+        <KPICard title="Aktueller Depotwert"     value={fmt(totals.totalWert)}          sub="Stand jetzt" info="Summe aller aktiven Positionen zum aktuellen Kurs." />
+        <KPICard title="Jährl. Dividende (jetzt)" value={fmt(totals.totalAnnualDiv)}    sub="Aktuelle Projektion" info="Erwartete jährliche Brutto-Dividende aller aktiven Positionen." />
+        <KPICard title="Monatliche Sparrate"      value={`${fmtNum(params.monthlySavings)} €`}  sub="Editierbar" info="Monatlich neu investiertes Kapital – über den Regler anpassbar." />
+        <KPICard title="Depot-Yield"              value={fmtPct(totals.weightedYield)} sub="Gewichtet" info="Nach Depotwert gewichtete Dividendenrendite aller aktiven Positionen." />
       </div>
 
       <Card title="Annahmen (editierbar)">
@@ -131,8 +131,8 @@ export function ProjectionTab({ positions }: Props) {
               </defs>
               <CartesianGrid {...GRID} />
               <XAxis dataKey="year" {...AXIS} />
-              <YAxis yAxisId="left"  {...AXIS} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <YAxis yAxisId="right" orientation="right" {...AXIS} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis yAxisId="left"  {...AXIS} tickFormatter={(v) => `${fmtNum(v / 1000)}k`} />
+              <YAxis yAxisId="right" orientation="right" {...AXIS} tickFormatter={(v) => `${fmtNum(v / 1000)}k`} />
               <Tooltip
                 formatter={(v: unknown, name: unknown) => [fmt(v as number), name === 'portfolioValue' ? 'Depotwert' : 'Jährl. Dividende']}
                 labelFormatter={(l) => `Jahr: ${l}`}
@@ -193,7 +193,7 @@ export function ProjectionTab({ positions }: Props) {
                     <div className="text-base font-semibold text-emerald-600 dark:text-emerald-400">{fmt(realDiv)}</div>
                   </div>
                   <div className="text-xs text-slate-300 dark:text-zinc-600">
-                    Kaufkraftverlust: -{((1 - 1/inflFactor) * 100).toFixed(1)} %
+                    Kaufkraftverlust: -{fmtNum((1 - 1/inflFactor) * 100, 1)} %
                   </div>
                 </div>
               </div>

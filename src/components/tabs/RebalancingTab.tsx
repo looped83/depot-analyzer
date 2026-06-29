@@ -7,7 +7,7 @@ import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
 import { SortableTable } from '../tables/SortableTable';
-import { fmt, fmtPct } from '../../lib/format';
+import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -70,10 +70,10 @@ export function RebalancingTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Monatliches Budget" value={`${budget} €`}              sub="Für Rebalancing" />
-        <KPICard title="Untergewichtet"     value={String(underweight.length)} sub="Positionen" />
-        <KPICard title="Übergewichtet"      value={String(overweight.length)}  sub="Positionen" />
-        <KPICard title="Ø Abweichung"       value={`${avgDeviation.toFixed(1)} %`} sub="Vom Zielgewicht" />
+        <KPICard title="Monatliches Budget" value={`${fmtNum(budget)} €`}       sub="Für Rebalancing" info="Dein monatliches Budget, das auf untergewichtete Positionen verteilt wird." />
+        <KPICard title="Untergewichtet"     value={String(underweight.length)} sub="Positionen" info="Positionen, deren aktuelles Gewicht unter dem Zielgewicht liegt." />
+        <KPICard title="Übergewichtet"      value={String(overweight.length)}  sub="Positionen" info="Positionen, die ihr Zielgewicht überschreiten. Sparplan ggf. reduzieren." />
+        <KPICard title="Ø Abweichung"       value={`${fmtNum(avgDeviation, 1)} %`} sub="Vom Zielgewicht" info="Durchschnittliche Abweichung aller Positionen von ihrem Zielgewicht." />
       </div>
 
       {/* Strategy + Budget */}
@@ -124,8 +124,8 @@ export function RebalancingTab({ positions }: Props) {
                 </div>
                 <p className="text-xs text-slate-400 dark:text-zinc-500 truncate">{r.name}</p>
                 <div className="flex gap-2 mt-1.5 text-xs">
-                  <span className="text-slate-400 dark:text-zinc-500">Ist <span className="font-semibold text-slate-600 dark:text-zinc-400">{r.portfolioWeight.toFixed(1)}%</span></span>
-                  <span className="text-slate-400 dark:text-zinc-500">→ Ziel <span className="font-semibold text-blue-600 dark:text-blue-400">{r.targetPct.toFixed(1)}%</span></span>
+                  <span className="text-slate-400 dark:text-zinc-500">Ist <span className="font-semibold text-slate-600 dark:text-zinc-400">{fmtNum(r.portfolioWeight, 1)}%</span></span>
+                  <span className="text-slate-400 dark:text-zinc-500">→ Ziel <span className="font-semibold text-blue-600 dark:text-blue-400">{fmtNum(r.targetPct, 1)}%</span></span>
                 </div>
                 <div className="mt-1.5 w-full h-1 bg-slate-100 dark:bg-zinc-700 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 rounded-full"
@@ -145,10 +145,10 @@ export function RebalancingTab({ positions }: Props) {
             <BarChart data={chartData} margin={{ bottom: 28, top: 4, right: 8 }}>
               <CartesianGrid {...GRID} vertical={false} />
               <XAxis dataKey="symbol" {...AXIS} angle={-35} textAnchor="end" interval={0} />
-              <YAxis {...AXIS} tickFormatter={(v) => `${v.toFixed(1)} %`} />
+              <YAxis {...AXIS} tickFormatter={(v) => `${fmtNum(v, 1)} %`} />
               <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />
               <Tooltip
-                formatter={(v: unknown) => [`${(v as number).toFixed(2)} %`, 'Δ Gewicht']}
+                formatter={(v: unknown) => [`${fmtNum(v as number, 2)} %`, 'Δ Gewicht']}
                 contentStyle={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: 12, fontSize: 12 }}
               />
               <Bar dataKey="delta" radius={[4, 4, 0, 0]} maxBarSize={28}>
@@ -170,7 +170,7 @@ export function RebalancingTab({ positions }: Props) {
           <div className="flex flex-wrap gap-2">
             {overweight.map((r) => (
               <span key={r.symbol} className="text-xs bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200 px-2 py-1 rounded-full font-mono">
-                {r.symbol} +{Math.abs(r.deltaPct).toFixed(1)} % über Ziel
+                {r.symbol} +{fmtNum(Math.abs(r.deltaPct), 1)} % über Ziel
               </span>
             ))}
           </div>
@@ -209,7 +209,7 @@ export function RebalancingTab({ positions }: Props) {
                     <span className={`font-mono font-semibold tabular-nums ${
                       n > 0.5 ? 'text-emerald-600 dark:text-emerald-400' :
                       n < -0.5 ? 'text-orange-500' : 'text-slate-400'
-                    }`}>{n > 0 ? '+' : ''}{n.toFixed(2)} %</span>
+                    }`}>{n > 0 ? '+' : ''}{fmtNum(n, 2)} %</span>
                   );
                 }},
               { key: 'deltaEur', label: 'Delta (€)', align: 'right',

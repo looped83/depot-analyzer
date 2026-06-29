@@ -8,7 +8,7 @@ import { KPICard } from '../KPICard';
 import { Card } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
-import { fmt, fmtPct } from '../../lib/format';
+import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -89,12 +89,12 @@ export function SavingsTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard title="Gesamte Sparrate"   value={`${totalSpar} €`}           sub="Pro Zyklus" />
-        <KPICard title="Aktive Sparpläne"   value={String(saved.length)}       sub={`von ${positions.length} Positionen`} />
-        <KPICard title="Ø Sparbetrag"       value={`${saved.length > 0 ? (totalSpar / saved.length).toFixed(0) : 0} €`} sub="Pro Position" />
-        <KPICard title="Reinvestition/Jahr" value={fmt(totalSpar * 12)}        sub="Hochrechnung (12 Monate)" />
-        <KPICard title="Sparquote"          value={totalWert > 0 ? `${((totalSpar * 12 / totalWert) * 100).toFixed(1)} %` : '—'} sub="Jährl. Sparrate / Depotwert" />
-        <KPICard title="Effizienz-Score"    value={`${efficiencyScore}`}        sub={efficiencyScore >= 70 ? 'Gut ausgerichtet' : 'Optimierbar'} />
+        <KPICard title="Gesamte Sparrate"   value={`${fmtNum(totalSpar)} €`}    sub="Pro Zyklus" info="Summe aller aktiven Sparplanbeträge pro Ausführungszyklus." />
+        <KPICard title="Aktive Sparpläne"   value={fmtNum(saved.length)}       sub={`von ${fmtNum(positions.length)} Positionen`} />
+        <KPICard title="Ø Sparbetrag"       value={`${saved.length > 0 ? fmtNum(Math.round(totalSpar / saved.length)) : 0} €`} sub="Pro Position" />
+        <KPICard title="Reinvestition/Jahr" value={fmt(totalSpar * 12)}        sub="Hochrechnung (12 Monate)" info="Monatliche Sparrate hochgerechnet auf 12 Monate." />
+        <KPICard title="Sparquote"          value={totalWert > 0 ? fmtPct((totalSpar * 12 / totalWert) * 100, 1) : '—'} sub="Jährl. Sparrate / Depotwert" info="Verhältnis der jährlichen Sparrate zum aktuellen Depotwert. Höhere Werte beschleunigen den Vermögensaufbau." />
+        <KPICard title="Effizienz-Score"    value={fmtNum(efficiencyScore)}     sub={efficiencyScore >= 70 ? 'Gut ausgerichtet' : 'Optimierbar'} info="Bewertet wie gut die Sparpläne auf Prioritäten und Aufbau-Positionen ausgerichtet sind (0-100)." />
       </div>
 
       {/* Sparplan Efficiency */}
@@ -131,7 +131,7 @@ export function SavingsTab({ positions }: Props) {
           <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Fokus auf High-Prio</div>
           <div className="flex items-end gap-2">
             <span className={`text-2xl font-bold ${highPrioPct > 60 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-500'}`}>
-              {highPrioPct.toFixed(0)} %
+              {fmtNum(highPrioPct)} %
             </span>
             <span className="text-xs text-slate-400 dark:text-zinc-500 mb-1">des Kapitals in Prio A/B</span>
           </div>
@@ -156,9 +156,9 @@ export function SavingsTab({ positions }: Props) {
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={growthChart} margin={{ top: 4, right: 20, bottom: 10 }}>
               <CartesianGrid {...GRID} vertical={false} />
-              <XAxis dataKey="month" {...AXIS} tickFormatter={(v) => `${(v / 12).toFixed(0)}J`}
+              <XAxis dataKey="month" {...AXIS} tickFormatter={(v) => `${fmtNum(v / 12)}J`}
                 ticks={[0, 12, 24, 36, 48, 60]} />
-              <YAxis {...AXIS} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis {...AXIS} tickFormatter={(v) => `${fmtNum(v / 1000)}k`} />
               <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(v as number)} labelFormatter={(l) => `Monat ${l}`} />} />
               <Area type="monotone" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.15} strokeWidth={2} />
             </AreaChart>
@@ -218,7 +218,7 @@ export function SavingsTab({ positions }: Props) {
           <div className="flex flex-wrap gap-2">
             {overweight.map((p) => (
               <span key={p.symbol} className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 px-2 py-1 rounded-full font-mono">
-                {p.symbol} ({p.portfolioWeight.toFixed(1)}%, {p.sparbetrag}€)
+                {p.symbol} ({fmtPct(p.portfolioWeight, 1)}, {fmtNum(p.sparbetrag)} €)
               </span>
             ))}
           </div>
@@ -231,7 +231,7 @@ export function SavingsTab({ positions }: Props) {
           <div className="flex flex-wrap gap-2">
             {underweightQuality.map((p) => (
               <span key={p.symbol} className="text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 px-2 py-1 rounded-full font-mono">
-                {p.symbol} – {p.name} ({p.portfolioWeight.toFixed(1)}%)
+                {p.symbol} – {p.name} ({fmtPct(p.portfolioWeight, 1)})
               </span>
             ))}
           </div>

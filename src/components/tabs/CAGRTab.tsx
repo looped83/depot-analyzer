@@ -8,7 +8,7 @@ import { Card } from '../Card';
 import { KPICard } from '../KPICard';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
-import { fmtPct, fmt } from '../../lib/format';
+import { fmtPct, fmtNum, fmt } from '../../lib/format';
 import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -39,8 +39,8 @@ export function CAGRTab({ positions }: Props) {
     return (
       <div className="bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-xl px-3 py-2.5 text-xs shadow-xl">
         <p className="font-semibold text-slate-800 dark:text-zinc-200 mb-1">{d.symbol} — {d.name}</p>
-        <p className="text-slate-500 dark:text-zinc-400">Yield: {d.x.toFixed(2)} % · CAGR: {d.y.toFixed(2)} %</p>
-        <p className="text-slate-400 dark:text-zinc-500">Chowder: {d.chowder.toFixed(1)}</p>
+        <p className="text-slate-500 dark:text-zinc-400">Yield: {fmtPct(d.x)} · CAGR: {fmtPct(d.y)}</p>
+        <p className="text-slate-400 dark:text-zinc-500">Chowder: {fmtNum(d.chowder, 1)}</p>
       </div>
     );
   };
@@ -48,9 +48,9 @@ export function CAGRTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-3 gap-3">
-        <KPICard title="Ø CAGR 5J"      value={fmtPct(avgCagr)}    sub="Aktive Positionen" />
-        <KPICard title="Ø Yield"         value={fmtPct(avgYield)}   sub="Aktive Positionen" />
-        <KPICard title="Ø Chowder Score" value={avgChowder.toFixed(1)} sub="Yield + CAGR" />
+        <KPICard title="Ø CAGR 5J"      value={fmtPct(avgCagr)}    sub="Aktive Positionen" info="Compound Annual Growth Rate – durchschnittliches jährliches Dividendenwachstum über 5 Jahre." />
+        <KPICard title="Ø Yield"         value={fmtPct(avgYield)}   sub="Aktive Positionen" info="Durchschnittliche Dividendenrendite aller aktiven Positionen." />
+        <KPICard title="Ø Chowder Score" value={fmtNum(avgChowder, 1)} sub="Yield + CAGR" info="Chowder Score = Yield + CAGR 5J. Ab 12 gilt eine Position als attraktiv." />
       </div>
 
       {/* Scatter matrix */}
@@ -96,8 +96,8 @@ export function CAGRTab({ positions }: Props) {
           <BarChart data={top10Chowder} margin={{ bottom: 28, top: 4, right: 8 }}>
             <CartesianGrid {...GRID} vertical={false} />
             <XAxis dataKey="symbol" {...AXIS} angle={-35} textAnchor="end" interval={0} />
-            <YAxis {...AXIS} tickFormatter={(v) => v.toFixed(0)} />
-            <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${(v as number).toFixed(1)}`} />} />
+            <YAxis {...AXIS} tickFormatter={(v) => fmtNum(v)} />
+            <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmtNum(v as number, 1)} />} />
             <Bar dataKey="chowderScore" radius={[4, 4, 0, 0]} maxBarSize={32}>
               {top10Chowder.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} fillOpacity={0.85} />)}
             </Bar>
@@ -134,7 +134,7 @@ export function CAGRTab({ positions }: Props) {
                   <span className={`font-mono font-semibold tabular-nums ${
                     (v as number) >= 12 ? 'text-emerald-600 dark:text-emerald-400' :
                     (v as number) >= 8  ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'
-                  }`}>{(v as number).toFixed(1)}</span>
+                  }`}>{fmtNum(v as number, 1)}</span>
                 )},
               { key: 'wert',     label: 'Wert',     align: 'right', render: (v) => fmt(v as number) },
               { key: 'typ',      label: 'Typ',       align: 'center' },

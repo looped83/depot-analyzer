@@ -8,7 +8,7 @@ import { KPICard } from '../KPICard';
 import { Card } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
-import { fmtPct } from '../../lib/format';
+import { fmtPct, fmtNum } from '../../lib/format';
 import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -94,7 +94,7 @@ export function QualityTab({ positions }: Props) {
     {
       label: 'Datenvollständigkeit',
       score: avgCompleteness,
-      detail: `Ø ${avgCompleteness.toFixed(0)} % der Felder befüllt`,
+      detail: `Ø ${fmtNum(avgCompleteness)} % der Felder befüllt`,
     },
     {
       label: 'Prioritäten-Abdeckung',
@@ -139,10 +139,10 @@ export function QualityTab({ positions }: Props) {
           <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Portfolio-Note</div>
           <div className={`text-4xl font-black ${gradeColor}`}>{grade}</div>
         </div>
-        <KPICard title="Gesamtqualität"       value={`${overallQuality.toFixed(0)} / 100`} sub="Ø aller Dimensionen" />
-        <KPICard title="Datenvollständigkeit" value={`${avgCompleteness.toFixed(0)} %`}     sub="Ø über alle Felder" />
-        <KPICard title="Gew. D-Score"         value={weightedQuality.toFixed(1)}            sub="Nach Depotwert gewichtet" />
-        <KPICard title="Positionen gesamt"    value={String(all.length)}                    sub={`davon ${active.length} aktiv`} />
+        <KPICard title="Gesamtqualität"       value={`${fmtNum(overallQuality)} / 100`} sub="Ø aller Dimensionen" info="Durchschnitt aus Datenvollständigkeit, Prioritäten-Abdeckung, Rating-Abdeckung und gewichtetem Dividend Score." />
+        <KPICard title="Datenvollständigkeit" value={`${fmtNum(avgCompleteness)} %`}     sub="Ø über alle Felder" info="Anteil der befüllten Datenfelder (Yield, ISIN, Priorität, Ausschüttungsmonate, Rating)." />
+        <KPICard title="Gew. D-Score"         value={fmtNum(weightedQuality, 1)}           sub="Nach Depotwert gewichtet" info="Dividend Score gewichtet nach Depotwert. Große Positionen mit hohem Score verbessern den Wert." />
+        <KPICard title="Positionen gesamt"    value={fmtNum(all.length)}                   sub={`davon ${fmtNum(active.length)} aktiv`} />
       </div>
 
       {/* Quick quality summary */}
@@ -154,7 +154,7 @@ export function QualityTab({ positions }: Props) {
               {strongDimensions.map(d => (
                 <div key={d.label} className="flex items-center justify-between text-xs">
                   <span className="text-emerald-700 dark:text-emerald-300">{d.label}</span>
-                  <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{d.score.toFixed(0)}</span>
+                  <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{fmtNum(d.score)}</span>
                 </div>
               ))}
             </div>
@@ -167,7 +167,7 @@ export function QualityTab({ positions }: Props) {
               {weakDimensions.map(d => (
                 <div key={d.label} className="flex items-center justify-between text-xs">
                   <span className="text-amber-700 dark:text-amber-300">{d.label}</span>
-                  <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">{d.score.toFixed(0)}</span>
+                  <span className="font-mono font-semibold text-amber-600 dark:text-amber-400">{fmtNum(d.score)}</span>
                 </div>
               ))}
             </div>
@@ -219,7 +219,7 @@ export function QualityTab({ positions }: Props) {
                   d.score >= 75 ? 'text-emerald-600 dark:text-emerald-400' :
                   d.score >= 50 ? 'text-blue-600 dark:text-blue-400' :
                   d.score >= 25 ? 'text-amber-500' : 'text-red-500'
-                }`}>{d.score.toFixed(0)}</span>
+                }`}>{fmtNum(d.score)}</span>
               </div>
             </div>
           ))}
@@ -234,7 +234,7 @@ export function QualityTab({ positions }: Props) {
               <CartesianGrid {...GRID} horizontal={false} />
               <XAxis type="number" {...AXIS} domain={[0, 100]} tickFormatter={(v) => `${v} %`} />
               <YAxis type="category" dataKey="label" {...AXIS} width={160} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${(v as number).toFixed(0)} %`} />} />
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${fmtNum(v as number)} %`} />} />
               <Bar dataKey="pct" radius={[0, 4, 4, 0]} maxBarSize={20}>
                 {completenessRows.map((r, i) => (
                   <Cell key={i} fill={r.pct >= 80 ? '#10b981' : r.pct >= 50 ? '#3b82f6' : '#f59e0b'} fillOpacity={0.85} />

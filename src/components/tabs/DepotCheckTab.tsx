@@ -7,7 +7,7 @@ import type { DepotPosition } from '../../lib/types';
 import { computeHealthScore, generateRecommendations, computeFreibetrag, computeStressTest } from '../../lib/insights';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
-import { fmt } from '../../lib/format';
+import { fmt, fmtNum } from '../../lib/format';
 import { ArrowRight, Zap, AlertTriangle, CheckCircle, Info, TrendingDown } from 'lucide-react';
 
 interface Props { positions: DepotPosition[] }
@@ -43,10 +43,10 @@ export function DepotCheckTab({ positions }: Props) {
     <div className="space-y-5">
       {/* Overall Score + KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Depot Health Score" value={`${health.overall.toFixed(0)} / 100`} sub={gradeLabel(health.overall)} />
-        <KPICard title="Empfehlungen" value={String(recommendations.length)} sub={`${recommendations.filter(r => r.priority === 'high').length} mit hoher Priorität`} />
-        <KPICard title="Freibetrag genutzt" value={`${Math.min(100, (freibetrag.used / freibetrag.freibetrag * 100)).toFixed(0)} %`} sub={freibetrag.remaining > 0 ? `${fmt(freibetrag.remaining)} frei` : 'Vollständig ausgeschöpft'} />
-        <KPICard title="Steuerbelastung" value={fmt(freibetrag.taxAmount)} sub={`${fmt(freibetrag.taxable)} steuerpflichtig`} />
+        <KPICard title="Depot Health Score" value={`${fmtNum(health.overall)} / 100`} sub={gradeLabel(health.overall)} info="Gewichteter Score aus 8 Dimensionen: Diversifikation, Qualität, Wachstum, Sicherheit, Cashflow, Effizienz u.a." />
+        <KPICard title="Empfehlungen" value={String(recommendations.length)} sub={`${recommendations.filter(r => r.priority === 'high').length} mit hoher Priorität`} info="Automatisch generierte Handlungsempfehlungen basierend auf deiner Depotanalyse." />
+        <KPICard title="Freibetrag genutzt" value={`${fmtNum(Math.min(100, freibetrag.used / freibetrag.freibetrag * 100))} %`} sub={freibetrag.remaining > 0 ? `${fmt(freibetrag.remaining)} frei` : 'Vollständig ausgeschöpft'} info="Sparerpauschbetrag: 1.000 € für Einzelveranlagung. Dividenden bis dahin sind steuerfrei." />
+        <KPICard title="Steuerbelastung" value={fmt(freibetrag.taxAmount)} sub={`${fmt(freibetrag.taxable)} steuerpflichtig`} info="Geschätzte Steuer auf Dividenden oberhalb des Freibetrags (KapESt + SolZ = 26,375 %)." />
       </div>
 
       {/* Health Score Gauge + Radar */}
@@ -63,7 +63,7 @@ export function DepotCheckTab({ positions }: Props) {
                   strokeDasharray={`${health.overall * 2.64} 264`} />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`text-3xl font-bold ${gradeColor(health.overall)}`}>{health.overall.toFixed(0)}</span>
+                <span className={`text-3xl font-bold ${gradeColor(health.overall)}`}>{fmtNum(health.overall)}</span>
                 <span className="text-xs text-slate-400 dark:text-zinc-500">{gradeLabel(health.overall)}</span>
               </div>
             </div>
@@ -134,7 +134,7 @@ export function DepotCheckTab({ positions }: Props) {
                   <div className={`h-full rounded-full transition-all duration-500 ${barColor(d.score)}`}
                     style={{ width: `${Math.min(100, d.score)}%` }} />
                 </div>
-                <span className={`text-sm font-bold tabular-nums w-10 text-right ${gradeColor(d.score)}`}>{d.score.toFixed(0)}</span>
+                <span className={`text-sm font-bold tabular-nums w-10 text-right ${gradeColor(d.score)}`}>{fmtNum(d.score)}</span>
               </div>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {d.tips.map((tip, i) => (

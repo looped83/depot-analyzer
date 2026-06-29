@@ -7,7 +7,7 @@ import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
 import { SortableTable } from '../tables/SortableTable';
-import { fmtPct, fmt } from '../../lib/format';
+import { fmtPct, fmtNum, fmt } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -86,7 +86,7 @@ export function SafetyTab({ positions }: Props) {
     return (
       <div className="bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-xl px-3 py-2.5 text-xs shadow-xl">
         <p className="font-semibold text-slate-800 dark:text-zinc-200 mb-1">{d.symbol}</p>
-        <p className="text-slate-500 dark:text-zinc-400">Yield {d.x.toFixed(2)} % · CAGR {d.y.toFixed(2)} %</p>
+        <p className="text-slate-500 dark:text-zinc-400">Yield {fmtPct(d.x)} · CAGR {fmtPct(d.y)}</p>
         <p className="mt-0.5" style={{ color: RISK_COLOR[d.risk] }}>
           {RISK_LABEL[d.risk]} · Safety {d.safety}
         </p>
@@ -102,7 +102,7 @@ export function SafetyTab({ positions }: Props) {
         <KPICard title="Sichere Positionen"   value={String(greens.length)}           sub={`von ${active.length} aktiven`} />
         <KPICard title="Zu beobachten"        value={String(yellows.length)}          sub="Yield hoch od. CAGR niedrig" />
         <KPICard title="Risiko-Positionen"    value={String(reds.length)}             sub="Sofortiger Handlungsbedarf" />
-        <KPICard title="Ø Safety Score"       value={avgSafety.toFixed(0)}            sub="0 = kritisch · 100 = sicher" />
+        <KPICard title="Ø Safety Score"       value={fmtNum(avgSafety)}               sub="0 = kritisch · 100 = sicher" info="Gewichteter Score aus CAGR, Yield, Prio und Status. Höhere Werte bedeuten geringeres Risiko." />
       </div>
 
       {/* Risk matrix scatter */}
@@ -152,7 +152,7 @@ export function SafetyTab({ positions }: Props) {
           <div className="flex flex-wrap gap-2">
             {traps.map((p) => (
               <span key={p.symbol} className="text-xs bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 px-2 py-1 rounded-full font-mono">
-                {p.symbol} Yield {p.yield.toFixed(1)}% · CAGR {p.cagr5j.toFixed(1)}%
+                {p.symbol} Yield {fmtPct(p.yield, 1)} · CAGR {fmtPct(p.cagr5j, 1)}
               </span>
             ))}
           </div>

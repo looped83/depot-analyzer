@@ -8,7 +8,7 @@ import { KPICard } from '../KPICard';
 import { Card } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
-import { fmt, fmtPct } from '../../lib/format';
+import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -79,7 +79,7 @@ export function DiversificationTab({ positions }: Props) {
           <text x={x + width / 2} y={y + height / 2 + 13} textAnchor="middle"
             dominantBaseline="middle" fontSize={9} fill="white" fillOpacity={0.8}
             style={{ pointerEvents: 'none' }}>
-            {portfolioWeight?.toFixed(1)}%
+            {fmtNum(portfolioWeight ?? 0, 1)}%
           </text>
         )}
       </g>
@@ -103,12 +103,12 @@ export function DiversificationTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard title="Aktive Positionen"  value={String(active.length)}        sub="Positionen im Depot" />
-        <KPICard title="HHI"                value={hhi.toFixed(0)}               sub={hhiLabel} />
-        <KPICard title="Div. Grade"         value={divGrade}                     sub={hhiLabel} />
-        <KPICard title="Top 5 Gewicht"      value={fmtPct(top5Weight)}           sub="Anteil am Depot" />
-        <KPICard title="Broker"             value={String(brokerCount)}           sub={`${typCount} Typen · ${katCount} Kategorien`} />
-        <KPICard title="Top 3 Div-Anteil"   value={`${top3DivPct.toFixed(0)} %`} sub={top3DivContrib.map(p => p.symbol).join(', ')} />
+        <KPICard title="Aktive Positionen"  value={String(active.length)}        sub="Positionen im Depot" info="Anzahl aller Positionen mit einem Depotwert > 0." />
+        <KPICard title="HHI"                value={fmtNum(hhi)}                  sub={hhiLabel} info="Herfindahl-Hirschman-Index: Summe der quadrierten Gewichte. < 1.000 = gut diversifiziert, > 2.500 = hoch konzentriert." />
+        <KPICard title="Div. Grade"         value={divGrade}                     sub={hhiLabel} info="Note basierend auf dem HHI: A+ (< 500) bis D (> 2.500)." />
+        <KPICard title="Top 5 Gewicht"      value={fmtPct(top5Weight)}           sub="Anteil am Depot" info="Anteil der 5 größten Positionen am Gesamtdepot." />
+        <KPICard title="Broker"             value={String(brokerCount)}           sub={`${typCount} Typen · ${katCount} Kategorien`} info="Anzahl verschiedener Broker, Anlagetypen und Kategorien im Depot." />
+        <KPICard title="Top 3 Div-Anteil"   value={`${fmtNum(top3DivPct)} %`} sub={top3DivContrib.map(p => p.symbol).join(', ')} info="Anteil der 3 größten Dividendenzahler an der Gesamtdividende." />
       </div>
 
       {/* Dependency warning */}
@@ -116,7 +116,7 @@ export function DiversificationTab({ positions }: Props) {
         <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-950/20 p-4">
           <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">Einkommensabhängigkeit</p>
           <p className="text-xs text-amber-600/70 dark:text-amber-300/60">
-            {top3DivContrib.map(p => p.symbol).join(', ')} liefern {top3DivPct.toFixed(0)} % deiner Dividende.
+            {top3DivContrib.map(p => p.symbol).join(', ')} liefern {fmtNum(top3DivPct)} % deiner Dividende.
             Bei einer Kürzung einer dieser Positionen würde dein Einkommen deutlich sinken.
           </p>
         </div>
@@ -135,7 +135,7 @@ export function DiversificationTab({ positions }: Props) {
                   return (
                     <div className="bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-xl px-3 py-2.5 text-xs shadow-xl">
                       <p className="font-semibold text-slate-800 dark:text-zinc-200">{d.name}</p>
-                      <p className="text-slate-500 dark:text-zinc-400">{fmt(d.size)} · {d.portfolioWeight.toFixed(2)} %</p>
+                      <p className="text-slate-500 dark:text-zinc-400">{fmt(d.size)} · {fmtNum(d.portfolioWeight, 2)} %</p>
                       <p className="text-slate-400 dark:text-zinc-500">{d.kategorie}</p>
                     </div>
                   );
@@ -183,9 +183,9 @@ export function DiversificationTab({ positions }: Props) {
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={sorted.slice(0, 15)} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
               <CartesianGrid {...GRID} horizontal={false} />
-              <XAxis type="number" {...AXIS} tickFormatter={(v) => `${v.toFixed(1)} %`} />
+              <XAxis type="number" {...AXIS} tickFormatter={(v) => `${fmtNum(v, 1)} %`} />
               <YAxis type="category" dataKey="symbol" {...AXIS} width={52} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${(v as number).toFixed(2)} %`} />} />
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${fmtNum(v as number, 2)} %`} />} />
               <Bar dataKey="portfolioWeight" radius={[0, 4, 4, 0]} maxBarSize={18}>
                 {sorted.slice(0, 15).map((p, i) => (
                   <Cell key={p.symbol} fill={p.portfolioWeight > 5 ? '#f59e0b' : PALETTE[i % PALETTE.length]} fillOpacity={0.85} />
@@ -205,7 +205,7 @@ export function DiversificationTab({ positions }: Props) {
           <div className="flex flex-wrap gap-2">
             {clumps.map((p) => (
               <span key={p.symbol} className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 px-2 py-1 rounded-full font-mono">
-                {p.symbol} {p.portfolioWeight.toFixed(1)} %
+                {p.symbol} {fmtNum(p.portfolioWeight, 1)} %
               </span>
             ))}
           </div>

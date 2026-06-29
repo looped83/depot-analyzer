@@ -8,7 +8,7 @@ import { computeMotivationMetrics, computeAchievements, computeSnowballEffect } 
 import { computeTotals, computeProjection } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
-import { fmt } from '../../lib/format';
+import { fmt, fmtNum } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -47,10 +47,10 @@ export function MotivationTab({ positions }: Props) {
     <div className="space-y-5">
       {/* Hero KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Passives Einkommen" value={fmt(totals.totalMonthlyDiv)} sub="Pro Monat, brutto" />
-        <KPICard title="Tägliches Einkommen" value={fmt(metrics.dailyPassiveIncome)} sub="365 Tage im Jahr" />
-        <KPICard title="Freiheitsgrad" value={`${metrics.freedomDegree.toFixed(1)} %`} sub="Fixkosten gedeckt (Basis: 2.500 €)" />
-        <KPICard title="Arbeitsstunden gespart" value={`${metrics.workHoursPerMonth.toFixed(1)} h`} sub="Pro Monat (Mindestlohn)" />
+        <KPICard title="Passives Einkommen" value={fmt(totals.totalMonthlyDiv)} sub="Pro Monat, brutto" info="Deine monatliche Brutto-Dividende aus allen aktiven Positionen." />
+        <KPICard title="Tägliches Einkommen" value={fmt(metrics.dailyPassiveIncome)} sub="365 Tage im Jahr" info="Jahres-Dividende geteilt durch 365 – dein tägliches Passiveinkommen." />
+        <KPICard title="Freiheitsgrad" value={`${fmtNum(metrics.freedomDegree, 1)} %`} sub="Fixkosten gedeckt (Basis: 2.500 €)" info="Anteil deiner monatlichen Fixkosten (2.500 €), der durch Dividenden gedeckt ist." />
+        <KPICard title="Arbeitsstunden gespart" value={`${fmtNum(metrics.workHoursPerMonth, 1)} h`} sub="Pro Monat (Mindestlohn)" info="So viele Stunden Arbeit (zum Mindestlohn) ersetzt dein Dividendeneinkommen pro Monat." />
       </div>
 
       {/* Freedom Degree */}
@@ -75,11 +75,11 @@ export function MotivationTab({ positions }: Props) {
             {metrics.freedomDegree < 5
               ? 'Jede Reise beginnt mit dem ersten Schritt. Dein passives Einkommen wächst mit jedem investierten Euro.'
               : metrics.freedomDegree < 20
-              ? `Deine Dividenden decken bereits ${metrics.freedomDegree.toFixed(1)} % deiner Fixkosten. Weiter so!`
+              ? `Deine Dividenden decken bereits ${fmtNum(metrics.freedomDegree, 1)} % deiner Fixkosten. Weiter so!`
               : metrics.freedomDegree < 50
-              ? `Beeindruckend: Fast ${metrics.freedomDegree.toFixed(0)} % deiner Fixkosten sind bereits durch passives Einkommen gedeckt.`
+              ? `Beeindruckend: Fast ${fmtNum(metrics.freedomDegree)} % deiner Fixkosten sind bereits durch passives Einkommen gedeckt.`
               : metrics.freedomDegree < 100
-              ? `Auf der Zielgeraden: ${metrics.freedomDegree.toFixed(0)} % finanzielle Freiheit erreicht!`
+              ? `Auf der Zielgeraden: ${fmtNum(metrics.freedomDegree)} % finanzielle Freiheit erreicht!`
               : 'Gratulation! Du hast finanzielle Freiheit erreicht!'
             }
           </p>
@@ -94,7 +94,7 @@ export function MotivationTab({ positions }: Props) {
             return (
               <div key={item.key} className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-center">
                 <div className="text-2xl mb-1">{item.icon}</div>
-                <div className="text-2xl font-bold text-slate-800 dark:text-zinc-200">{val.toFixed(1)}x</div>
+                <div className="text-2xl font-bold text-slate-800 dark:text-zinc-200">{fmtNum(val, 1)}x</div>
                 <div className="text-xs font-medium text-slate-600 dark:text-zinc-400 mt-0.5">{item.label}</div>
                 <div className="text-xs text-slate-300 dark:text-zinc-600 mt-0.5">{item.price} {item.unit}</div>
               </div>
@@ -108,7 +108,7 @@ export function MotivationTab({ positions }: Props) {
               <div key={item.key} className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-center">
                 <div className="text-2xl mb-1">{item.icon}</div>
                 <div className="text-2xl font-bold text-slate-800 dark:text-zinc-200">
-                  {'isCurrency' in item && item.isCurrency ? fmt(val) : val.toFixed(1)}
+                  {'isCurrency' in item && item.isCurrency ? fmt(val) : fmtNum(val, 1)}
                 </div>
                 <div className="text-xs font-medium text-slate-600 dark:text-zinc-400 mt-0.5">{item.label}</div>
                 <div className="text-xs text-slate-300 dark:text-zinc-600 mt-0.5">
@@ -156,7 +156,7 @@ export function MotivationTab({ positions }: Props) {
                       </div>
                       <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">{a.description}</p>
                     </div>
-                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400 shrink-0">{a.progress.toFixed(0)} %</span>
+                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400 shrink-0">{fmtNum(a.progress)} %</span>
                   </div>
                 </div>
               ))}
@@ -182,7 +182,7 @@ export function MotivationTab({ positions }: Props) {
               </defs>
               <CartesianGrid {...GRID} />
               <XAxis dataKey="year" {...AXIS} />
-              <YAxis {...AXIS} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+              <YAxis {...AXIS} tickFormatter={v => `${fmtNum(v / 1000)}k`} />
               <Tooltip
                 formatter={(v: unknown, name: unknown) => [
                   fmt(v as number),
@@ -231,7 +231,7 @@ export function MotivationTab({ positions }: Props) {
         </div>
         <p className="text-xs text-slate-500 dark:text-zinc-400 mt-3 text-center leading-relaxed">
           {future5Monthly > totals.totalMonthlyDiv * 1.5
-            ? `In 5 Jahren könntest du ${fmt(future5Monthly)} pro Monat an Dividenden erhalten – das ${(future5Monthly / totals.totalMonthlyDiv).toFixed(1)}x deines aktuellen Einkommens.`
+            ? `In 5 Jahren könntest du ${fmt(future5Monthly)} pro Monat an Dividenden erhalten – das ${fmtNum(future5Monthly / totals.totalMonthlyDiv, 1)}x deines aktuellen Einkommens.`
             : `Dein passives Einkommen wächst stetig. Jeder investierte Euro und jede reinvestierte Dividende bringt dich deinem Ziel näher.`
           }
         </p>

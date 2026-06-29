@@ -6,7 +6,7 @@ import { Card, StatusBadge, PrioBadge } from '../Card';
 import { computeTotals, computeMonthlyCalendar } from '../../lib/calculations';
 import { computeHealthScore, generateRecommendations, computeFreibetrag } from '../../lib/insights';
 import { SortableTable } from '../tables/SortableTable';
-import { fmt, fmtPct } from '../../lib/format';
+import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { AlertTriangle, Zap } from 'lucide-react';
 
 const PALETTE = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f97316','#ec4899','#84cc16','#ef4444','#6366f1'];
@@ -56,12 +56,12 @@ export function OverviewTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard title="Gesamtwert"      value={fmt(totals.totalWert)}        sub="Alle Positionen" />
-        <KPICard title="Positionen"       value={String(positions.length)}      sub={`${aufbau.length} Aufbau · ${erledigt.length} Erledigt`} />
-        <KPICard title="Depot-Yield"      value={fmtPct(totals.weightedYield)}  sub="Gewichtet" />
-        <KPICard title="Jährl. Dividende" value={fmt(totals.totalAnnualDiv)}    sub="Brutto, aktuell" />
-        <KPICard title="Ø Monat"          value={fmt(totals.totalMonthlyDiv)}   sub="Dividende / 12" />
-        <KPICard title="Sparrate"         value={`${totals.totalSparbetrag} €`} sub="Pro Zyklus" />
+        <KPICard title="Gesamtwert"      value={fmt(totals.totalWert)}        sub="Alle Positionen" info="Summe aller Positionswerte im Depot." />
+        <KPICard title="Positionen"       value={fmtNum(positions.length)}      sub={`${fmtNum(aufbau.length)} Aufbau · ${fmtNum(erledigt.length)} Erledigt`} />
+        <KPICard title="Depot-Yield"      value={fmtPct(totals.weightedYield)}  sub="Gewichtet" info="Nach Depotwert gewichtete Dividendenrendite aller aktiven Positionen." />
+        <KPICard title="Jährl. Dividende" value={fmt(totals.totalAnnualDiv)}    sub="Brutto, aktuell" info="Erwartete jährliche Brutto-Dividende basierend auf aktuellen Yields und Werten." />
+        <KPICard title="Ø Monat"          value={fmt(totals.totalMonthlyDiv)}   sub="Dividende / 12" info="Jahresdividende geteilt durch 12. Die tatsächliche monatliche Verteilung kann abweichen." />
+        <KPICard title="Sparrate"         value={`${fmtNum(totals.totalSparbetrag)} €`} sub="Pro Zyklus" info="Summe aller aktiven Sparpläne pro Ausführungszyklus." />
       </div>
 
       {/* Portfolio Health Summary */}
@@ -76,7 +76,7 @@ export function OverviewTab({ positions }: Props) {
                 className={health.overall >= 70 ? 'stroke-emerald-500' : health.overall >= 50 ? 'stroke-amber-500' : 'stroke-red-500'} />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className={`text-sm font-bold ${healthColor}`}>{health.overall.toFixed(0)}</span>
+              <span className={`text-sm font-bold ${healthColor}`}>{fmtNum(health.overall)}</span>
             </div>
           </div>
           <div>
@@ -147,15 +147,15 @@ export function OverviewTab({ positions }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className={top5W > 50 ? 'border-amber-200 dark:border-amber-800/50' : ''}>
           <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Top 5 Konzentration</div>
-          <div className="text-3xl font-semibold text-slate-900 dark:text-white">{top5W.toFixed(1)} %</div>
+          <div className="text-3xl font-semibold text-slate-900 dark:text-white">{fmtPct(top5W, 1)}</div>
           <div className={`mt-1 text-xs ${top5W > 50 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-zinc-500'}`}>
             {top5W > 50 ? 'Erhöhtes Klumpenrisiko' : 'Im normalen Bereich'}
           </div>
         </Card>
         <Card>
           <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Top 10 Gewichtung</div>
-          <div className="text-3xl font-semibold text-slate-900 dark:text-white">{top10W.toFixed(1)} %</div>
-          <div className="mt-1 text-xs text-slate-400 dark:text-zinc-500">von {positions.length} Positionen</div>
+          <div className="text-3xl font-semibold text-slate-900 dark:text-white">{fmtPct(top10W, 1)}</div>
+          <div className="mt-1 text-xs text-slate-400 dark:text-zinc-500">von {fmtNum(positions.length)} Positionen</div>
         </Card>
         {beobachten.length > 0 && (
           <Card className="border-amber-200 dark:border-amber-800/50">
@@ -195,7 +195,7 @@ export function OverviewTab({ positions }: Props) {
         <ResponsiveContainer width="100%" height={150}>
           <BarChart data={aggregateBy(positions,'broker')} layout="vertical" margin={{ left: 0, right: 40 }}>
             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} horizontal={false} />
-            <XAxis type="number" tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+            <XAxis type="number" tickFormatter={(v) => `${fmtNum(v / 1000)}k`} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
             <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} width={30} axisLine={false} tickLine={false} />
             <Tooltip content={<Tip />} />
             <Bar dataKey="value" radius={[0,6,6,0]} maxBarSize={18}>
@@ -218,7 +218,7 @@ export function OverviewTab({ positions }: Props) {
                 <div className="w-14 h-1 bg-slate-100 dark:bg-zinc-700 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(100,(row as DepotPosition).portfolioWeight/(top10[0]?.portfolioWeight||1)*100)}%` }} />
                 </div>
-                <span>{(v as number).toFixed(1)} %</span>
+                <span>{fmtPct(v as number, 1)}</span>
               </div>
             )},
             { key: 'yield', label: 'Yield', align: 'right', render: (v) => fmtPct(v as number) },
@@ -238,7 +238,7 @@ export function OverviewTab({ positions }: Props) {
               { key: 'typ', label: 'Typ', align: 'center' },
               { key: 'kategorie', label: 'Kategorie' },
               { key: 'wert', label: 'Wert', align: 'right', render: (v) => fmt(v as number) },
-              { key: 'portfolioWeight', label: 'Gewicht', align: 'right', render: (v) => `${(v as number).toFixed(1)} %` },
+              { key: 'portfolioWeight', label: 'Gewicht', align: 'right', render: (v) => `${fmtPct(v as number, 1)}` },
               { key: 'prio', label: 'Prio', align: 'center', render: (v) => <PrioBadge prio={v as string|null} /> },
               { key: 'status', label: 'Status', align: 'center', render: (v) => <StatusBadge status={String(v)} /> },
             ]} />

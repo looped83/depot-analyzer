@@ -7,7 +7,7 @@ import { ChartTooltip } from '../ChartTooltip';
 import { computeTotals } from '../../lib/calculations';
 import { computeFreibetrag } from '../../lib/insights';
 import { SortableTable } from '../tables/SortableTable';
-import { fmt, fmtPct } from '../../lib/format';
+import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -44,12 +44,12 @@ export function DividendTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard title="Brutto / Jahr"       value={fmt(totals.totalAnnualDiv)}    sub="Vor Steuern" />
-        <KPICard title="Netto / Jahr"         value={fmt(netAnnualDiv)}             sub={freibetragInfo.taxAmount > 0 ? `${fmt(freibetragInfo.taxAmount)} Steuer` : 'Kein Steuerabzug'} />
+        <KPICard title="Brutto / Jahr"       value={fmt(totals.totalAnnualDiv)}    sub="Vor Steuern" info="Jährliche Dividende vor Abzug von Kapitalertragsteuer und Solidaritätszuschlag." />
+        <KPICard title="Netto / Jahr"         value={fmt(netAnnualDiv)}             sub={freibetragInfo.taxAmount > 0 ? `${fmt(freibetragInfo.taxAmount)} Steuer` : 'Kein Steuerabzug'} info="Nach Abzug von 26,375 % KapESt + SolZ auf den Betrag über dem Sparerpauschbetrag (1.000 €)." />
         <KPICard title="Netto / Monat"        value={fmt(netAnnualDiv / 12)}        sub="Nach Steuer" />
-        <KPICard title="Depot-Yield"          value={fmtPct(totals.weightedYield)}  sub="Gewichtet" />
-        <KPICard title="Dividende je 1.000 €" value={fmt(divPerThousand)}           sub="Effizienz-Kennzahl" />
-        <KPICard title="Ø Chowder Score"      value={weightedChowder.toFixed(1)}    sub={weightedChowder >= 12 ? 'Gut' : 'Ausbaufähig'} />
+        <KPICard title="Depot-Yield"          value={fmtPct(totals.weightedYield)}  sub="Gewichtet" info="Nach Depotwert gewichtete Dividendenrendite. Große Positionen beeinflussen den Wert stärker." />
+        <KPICard title="Dividende je 1.000 €" value={fmt(divPerThousand)}           sub="Effizienz-Kennzahl" info="Wie viel Dividende du pro 1.000 € investiertem Kapital erhältst." />
+        <KPICard title="Ø Chowder Score"      value={fmtNum(weightedChowder, 1)}    sub={weightedChowder >= 12 ? 'Gut' : 'Ausbaufähig'} info="Chowder Score = Yield + CAGR 5J. Werte ab 12 gelten als attraktiv." />
       </div>
 
       {/* Tax and Freibetrag overview */}
@@ -97,7 +97,7 @@ export function DividendTab({ positions }: Props) {
                 <p className="text-xs text-slate-400 dark:text-zinc-500">{label}</p>
                 <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{fmt(val)}</p>
                 <p className="text-xs text-slate-400 dark:text-zinc-500">
-                  {totals.totalAnnualDiv > 0 ? ((val / totals.totalAnnualDiv) * 100).toFixed(1) : 0} % der Dividende
+                  {totals.totalAnnualDiv > 0 ? fmtPct((val / totals.totalAnnualDiv) * 100, 1) : '0 %'} der Dividende
                 </p>
               </div>
             ))}
@@ -166,7 +166,7 @@ export function DividendTab({ positions }: Props) {
                 {divChampions.map(p => (
                   <div key={p.symbol} className="flex items-center gap-1.5 bg-violet-50/60 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 rounded-lg px-2.5 py-1.5">
                     <span className="text-xs font-mono font-bold text-violet-800 dark:text-violet-300">{p.symbol}</span>
-                    <span className="text-[10px] text-violet-500 dark:text-violet-400">{p.chowderScore.toFixed(1)}</span>
+                    <span className="text-[10px] text-violet-500 dark:text-violet-400">{fmtNum(p.chowderScore, 1)}</span>
                   </div>
                 ))}
               </div>
@@ -182,7 +182,7 @@ export function DividendTab({ positions }: Props) {
           <BarChart data={top15} margin={{ bottom: 28, top: 4, right: 8 }}>
             <CartesianGrid {...GRID} vertical={false} />
             <XAxis dataKey="symbol" {...AXIS} angle={-35} textAnchor="end" interval={0} />
-            <YAxis tickFormatter={(v) => `${v.toFixed(0)} €`} {...AXIS} />
+            <YAxis tickFormatter={(v) => `${fmtNum(v)} €`} {...AXIS} />
             <Tooltip
               content={(props) => (
                 <ChartTooltip
@@ -225,7 +225,7 @@ export function DividendTab({ positions }: Props) {
                       <div className="h-full bg-emerald-500 rounded-full"
                         style={{ width: `${Math.min(100, (row as DepotPosition).dividendContribution)}%` }} />
                     </div>
-                    <span>{(v as number).toFixed(1)} %</span>
+                    <span>{fmtPct(v as number, 1)}</span>
                   </div>
                 )},
               { key: 'ausschuettungsfrequenz', label: 'Frequenz', align: 'center',
