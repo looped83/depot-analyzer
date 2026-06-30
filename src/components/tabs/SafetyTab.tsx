@@ -9,6 +9,7 @@ import { Card } from '../Card';
 import { SortableTable } from '../tables/SortableTable';
 import { fmtPct, fmtNum, fmt } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
+import { computeStressTest } from '../../lib/insights';
 
 interface Props { positions: DepotPosition[] }
 
@@ -72,12 +73,13 @@ export function SafetyTab({ positions }: Props) {
 
   const traps = active.filter((p) => p.yield > 6 && p.cagr5j < 2 && p.cagr5j >= 0);
   const avgSafety = withRisk.reduce((s, p) => s + p.safetyScore, 0) / (withRisk.length || 1);
+  const stressTestTop5 = computeStressTest(active, 0);
 
-  const scatterData = active
+  const scatterData = withRisk
     .filter((p) => p.cagr5j !== 0 || p.yield !== 0)
     .map((p) => ({
       x: p.yield, y: p.cagr5j,
-      symbol: p.symbol, risk: riskLevel(p), safety: safetyScore(p),
+      symbol: p.symbol, risk: p.risk, safety: p.safetyScore,
     }));
 
   const SafetyTip = ({ active: a, payload }: { active?: boolean; payload?: { payload?: typeof scatterData[0] }[] }) => {
@@ -184,11 +186,7 @@ export function SafetyTab({ positions }: Props) {
             { label: '-20 % Kürzung', pct: 20 },
             { label: '-50 % Kürzung', pct: 50 },
           ].map(({ label, pct }) => {
-            const top5 = [...active].sort((a, b) => b.annualDividend - a.annualDividend).slice(0, 5);
-            const top5Div = top5.reduce((s, p) => s + p.annualDividend, 0);
-            const totalDiv = active.reduce((s, p) => s + p.annualDividend, 0);
-            const lost = top5Div * (pct / 100);
-            const remaining = totalDiv - lost;
+            const { stressedAnnualDiv: remaining, lostIncome: lost } = computeStressTest(active, pct);
             return (
               <div key={label} className={`rounded-xl border p-4 text-center ${
                 pct === 0 ? 'border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20'
@@ -206,8 +204,8 @@ export function SafetyTab({ positions }: Props) {
           })}
         </div>
         <div className="mt-2 text-xs text-slate-400 dark:text-zinc-500">
-          Betroffene Top 5: {[...active].sort((a, b) => b.annualDividend - a.annualDividend).slice(0, 5).map(p =>
-            <span key={p.symbol} className="font-mono bg-slate-50 dark:bg-zinc-800 px-1.5 py-0.5 rounded mx-0.5">{p.symbol}</span>
+          Betroffene Top 5: {stressTestTop5.affectedSymbols.map(sym =>
+            <span key={sym} className="font-mono bg-slate-50 dark:bg-zinc-800 px-1.5 py-0.5 rounded mx-0.5">{sym}</span>
           )}
         </div>
       </Card>
