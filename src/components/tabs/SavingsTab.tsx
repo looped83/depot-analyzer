@@ -241,7 +241,7 @@ export function SavingsTab({ positions }: Props) {
       )}
 
       <Card title="Sparplan-Ranking – Kapitalfluss" pad={false}>
-        <div className="px-5 pb-5">
+        <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={bySpar}
             rowKey={(r) => r.symbol}

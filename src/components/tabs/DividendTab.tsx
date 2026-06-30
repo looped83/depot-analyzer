@@ -252,7 +252,7 @@ export function DividendTab({ positions }: Props) {
           />
         }
       >
-        <div className="px-5 pb-5">
+        <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={byDiv}
             rowKey={(r) => r.symbol}
@@ -295,7 +295,7 @@ export function DividendTab({ positions }: Props) {
       </Card>
 
       <Card title="Yield-Ranking" pad={false}>
-        <div className="px-5 pb-5">
+        <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={byYield}
             rowKey={(r) => r.symbol}

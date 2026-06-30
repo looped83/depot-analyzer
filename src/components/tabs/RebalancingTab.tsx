@@ -178,7 +178,7 @@ export function RebalancingTab({ positions }: Props) {
 
       {/* Full table */}
       <Card title="Alle Positionen – Ist vs. Ziel" pad={false}>
-        <div className="px-5 pb-5">
+        <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={rows}
             rowKey={(r) => r.symbol}
