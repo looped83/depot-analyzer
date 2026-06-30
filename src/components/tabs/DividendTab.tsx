@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
@@ -13,6 +13,7 @@ import { PALETTE, AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 interface Props { positions: DepotPosition[] }
 
 export function DividendTab({ positions }: Props) {
+  const [divSearch, setDivSearch] = useState('');
   const totals   = computeTotals(positions);
   const freibetragInfo = computeFreibetrag(positions);
   const active   = positions.filter((p) => p.wert > 0);
@@ -23,6 +24,8 @@ export function DividendTab({ positions }: Props) {
   const incomeDiv = active.filter((p) => ['Income','High Yield'].includes(p.kategorie))
                          .reduce((s, p) => s + p.annualDividend, 0);
   const growthDiv = totals.totalAnnualDiv - incomeDiv;
+  const incomePct = totals.totalAnnualDiv > 0 ? (incomeDiv / totals.totalAnnualDiv) * 100 : 50;
+  const growthPct = 100 - incomePct;
 
   const highYield = active.filter((p) => p.yield > 6);
   const lowYield  = active.filter((p) => p.yield > 0 && p.yield < 1.5);
@@ -88,19 +91,29 @@ export function DividendTab({ positions }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card title="Income vs. Growth">
-          <div className="flex gap-6 mt-1">
-            {[
-              { label: 'Income / High Yield',     val: incomeDiv },
-              { label: 'Growth / Accumulation',   val: growthDiv },
-            ].map(({ label, val }) => (
-              <div key={label} className="flex-1">
-                <p className="text-xs text-slate-400 dark:text-zinc-500">{label}</p>
-                <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{fmt(val)}</p>
-                <p className="text-xs text-slate-400 dark:text-zinc-500">
-                  {totals.totalAnnualDiv > 0 ? fmtPct((val / totals.totalAnnualDiv) * 100, 1) : '0 %'} der Dividende
-                </p>
+          <div className="mt-3">
+            <div className="w-full h-2.5 rounded-full overflow-hidden flex">
+              <div className="bg-amber-400 transition-all" style={{ width: `${incomePct}%` }} />
+              <div className="bg-blue-500 flex-1" />
+            </div>
+            <div className="flex justify-between mt-3 gap-3">
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-amber-400 shrink-0" />
+                  <span className="text-xs text-slate-500 dark:text-zinc-400">Income / High Yield</span>
+                </div>
+                <div className="text-xl font-bold text-slate-900 dark:text-white">{fmt(incomeDiv)}</div>
+                <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 mt-0.5">{fmtPct(incomePct, 1)} der Dividende</div>
               </div>
-            ))}
+              <div className="text-right">
+                <div className="flex items-center gap-1.5 justify-end mb-1">
+                  <span className="text-xs text-slate-500 dark:text-zinc-400">Growth / Accum.</span>
+                  <span className="w-2.5 h-2.5 rounded-sm bg-blue-500 shrink-0" />
+                </div>
+                <div className="text-xl font-bold text-slate-900 dark:text-white">{fmt(growthDiv)}</div>
+                <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-0.5">{fmtPct(growthPct, 1)} der Dividende</div>
+              </div>
+            </div>
           </div>
         </Card>
 
@@ -178,18 +191,28 @@ export function DividendTab({ positions }: Props) {
               ))}
             </div>
           </Card>
-          <Card title={`Chowder Champions (${divChampions.length})`} sub="Yield + CAGR > 12 = starke Gesamtrendite">
+          <Card title={`Chowder Champions (${divChampions.length})`} sub="Yield + CAGR ≥ 12 = starke Gesamtrendite">
             {divChampions.length > 0 ? (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {divChampions.map(p => (
-                  <div key={p.symbol} className="flex items-center gap-1.5 bg-violet-50/60 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40 rounded-lg px-2.5 py-1.5">
-                    <span className="text-xs font-mono font-bold text-violet-800 dark:text-violet-300">{p.symbol}</span>
-                    <span className="text-[10px] text-violet-500 dark:text-violet-400">{fmtNum(p.chowderScore, 1)}</span>
+              <div className="space-y-2 mt-2">
+                {divChampions.slice(0, 8).map(p => (
+                  <div key={p.symbol} className="flex items-center gap-2.5">
+                    <span className="text-xs font-mono font-bold text-violet-700 dark:text-violet-300 w-12 shrink-0">{p.symbol}</span>
+                    <div className="flex-1 h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-violet-500 rounded-full"
+                        style={{ width: `${Math.min(100, (p.chowderScore / 25) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-mono font-semibold text-violet-700 dark:text-violet-300 w-8 text-right shrink-0">{fmtNum(p.chowderScore, 1)}</span>
+                    <span className="text-[10px] text-slate-400 dark:text-zinc-500 w-24 text-right shrink-0">{fmtPct(p.yield, 1)} + {fmtPct(p.cagr5j, 1)}</span>
                   </div>
                 ))}
+                {divChampions.length > 8 && (
+                  <p className="text-xs text-slate-400 dark:text-zinc-500 text-center pt-1">+{divChampions.length - 8} weitere</p>
+                )}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2">Keine Positionen mit Chowder &ge; 12</p>
+              <p className="text-xs text-slate-400 dark:text-zinc-500 mt-2">Keine Positionen mit Chowder ≥ 12</p>
             )}
           </Card>
         </div>
@@ -217,12 +240,25 @@ export function DividendTab({ positions }: Props) {
         </ResponsiveContainer>
       </Card>
 
-      <Card title="Dividendenanalyse – Alle Positionen" pad={false}>
+      <Card
+        title="Dividendenanalyse – Alle Positionen"
+        pad={false}
+        headerRight={
+          <input
+            className="text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/40 placeholder-zinc-600 text-zinc-200 w-36"
+            placeholder="Suchen …"
+            value={divSearch}
+            onChange={(e) => setDivSearch(e.target.value)}
+          />
+        }
+      >
         <div className="px-5 pb-5">
           <SortableTable
             data={byDiv}
             rowKey={(r) => r.symbol}
             filterKeys={['symbol', 'name', 'kategorie']}
+            filter={divSearch}
+            onFilterChange={setDivSearch}
             columns={[
               { key: 'symbol', label: 'Symbol', width: '80px',
                 render: (v) => <span className="font-mono font-semibold text-xs text-slate-800 dark:text-zinc-200">{String(v)}</span> },

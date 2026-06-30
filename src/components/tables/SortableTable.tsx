@@ -16,26 +16,32 @@ interface Props<T> {
   pageSize?: number;
   filterKeys?: (keyof T)[];
   rowKey: (row: T) => string;
+  /** Controlled filter value. When provided with onFilterChange, the internal search input is hidden. */
+  filter?: string;
+  onFilterChange?: (value: string) => void;
 }
 
 function get<T>(obj: T, key: string): unknown {
   return (obj as Record<string, unknown>)[key];
 }
 
-export function SortableTable<T>({ data, columns, pageSize = 25, filterKeys, rowKey }: Props<T>) {
+export function SortableTable<T>({ data, columns, pageSize = 25, filterKeys, rowKey, filter: controlledFilter, onFilterChange }: Props<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [filter, setFilter] = useState('');
+  const [internalFilter, setInternalFilter] = useState('');
   const [page, setPage] = useState(0);
 
+  const isControlled = onFilterChange != null;
+  const activeFilter = isControlled ? (controlledFilter ?? '') : internalFilter;
+
   const filtered = useMemo(() => {
-    if (!filter.trim()) return data;
-    const q = filter.toLowerCase();
+    if (!activeFilter.trim()) return data;
+    const q = activeFilter.toLowerCase();
     return data.filter((row) => {
       const keys = filterKeys ?? (Object.keys(row as object) as (keyof T)[]);
       return keys.some((k) => String(get(row, k as string) ?? '').toLowerCase().includes(q));
     });
-  }, [data, filter, filterKeys]);
+  }, [data, activeFilter, filterKeys]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered;
@@ -59,12 +65,12 @@ export function SortableTable<T>({ data, columns, pageSize = 25, filterKeys, row
 
   return (
     <div className="flex flex-col gap-3">
-      {filterKeys && (
+      {filterKeys && !isControlled && (
         <input
           className="w-full max-w-xs text-sm bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 placeholder-slate-300 dark:placeholder-zinc-600 text-slate-800 dark:text-zinc-200"
           placeholder="Suchen …"
-          value={filter}
-          onChange={(e) => { setFilter(e.target.value); setPage(0); }}
+          value={internalFilter}
+          onChange={(e) => { setInternalFilter(e.target.value); setPage(0); }}
         />
       )}
       <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">

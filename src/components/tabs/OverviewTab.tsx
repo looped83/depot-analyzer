@@ -1,14 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
-import { Card, StatusBadge, PrioBadge } from '../Card';
+import { Card, StatusBadge, PrioBadge, InfoTip } from '../Card';
 import { computeTotals, computeMonthlyCalendar } from '../../lib/calculations';
-import { computeHealthScore, generateRecommendations, computeFreibetrag } from '../../lib/insights';
+import { computeHealthScore, computeFreibetrag } from '../../lib/insights';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { PALETTE, BAR_CURSOR } from '../../lib/chartTheme';
-import { AlertTriangle, Zap } from 'lucide-react';
 interface Props { positions: DepotPosition[] }
 
 function aggregateBy(positions: DepotPosition[], key: keyof DepotPosition) {
@@ -26,9 +25,9 @@ const Tip = ({ active, payload }: { active?: boolean; payload?: { name: string; 
   ) : null;
 
 export function OverviewTab({ positions }: Props) {
+  const [allSearch, setAllSearch] = useState('');
   const totals = computeTotals(positions);
   const health = computeHealthScore(positions);
-  const recommendations = generateRecommendations(positions);
   const freibetrag = computeFreibetrag(positions);
   const calendar = computeMonthlyCalendar(positions);
   const byWert = [...positions].sort((a, b) => b.wert - a.wert);
@@ -47,10 +46,8 @@ export function OverviewTab({ positions }: Props) {
   const netDiv = freibetrag.annualDiv - freibetrag.taxAmount;
   const monthsWithIncome = calendar.filter(m => m.expectedIncome > 0).length;
 
-  const topActions = recommendations.filter(r => r.priority === 'high').slice(0, 3);
   const healthColor = health.overall >= 70 ? 'text-emerald-600 dark:text-emerald-400'
     : health.overall >= 50 ? 'text-amber-500' : 'text-red-500';
-  const healthBg = health.overall >= 70 ? 'from-emerald-500' : health.overall >= 50 ? 'from-amber-500' : 'from-red-500';
 
   return (
     <div className="space-y-5">
@@ -114,45 +111,23 @@ export function OverviewTab({ positions }: Props) {
         </div>
       </div>
 
-      {/* Urgent Actions */}
-      {topActions.length > 0 && (
-        <div className="rounded-2xl border border-amber-100 dark:border-amber-900/40 bg-amber-50/50 dark:bg-amber-950/20 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Zap size={14} className="text-amber-600 dark:text-amber-400" />
-            <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">Nächste Schritte ({recommendations.filter(r => r.priority === 'high').length} wichtig)</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            {topActions.map(action => (
-              <div key={action.id} className="flex items-start gap-2 bg-white/60 dark:bg-zinc-800/60 rounded-xl p-3">
-                <AlertTriangle size={13} className="text-amber-500 mt-0.5 shrink-0" />
-                <div>
-                  <div className="text-xs font-semibold text-slate-700 dark:text-zinc-300">{action.title}</div>
-                  <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">{action.impact}</div>
-                  {action.symbols && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {action.symbols.slice(0, 4).map(s => (
-                        <span key={s} className="text-[10px] font-mono bg-amber-100/80 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded">{s}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Status Overview + Concentration */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className={top5W > 50 ? 'border-amber-200 dark:border-amber-800/50' : ''}>
-          <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Top 5 Konzentration</div>
+          <div className="flex items-center gap-1.5 mb-2">
+            <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Top 5 Konzentration</div>
+            <InfoTip text="Anteil der 5 größten Positionen am Gesamtdepot. Werte über 50 % deuten auf erhöhtes Klumpenrisiko hin – ein Ausfall trifft das Depot stärker." />
+          </div>
           <div className="text-3xl font-semibold text-slate-900 dark:text-white">{fmtPct(top5W, 1)}</div>
           <div className={`mt-1 text-xs ${top5W > 50 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-zinc-500'}`}>
             {top5W > 50 ? 'Erhöhtes Klumpenrisiko' : 'Im normalen Bereich'}
           </div>
         </Card>
         <Card>
-          <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Top 10 Gewichtung</div>
+          <div className="flex items-center gap-1.5 mb-2">
+            <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Top 10 Gewichtung</div>
+            <InfoTip text="Anteil der 10 größten Positionen am Gesamtdepot. Zeigt, wie stark das Depot auf wenige Werte konzentriert ist." />
+          </div>
           <div className="text-3xl font-semibold text-slate-900 dark:text-white">{fmtPct(top10W, 1)}</div>
           <div className="mt-1 text-xs text-slate-400 dark:text-zinc-500">von {fmtNum(positions.length)} Positionen</div>
         </Card>
@@ -228,10 +203,23 @@ export function OverviewTab({ positions }: Props) {
         </div>
       </Card>
 
-      <Card title="Alle Positionen" pad={false}>
+      <Card
+        title="Alle Positionen"
+        pad={false}
+        headerRight={
+          <input
+            className="text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/40 placeholder-zinc-600 text-zinc-200 w-36"
+            placeholder="Suchen …"
+            value={allSearch}
+            onChange={(e) => setAllSearch(e.target.value)}
+          />
+        }
+      >
         <div className="px-5 pb-5">
           <SortableTable data={byWert} rowKey={(r) => r.symbol}
             filterKeys={['symbol','name','broker','kategorie','status']}
+            filter={allSearch}
+            onFilterChange={setAllSearch}
             columns={[
               { key: 'symbol', label: 'Symbol', width: '80px', render: (v) => <span className="font-mono font-semibold text-xs text-slate-800 dark:text-zinc-200">{String(v)}</span> },
               { key: 'name', label: 'Name' },
