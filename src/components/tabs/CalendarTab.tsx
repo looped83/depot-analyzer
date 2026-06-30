@@ -21,7 +21,10 @@ export function CalendarTab({ positions }: Props) {
   const calendar = computeMonthlyCalendar(positions);
   const avgIncome = calendar.reduce((s, m) => s + m.expectedIncome, 0) / 12;
   const maxMonth = calendar.reduce((m, c) => c.expectedIncome > m.expectedIncome ? c : m);
-  const minMonth = calendar.filter((m) => m.expectedIncome > 0).reduce((m, c) => c.expectedIncome < m.expectedIncome ? c : m);
+  const activeMonths = calendar.filter((m) => m.expectedIncome > 0);
+  const minMonth = activeMonths.length > 0
+    ? activeMonths.reduce((m, c) => c.expectedIncome < m.expectedIncome ? c : m)
+    : undefined;
   const totalAnnual = calendar.reduce((s, m) => s + m.expectedIncome, 0);
 
   const colorByIncome = (income: number) => {

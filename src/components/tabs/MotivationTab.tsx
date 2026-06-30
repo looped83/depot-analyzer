@@ -32,15 +32,15 @@ export function MotivationTab({ positions }: Props) {
   const metrics = useMemo(() => computeMotivationMetrics(positions), [positions]);
   const achievements = useMemo(() => computeAchievements(positions), [positions]);
   const snowball = useMemo(() => computeSnowballEffect(positions, 20), [positions]);
-  const totals = computeTotals(positions);
+  const totals = useMemo(() => computeTotals(positions), [positions]);
 
   const reached = achievements.filter(a => a.reached);
   const nextUp = achievements.filter(a => !a.reached).sort((a, b) => b.progress - a.progress);
 
-  const proj5 = computeProjection(positions, {
+  const proj5 = useMemo(() => computeProjection(positions, {
     dividendGrowthRate: 5, monthlySavings: totals.totalSparbetrag,
     reinvest: true, capitalGrowthRate: 6,
-  }, 5);
+  }, 5), [positions, totals.totalSparbetrag]);
   const future5Div = proj5[5]?.annualDividend ?? 0;
   const future5Monthly = future5Div / 12;
 

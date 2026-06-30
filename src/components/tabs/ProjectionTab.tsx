@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   AreaChart, Area,
@@ -29,21 +29,38 @@ export function ProjectionTab({ positions }: Props) {
     capitalGrowthRate: 6,
   });
 
-  const data5 = computeProjection(positions, params, 5);
-  const data1 = computeProjection(positions, params, 1);
-  const data3 = computeProjection(positions, params, 3);
+  const data5 = useMemo(() => computeProjection(positions, params, 5), [positions, params]);
+  const proj30 = useMemo(() => computeProjection(positions, params, 30), [positions, params]);
 
-  const scenarios = SCENARIOS.map((s) => {
+  const scenarios = useMemo(() => SCENARIOS.map((s) => {
     const d = computeProjection(positions, { ...params, ...s }, 5);
     return { ...s, result: d[5] };
-  });
+  }), [positions, params]);
+
+  // data1 and data3 reuse data5 — a 5-year projection already contains years 0–5
+  const afterYear1 = data5[1];
+  const afterYear3 = data5[3];
+  const afterYear5 = data5[5];
+
+  const whatIfResults = useMemo(() => [
+    { label: '+100 € Sparrate/Monat', params: { ...params, monthlySavings: params.monthlySavings + 100 } },
+    { label: '+200 € Sparrate/Monat', params: { ...params, monthlySavings: params.monthlySavings + 200 } },
+    { label: '+2 % Dividendenwachstum', params: { ...params, dividendGrowthRate: params.dividendGrowthRate + 2 } },
+  ].map(s => {
+    const result = computeProjection(positions, s.params, 5);
+    return { label: s.label, result5: result[5] };
+  }), [positions, params]);
+
+  const freedomCountdown = useMemo(() => {
+    const targets = [500, 1000, 1500, 2000, 2500, 3000];
+    return targets.map(target => {
+      const hit = proj30.find(d => d.annualDividend / 12 >= target);
+      return { target, hitYear: hit?.year ?? null };
+    });
+  }, [proj30]);
 
   const upd = (key: keyof ProjectionParams, val: number | boolean) =>
     setParams((p) => ({ ...p, [key]: val }));
-
-  const afterYear1 = data1[1];
-  const afterYear3 = data3[3];
-  const afterYear5 = data5[5];
 
   return (
     <div className="space-y-5">
@@ -204,18 +221,12 @@ export function ProjectionTab({ positions }: Props) {
       {/* Was wäre wenn */}
       <Card title="Was wäre wenn?" sub="Vergleich: Wie verändert sich das Ergebnis nach 5 Jahren?">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
-          {[
-            { label: '+100 € Sparrate/Monat', params: { ...params, monthlySavings: params.monthlySavings + 100 } },
-            { label: '+200 € Sparrate/Monat', params: { ...params, monthlySavings: params.monthlySavings + 200 } },
-            { label: '+2 % Dividendenwachstum', params: { ...params, dividendGrowthRate: params.dividendGrowthRate + 2 } },
-          ].map(scenario => {
-            const result = computeProjection(positions, scenario.params, 5);
-            const r5 = result[5];
+          {whatIfResults.map(({ label, result5: r5 }) => {
             const diffValue = (r5?.portfolioValue ?? 0) - (afterYear5?.portfolioValue ?? 0);
             const diffDiv = (r5?.annualDividend ?? 0) - (afterYear5?.annualDividend ?? 0);
             return (
-              <div key={scenario.label} className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4">
-                <div className="text-xs font-bold text-blue-700 dark:text-blue-400 mb-2">{scenario.label}</div>
+              <div key={label} className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4">
+                <div className="text-xs font-bold text-blue-700 dark:text-blue-400 mb-2">{label}</div>
                 <div className="space-y-1.5">
                   <div>
                     <div className="text-xs text-slate-400 dark:text-zinc-500">Depotwert (5J)</div>
@@ -235,41 +246,30 @@ export function ProjectionTab({ positions }: Props) {
       </Card>
 
       {/* Freiheits-Countdown */}
-      {(() => {
-        const proj30 = computeProjection(positions, params, 30);
-        const targets = [500, 1000, 1500, 2000, 2500, 3000];
-        const countdowns = targets.map(target => {
-          const hit = proj30.find(d => d.annualDividend / 12 >= target);
-          return { target, hitYear: hit?.year ?? null };
-        });
-        return (
-          <Card title="Freiheits-Countdown" sub="Wann erreichst du welche monatliche Dividende?">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-2">
-              {countdowns.map(c => {
-                const currentMonthlyDiv = totals.totalMonthlyDiv;
-                const reached = currentMonthlyDiv >= c.target;
-                return (
-                  <div key={c.target} className={`rounded-xl border p-3 text-center ${
-                    reached ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/20'
-                      : 'border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900'
-                  }`}>
-                    <div className="text-sm font-bold text-slate-800 dark:text-zinc-200">{fmt(c.target)}</div>
-                    <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">/Monat</div>
-                    <div className="text-xs mt-1.5">
-                      {reached
-                        ? <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Erreicht</span>
-                        : c.hitYear
-                          ? <span className="text-blue-600 dark:text-blue-400 font-semibold">ca. {c.hitYear}</span>
-                          : <span className="text-slate-300 dark:text-zinc-600">&gt;30 Jahre</span>
-                      }
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        );
-      })()}
+      <Card title="Freiheits-Countdown" sub="Wann erreichst du welche monatliche Dividende?">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mt-2">
+          {freedomCountdown.map(c => {
+            const reached = totals.totalMonthlyDiv >= c.target;
+            return (
+              <div key={c.target} className={`rounded-xl border p-3 text-center ${
+                reached ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/20'
+                  : 'border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900'
+              }`}>
+                <div className="text-sm font-bold text-slate-800 dark:text-zinc-200">{fmt(c.target)}</div>
+                <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">/Monat</div>
+                <div className="text-xs mt-1.5">
+                  {reached
+                    ? <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Erreicht</span>
+                    : c.hitYear
+                      ? <span className="text-blue-600 dark:text-blue-400 font-semibold">ca. {c.hitYear}</span>
+                      : <span className="text-slate-300 dark:text-zinc-600">&gt;30 Jahre</span>
+                  }
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
 
       <p className="text-xs text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 rounded-xl px-4 py-3 leading-relaxed">
         Alle Projektionen sind Modellrechnungen auf Basis der eingegebenen Annahmen und der aktuellen Depotzusammensetzung. Sie stellen keine Garantie für zukünftige Erträge dar. Steuern und Kosten sind nicht berücksichtigt. Inflationsannahme: 2,5 %/Jahr.
