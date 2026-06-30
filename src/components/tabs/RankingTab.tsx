@@ -1,7 +1,7 @@
 import React from 'react';
 import type { DepotPosition } from '../../lib/types';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
-import { Trophy, TrendingUp, DollarSign, Star, AlertTriangle } from 'lucide-react';
+import { Trophy, TrendingUp, DollarSign, Star, AlertTriangle, Search } from 'lucide-react';
 
 interface Props { positions: DepotPosition[] }
 
