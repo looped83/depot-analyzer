@@ -70,6 +70,10 @@ export function parseExcel(file: File): Promise<DepotPosition[]> {
 
         const iZyklus = col('zyklus');
         const iSymbol = col('symbol');
+        if (iSymbol === -1) {
+          reject(new Error('Spalte "Symbol" wurde in der Excel-Datei nicht gefunden.'));
+          return;
+        }
         const iName = col('name');
         const iStatus = col('status');
         const iPrio = col('prio');
