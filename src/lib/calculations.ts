@@ -26,13 +26,6 @@ export function parsePaymentMonths(monate: string): number[] {
   return [...new Set(found)].sort((a, b) => a - b);
 }
 
-function normalize(values: number[]): number[] {
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  if (max === min) return values.map(() => 0.5);
-  return values.map((v) => (v - min) / (max - min));
-}
-
 /**
  * Dividend Score = 40% norm. Yield + 40% norm. CAGR + 10% FreqScore (norm) + 10% Priorität/Status
  */
@@ -178,4 +171,3 @@ export function computeProjection(
   return results;
 }
 
-export { normalize, MONTH_NAMES };

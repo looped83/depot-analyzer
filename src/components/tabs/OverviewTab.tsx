@@ -7,10 +7,8 @@ import { computeTotals, computeMonthlyCalendar } from '../../lib/calculations';
 import { computeHealthScore, generateRecommendations, computeFreibetrag } from '../../lib/insights';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
-import { BAR_CURSOR } from '../../lib/chartTheme';
+import { PALETTE, BAR_CURSOR } from '../../lib/chartTheme';
 import { AlertTriangle, Zap } from 'lucide-react';
-
-const PALETTE = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f97316','#ec4899','#84cc16','#ef4444','#6366f1'];
 interface Props { positions: DepotPosition[] }
 
 function aggregateBy(positions: DepotPosition[], key: keyof DepotPosition) {

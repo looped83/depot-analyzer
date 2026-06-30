@@ -410,11 +410,11 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
     },
     {
       id: 'freibetrag', label: 'Freibetrag',
-      description: '1.000 € Sparerpauschbetrag ausgeschöpft',
+      description: '2.000 € Sparerpauschbetrag ausgeschöpft (verheiratet)',
       icon: '🏛️',
-      reached: totals.totalAnnualDiv >= 1000,
-      progress: Math.min(100, (totals.totalAnnualDiv / 1000) * 100),
-      current: `${totals.totalAnnualDiv.toFixed(0)} €`, target: '1.000 €/Jahr',
+      reached: totals.totalAnnualDiv >= 2000,
+      progress: Math.min(100, (totals.totalAnnualDiv / 2000) * 100),
+      current: `${totals.totalAnnualDiv.toFixed(0)} €`, target: '2.000 €/Jahr',
     },
     {
       id: 'prio-a-five', label: '5 Prio-A',
