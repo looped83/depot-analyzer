@@ -51,6 +51,15 @@ interface Props {
   onReset: () => void;
 }
 
+const Btn = ({ onClick, children }: { onClick: () => void; children: React.ReactNode }) => (
+  <button
+    onClick={onClick}
+    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+  >
+    {children}
+  </button>
+);
+
 export function Dashboard({ positions, filename, onReset }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const totals = useMemo(() => computeTotals(positions), [positions]);
@@ -71,15 +80,6 @@ export function Dashboard({ positions, filename, onReset }: Props) {
     Object.assign(document.createElement('a'), { href: url, download: `depot-analyse-${new Date().toISOString().slice(0, 10)}.csv` }).click();
     URL.revokeObjectURL(url);
   };
-
-  const Btn = ({ onClick, children }: { onClick: () => void; children: React.ReactNode }) => (
-    <button
-      onClick={onClick}
-      className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-    >
-      {children}
-    </button>
-  );
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">

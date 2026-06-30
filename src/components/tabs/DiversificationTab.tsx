@@ -52,6 +52,42 @@ function calcHHI(positions: DepotPosition[]) {
   return positions.reduce((s, p) => s + p.portfolioWeight ** 2, 0);
 }
 
+const KATEGORIE_COLORS: Record<string, string> = {
+  'Income':      PALETTE[1],
+  'Growth':      PALETTE[0],
+  'High Yield':  PALETTE[2],
+  'Accumulation': PALETTE[4],
+};
+
+function TreemapContent(props: {
+  x?: number; y?: number; width?: number; height?: number;
+  name?: string; kategorie?: string; portfolioWeight?: number;
+}) {
+  const { x = 0, y = 0, width = 0, height = 0, name, kategorie, portfolioWeight } = props;
+  if (width < 30 || height < 18) return null;
+  const fill = KATEGORIE_COLORS[kategorie ?? ''] ?? PALETTE[6];
+  return (
+    <g>
+      <rect x={x} y={y} width={width} height={height} rx={4}
+        fill={fill} fillOpacity={0.82} stroke="white" strokeWidth={1.5} />
+      {width > 44 && height > 22 && (
+        <text x={x + width / 2} y={y + height / 2} textAnchor="middle"
+          dominantBaseline="middle" fontSize={Math.min(11, width / 5)}
+          fill="white" fontWeight={600} style={{ pointerEvents: 'none' }}>
+          {name}
+        </text>
+      )}
+      {width > 50 && height > 36 && (
+        <text x={x + width / 2} y={y + height / 2 + 13} textAnchor="middle"
+          dominantBaseline="middle" fontSize={9} fill="white" fillOpacity={0.8}
+          style={{ pointerEvents: 'none' }}>
+          {fmtNum(portfolioWeight ?? 0, 1)}%
+        </text>
+      )}
+    </g>
+  );
+}
+
 export function DiversificationTab({ positions }: Props) {
   const active = positions.filter((p) => p.wert > 0);
   const totalWert = active.reduce((s, p) => s + p.wert, 0);
@@ -65,7 +101,6 @@ export function DiversificationTab({ positions }: Props) {
 
   const sorted = [...active].sort((a, b) => b.portfolioWeight - a.portfolioWeight);
   const top5Weight  = sorted.slice(0, 5).reduce((s, p) => s + p.portfolioWeight, 0);
-  const top10Weight = sorted.slice(0, 10).reduce((s, p) => s + p.portfolioWeight, 0);
   const hhi = calcHHI(active);
   const hhiLabel = hhi < 1000 ? 'Gut diversifiziert' : hhi < 2500 ? 'Mäßig konzentriert' : 'Hoch konzentriert';
 
@@ -76,48 +111,9 @@ export function DiversificationTab({ positions }: Props) {
     portfolioWeight: p.portfolioWeight,
   }));
 
-  const kategorieColors: Record<string, string> = {
-    'Income':      PALETTE[1],
-    'Growth':      PALETTE[0],
-    'High Yield':  PALETTE[2],
-    'Accumulation': PALETTE[4],
-  };
-
-  const TreemapContent = (props: {
-    x?: number; y?: number; width?: number; height?: number;
-    name?: string; kategorie?: string; portfolioWeight?: number;
-  }) => {
-    const { x = 0, y = 0, width = 0, height = 0, name, kategorie, portfolioWeight } = props;
-    if (width < 30 || height < 18) return null;
-    const fill = kategorieColors[kategorie ?? ''] ?? PALETTE[6];
-    return (
-      <g>
-        <rect x={x} y={y} width={width} height={height} rx={4}
-          fill={fill} fillOpacity={0.82} stroke="white" strokeWidth={1.5} />
-        {width > 44 && height > 22 && (
-          <text x={x + width / 2} y={y + height / 2} textAnchor="middle"
-            dominantBaseline="middle" fontSize={Math.min(11, width / 5)}
-            fill="white" fontWeight={600} style={{ pointerEvents: 'none' }}>
-            {name}
-          </text>
-        )}
-        {width > 50 && height > 36 && (
-          <text x={x + width / 2} y={y + height / 2 + 13} textAnchor="middle"
-            dominantBaseline="middle" fontSize={9} fill="white" fillOpacity={0.8}
-            style={{ pointerEvents: 'none' }}>
-            {fmtNum(portfolioWeight ?? 0, 1)}%
-          </text>
-        )}
-      </g>
-    );
-  };
-
   const clumps = sorted.filter((p) => p.portfolioWeight > 5);
 
   const divGrade = hhi < 500 ? 'A+' : hhi < 800 ? 'A' : hhi < 1200 ? 'B+' : hhi < 1800 ? 'B' : hhi < 2500 ? 'C' : 'D';
-  const divGradeColor = divGrade.startsWith('A') ? 'text-emerald-600 dark:text-emerald-400'
-    : divGrade.startsWith('B') ? 'text-blue-600 dark:text-blue-400'
-    : divGrade.startsWith('C') ? 'text-amber-500' : 'text-red-500';
 
   const { top: top3DivContrib, pct: top3DivPct } = topDividendContributors(active, 3);
 
@@ -171,7 +167,7 @@ export function DiversificationTab({ positions }: Props) {
           </ResponsiveContainer>
         </div>
         <div className="flex flex-wrap gap-3 mt-3">
-          {Object.entries(kategorieColors).map(([k, c]) => (
+          {Object.entries(KATEGORIE_COLORS).map(([k, c]) => (
             <div key={k} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400">
               <span className="w-2.5 h-2.5 rounded-sm" style={{ background: c }} />
               {k}

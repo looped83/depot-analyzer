@@ -47,7 +47,6 @@ export function computeHealthScore(positions: DepotPosition[]): {
   dimensions: HealthDimension[];
 } {
   const active = positions.filter(p => p.wert > 0);
-  const totals = computeTotals(positions);
   const calendar = computeMonthlyCalendar(positions);
   const totalWert = active.reduce((s, p) => s + p.wert, 0);
   const total = positions.length || 1;
