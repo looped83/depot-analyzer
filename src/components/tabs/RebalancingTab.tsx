@@ -34,7 +34,7 @@ export function RebalancingTab({ positions }: Props) {
   const totalSpar = positions.reduce((s, p) => s + p.sparbetrag, 0);
 
   const [strategy, setStrategy] = useState<Strategy>('prio');
-  const [budget, setBudget]     = useState(Math.max(totalSpar, 200));
+  const [budget, setBudget]     = useState(3000);
 
   const targets = calcTargets(active, strategy);
 

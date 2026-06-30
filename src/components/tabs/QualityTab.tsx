@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, InfoTip } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmtPct, fmtNum } from '../../lib/format';
@@ -136,7 +136,10 @@ export function QualityTab({ positions }: Props) {
       {/* Grade + KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div className={`rounded-2xl border bg-gradient-to-br ${gradeBg} p-5 text-center flex flex-col items-center justify-center`}>
-          <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">Portfolio-Note</div>
+          <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1 flex items-center gap-1 justify-center">
+            Portfolio-Note
+            <InfoTip text="Gesamtnote A+ bis D auf Basis von Datenvollständigkeit, Prioritäten-Abdeckung, Rating-Abdeckung und gewichtetem Dividend Score. A+ ≥ 85, A ≥ 75, B+ ≥ 65, B ≥ 55, C+ ≥ 45, C ≥ 35, D darunter." />
+          </div>
           <div className={`text-4xl font-black ${gradeColor}`}>{grade}</div>
         </div>
         <KPICard title="Gesamtqualität"       value={`${fmtNum(overallQuality)} / 100`} sub="Ø aller Dimensionen" info="Durchschnitt aus Datenvollständigkeit, Prioritäten-Abdeckung, Rating-Abdeckung und gewichtetem Dividend Score." />

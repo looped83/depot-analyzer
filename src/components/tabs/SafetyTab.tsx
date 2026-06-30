@@ -99,9 +99,9 @@ export function SafetyTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Sichere Positionen"   value={String(greens.length)}           sub={`von ${active.length} aktiven`} />
-        <KPICard title="Zu beobachten"        value={String(yellows.length)}          sub="Yield hoch od. CAGR niedrig" />
-        <KPICard title="Risiko-Positionen"    value={String(reds.length)}             sub="Sofortiger Handlungsbedarf" />
+        <KPICard title="Sichere Positionen"   value={String(greens.length)}           sub={`von ${active.length} aktiven`} info="Positionen mit Yield ≤ 6,5 % und CAGR ≥ 2 %. Diese gelten als stabile Dividendenzahler ohne unmittelbaren Handlungsbedarf." />
+        <KPICard title="Zu beobachten"        value={String(yellows.length)}          sub="Yield hoch od. CAGR niedrig" info="Positionen mit Yield > 6,5 % oder CAGR < 2 % oder Status 'Beobachten'. Regelmäßig auf Dividendenkürzungen prüfen." />
+        <KPICard title="Risiko-Positionen"    value={String(reds.length)}             sub="Sofortiger Handlungsbedarf" info="Positionen mit Yield > 9 %, negativem CAGR oder Status 'Verkauf'. Sofort prüfen und ggf. reduzieren oder verkaufen." />
         <KPICard title="Ø Safety Score"       value={fmtNum(avgSafety)}               sub="0 = kritisch · 100 = sicher" info="Gewichteter Score aus CAGR, Yield, Prio und Status. Höhere Werte bedeuten geringeres Risiko." />
       </div>
 

@@ -156,7 +156,7 @@ export function RankingTab({ positions }: Props) {
     },
     {
       id: 'watchlist',
-      title: 'Watchlist / Review Needed',
+      title: 'Review Needed',
       description: 'Beobachten + Verkauf + niedrige Scores',
       icon: <AlertTriangle size={16} className="text-red-600" />,
       color: 'border-red-100 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20',

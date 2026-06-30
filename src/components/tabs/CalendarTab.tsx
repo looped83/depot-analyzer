@@ -11,6 +11,12 @@ import { AXIS, GRID } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
 
+const FULL_MONTH: Record<string, string> = {
+  Jan: 'Januar', Feb: 'Februar', Mär: 'März', Apr: 'April',
+  Mai: 'Mai', Jun: 'Juni', Jul: 'Juli', Aug: 'August',
+  Sep: 'September', Okt: 'Oktober', Nov: 'November', Dez: 'Dezember',
+};
+
 export function CalendarTab({ positions }: Props) {
   const calendar = computeMonthlyCalendar(positions);
   const avgIncome = calendar.reduce((s, m) => s + m.expectedIncome, 0) / 12;
@@ -35,7 +41,7 @@ export function CalendarTab({ positions }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Jährl. Gesamtdividende" value={fmt(totalAnnual)}           sub="Aus Cashflow-Analyse" />
         <KPICard title="Bester Monat"            value={maxMonth.label}            sub={fmt(maxMonth.expectedIncome)} />
-        <KPICard title="Schwächster Monat"       value={minMonth?.label ?? '—'}    sub={minMonth ? fmt(minMonth.expectedIncome) : '—'} />
+        <KPICard title="Schwächster Monat"       value={minMonth ? (FULL_MONTH[minMonth.label] ?? minMonth.label) : '—'} sub={minMonth ? fmt(minMonth.expectedIncome) : '—'} />
         <KPICard title="Ø Monatlicher Cashflow"  value={fmt(avgIncome)}            sub="Dividende / 12" />
       </div>
 
