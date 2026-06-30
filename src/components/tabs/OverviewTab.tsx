@@ -18,10 +18,10 @@ function aggregateBy(positions: DepotPosition[], key: keyof DepotPosition) {
   return [...map.entries()].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 }
 
-const Tip = ({ active, payload }: { active?: boolean; payload?: { name: string; value: number }[] }) =>
+const Tip = ({ active, payload }: { active?: boolean; payload?: { name: string; value: number; payload?: { name?: string } }[] }) =>
   active && payload?.length ? (
     <div className="bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs shadow-lg">
-      <p className="font-medium text-slate-700 dark:text-zinc-300">{payload[0].name}</p>
+      <p className="font-medium text-slate-700 dark:text-zinc-300">{payload[0].payload?.name ?? payload[0].name}</p>
       <p className="text-slate-400">{fmt(payload[0].value)}</p>
     </div>
   ) : null;

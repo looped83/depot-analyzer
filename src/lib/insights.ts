@@ -34,7 +34,7 @@ export interface MotivationMetrics {
   netflixAbos: number;
   spotifyAbos: number;
   handyVertraege: number;
-  tankFuellungen: number;
+  autoLaden: number;
   urlaubsTage: number;
   lebensmittelTage: number;
   workHoursPerMonth: number;
@@ -291,7 +291,7 @@ export function computeMotivationMetrics(positions: DepotPosition[]): Motivation
   const NETFLIX = 13.99;
   const SPOTIFY = 11.99;
   const HANDY = 30;
-  const TANK = 80;
+  const AUTO_LADEN = 25;
   const URLAUB = 100;
   const LEBENSMITTEL = 15;
   const MIN_WAGE = 12.82;
@@ -301,7 +301,7 @@ export function computeMotivationMetrics(positions: DepotPosition[]): Motivation
     netflixAbos: monthlyDiv / NETFLIX,
     spotifyAbos: monthlyDiv / SPOTIFY,
     handyVertraege: monthlyDiv / HANDY,
-    tankFuellungen: monthlyDiv / TANK,
+    autoLaden: monthlyDiv / AUTO_LADEN,
     urlaubsTage: annualDiv / URLAUB,
     lebensmittelTage: annualDiv / LEBENSMITTEL,
     workHoursPerMonth: monthlyDiv / MIN_WAGE,
@@ -491,7 +491,7 @@ export function computeFreibetrag(positions: DepotPosition[]): {
   taxAmount: number;
 } {
   const totals = computeTotals(positions);
-  const freibetrag = 1000;
+  const freibetrag = 2000;
   const used = Math.min(totals.totalAnnualDiv, freibetrag);
   const taxable = Math.max(0, totals.totalAnnualDiv - freibetrag);
   const taxAmount = taxable * 0.26375;

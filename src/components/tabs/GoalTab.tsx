@@ -32,7 +32,7 @@ export function GoalTab({ positions }: Props) {
   const [goalMonthly, setGoalMonthly]   = useState(2000);
   const [divGrowth, setDivGrowth]       = useState(5);
   const [capGrowth, setCapGrowth]       = useState(6);
-  const [savings, setSavings]           = useState(totals.totalSparbetrag);
+  const [savings, setSavings]           = useState(4200);
   const [reinvest, setReinvest]         = useState(true);
 
   const params = { dividendGrowthRate: divGrowth, monthlySavings: savings, reinvest, capitalGrowthRate: capGrowth };

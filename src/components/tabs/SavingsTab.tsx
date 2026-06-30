@@ -64,13 +64,16 @@ export function SavingsTab({ positions }: Props) {
     (overweight.length === 0 ? 10 : 0)
   ));
 
+  const EXTRA_MONTHLY = 3000;
+  const totalMonthlyInvest = totalSpar + EXTRA_MONTHLY;
+
   const avgYieldSaved = saved.length > 0 ? saved.reduce((s, p) => s + p.yield, 0) / saved.length : 0;
   const futureYears = [1, 3, 5, 10];
   const growthRate = 0.06;
   const futureProjection = futureYears.map(y => {
     let value = 0;
     for (let m = 0; m < y * 12; m++) {
-      value = (value + totalSpar) * (1 + growthRate / 12);
+      value = (value + totalMonthlyInvest) * (1 + growthRate / 12);
     }
     const addedDiv = value * (avgYieldSaved / 100);
     return { year: y, label: `${y}J`, value, addedDiv };
@@ -78,7 +81,7 @@ export function SavingsTab({ positions }: Props) {
 
   const growthChart = Array.from({ length: 61 }, (_, m) => {
     let v = 0;
-    for (let i = 0; i < m; i++) v = (v + totalSpar) * (1 + growthRate / 12);
+    for (let i = 0; i < m; i++) v = (v + totalMonthlyInvest) * (1 + growthRate / 12);
     return { month: m, value: v, label: m % 12 === 0 ? `${m / 12}J` : '' };
   }).filter((_, i) => i % 3 === 0);
 
@@ -143,7 +146,7 @@ export function SavingsTab({ positions }: Props) {
 
       {/* Future Value Projection */}
       {totalSpar > 0 && (
-        <Card title="Sparplan-Zukunftsprojektion" sub={`Bei ${totalSpar} €/Monat und 6 % durchschn. Wachstum`}>
+        <Card title="Sparplan-Zukunftsprojektion" sub={`Sparrate ${fmtNum(totalSpar)} € + 3.000 € Einmalkäufe = ${fmtNum(totalMonthlyInvest)} €/Monat · 6 % Wachstum p.a.`}>
           <div className="grid grid-cols-4 gap-3 mt-3 mb-3">
             {futureProjection.map(f => (
               <div key={f.year} className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-3 text-center">

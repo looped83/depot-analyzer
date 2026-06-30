@@ -23,7 +23,7 @@ export function ProjectionTab({ positions }: Props) {
 
   const [params, setParams] = useState<ProjectionParams>({
     dividendGrowthRate: 5,
-    monthlySavings: totals.totalSparbetrag,
+    monthlySavings: 4200,
     reinvest: true,
     capitalGrowthRate: 6,
   });

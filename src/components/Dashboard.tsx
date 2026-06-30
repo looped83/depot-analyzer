@@ -10,7 +10,6 @@ import { FindingsTab } from './tabs/FindingsTab';
 import { ProjectionTab } from './tabs/ProjectionTab';
 import { DiversificationTab } from './tabs/DiversificationTab';
 import { SafetyTab } from './tabs/SafetyTab';
-import { WatchlistTab } from './tabs/WatchlistTab';
 import { GoalTab } from './tabs/GoalTab';
 import { RebalancingTab } from './tabs/RebalancingTab';
 import { QualityTab } from './tabs/QualityTab';
@@ -22,7 +21,7 @@ import { fmt, fmtPct, fmtNum } from '../lib/format';
 import {
   LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
   Calendar, Trophy, Lightbulb, LineChart,
-  Download, Moon, Sun, Upload, PieChart, ShieldCheck, Bookmark,
+  Download, Moon, Sun, Upload, PieChart, ShieldCheck,
   Target, Sliders, Star, HeartPulse, Sparkles,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -43,7 +42,6 @@ const TABS: Tab[] = [
   { id: 'projection',      label: 'Ausblick',        icon: <LineChart    size={13} /> },
   { id: 'diversification', label: 'Diversifikation', icon: <PieChart     size={13} /> },
   { id: 'safety',          label: 'Sicherheit',      icon: <ShieldCheck  size={13} /> },
-  { id: 'watchlist',       label: 'Watchlist',       icon: <Bookmark     size={13} /> },
   { id: 'goal',            label: 'Zielplanung',     icon: <Target       size={13} /> },
   { id: 'rebalancing',     label: 'Rebalancing',     icon: <Sliders      size={13} /> },
   { id: 'quality',         label: 'Qualität',        icon: <Star         size={13} /> },
@@ -250,7 +248,6 @@ export function Dashboard({ positions, filename, onReset, darkMode, onToggleDark
         {activeTab === 'projection'      && <ProjectionTab      positions={positions} />}
         {activeTab === 'diversification' && <DiversificationTab positions={positions} />}
         {activeTab === 'safety'          && <SafetyTab          positions={positions} />}
-        {activeTab === 'watchlist'       && <WatchlistTab       positions={positions} />}
         {activeTab === 'goal'            && <GoalTab            positions={positions} />}
         {activeTab === 'rebalancing'     && <RebalancingTab     positions={positions} />}
         {activeTab === 'quality'         && <QualityTab         positions={positions} />}

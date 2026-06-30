@@ -17,7 +17,7 @@ const EQUIV_ITEMS = [
   { key: 'netflixAbos', label: 'Netflix Standard', icon: '🎬', unit: '/Monat', price: '13,99 €' },
   { key: 'spotifyAbos', label: 'Spotify Premium', icon: '🎵', unit: '/Monat', price: '11,99 €' },
   { key: 'handyVertraege', label: 'Handyverträge', icon: '📱', unit: '/Monat', price: '30 €' },
-  { key: 'tankFuellungen', label: 'Tankfüllungen', icon: '⛽', unit: '/Monat', price: '80 €' },
+  { key: 'autoLaden', label: 'Auto laden', icon: '🔋', unit: '/Monat', price: '25 €' },
 ] as const;
 
 const LIFE_ITEMS = [
