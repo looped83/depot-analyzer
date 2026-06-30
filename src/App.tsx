@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { UploadZone } from './components/UploadZone';
-import { Dashboard } from './components/Dashboard';
-import { parseExcel } from './lib/parser';
 import { calculateDerived } from './lib/calculations';
 import type { DepotPosition } from './lib/types';
+
+const Dashboard = lazy(() => import('./components/Dashboard').then((m) => ({ default: m.Dashboard })));
 
 export default function App() {
   const [positions, setPositions] = useState<DepotPosition[] | null>(null);
@@ -19,6 +19,7 @@ export default function App() {
     setLoading(true);
     setError('');
     try {
+      const { parseExcel } = await import('./lib/parser');
       const raw = await parseExcel(file);
       if (raw.length === 0) throw new Error('Keine Positionen in der Datei gefunden.');
       const derived = calculateDerived(raw);
@@ -33,11 +34,13 @@ export default function App() {
 
   if (positions) {
     return (
-      <Dashboard
-        positions={positions}
-        filename={filename}
-        onReset={() => setPositions(null)}
-      />
+      <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
+        <Dashboard
+          positions={positions}
+          filename={filename}
+          onReset={() => setPositions(null)}
+        />
+      </Suspense>
     );
   }
 

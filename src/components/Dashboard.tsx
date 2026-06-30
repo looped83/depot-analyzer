@@ -1,20 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, Suspense, lazy } from 'react';
 import type { DepotPosition, TabId } from '../lib/types';
+// OverviewTab loads eagerly since it's the default tab shown on first render; the rest lazy-load on demand.
 import { OverviewTab } from './tabs/OverviewTab';
-import { DividendTab } from './tabs/DividendTab';
-import { CAGRTab } from './tabs/CAGRTab';
-import { SavingsTab } from './tabs/SavingsTab';
-import { CalendarTab } from './tabs/CalendarTab';
-import { RankingTab } from './tabs/RankingTab';
-import { FindingsTab } from './tabs/FindingsTab';
-import { ProjectionTab } from './tabs/ProjectionTab';
-import { DiversificationTab } from './tabs/DiversificationTab';
-import { SafetyTab } from './tabs/SafetyTab';
-import { GoalTab } from './tabs/GoalTab';
-import { RebalancingTab } from './tabs/RebalancingTab';
-import { QualityTab } from './tabs/QualityTab';
-import { DepotCheckTab } from './tabs/DepotCheckTab';
-import { MotivationTab } from './tabs/MotivationTab';
 import { computeTotals } from '../lib/calculations';
 import { computeHealthScore } from '../lib/insights';
 import { fmt, fmtPct, fmtNum } from '../lib/format';
@@ -24,6 +11,24 @@ import {
   Download, Upload, PieChart, ShieldCheck,
   Target, Sliders, Star, HeartPulse, Sparkles,
 } from 'lucide-react';
+
+const namedLazy = <P extends object>(loader: () => Promise<Record<string, React.ComponentType<P>>>, name: string) =>
+  lazy(() => loader().then((m) => ({ default: m[name] })));
+
+const DividendTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/DividendTab'), 'DividendTab');
+const CAGRTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/CAGRTab'), 'CAGRTab');
+const SavingsTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/SavingsTab'), 'SavingsTab');
+const CalendarTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/CalendarTab'), 'CalendarTab');
+const RankingTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/RankingTab'), 'RankingTab');
+const FindingsTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/FindingsTab'), 'FindingsTab');
+const ProjectionTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/ProjectionTab'), 'ProjectionTab');
+const DiversificationTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/DiversificationTab'), 'DiversificationTab');
+const SafetyTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/SafetyTab'), 'SafetyTab');
+const GoalTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/GoalTab'), 'GoalTab');
+const RebalancingTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/RebalancingTab'), 'RebalancingTab');
+const QualityTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/QualityTab'), 'QualityTab');
+const DepotCheckTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/DepotCheckTab'), 'DepotCheckTab');
+const MotivationTab = namedLazy<{ positions: DepotPosition[] }>(() => import('./tabs/MotivationTab'), 'MotivationTab');
 
 interface Tab { id: TabId; label: string; icon: React.ReactNode }
 
@@ -174,21 +179,23 @@ export function Dashboard({ positions, filename, onReset }: Props) {
 
       {/* Page content */}
       <main className="max-w-screen-xl mx-auto px-6 py-8">
-        {activeTab === 'overview'   && <OverviewTab   positions={positions} />}
-        {activeTab === 'dividends'  && <DividendTab   positions={positions} />}
-        {activeTab === 'cagr'       && <CAGRTab        positions={positions} />}
-        {activeTab === 'savings'    && <SavingsTab     positions={positions} />}
-        {activeTab === 'calendar'   && <CalendarTab    positions={positions} />}
-        {activeTab === 'rankings'   && <RankingTab     positions={positions} />}
-        {activeTab === 'findings'   && <FindingsTab    positions={positions} />}
-        {activeTab === 'depot-check'     && <DepotCheckTab      positions={positions} />}
-        {activeTab === 'motivation'      && <MotivationTab      positions={positions} />}
-        {activeTab === 'projection'      && <ProjectionTab      positions={positions} />}
-        {activeTab === 'diversification' && <DiversificationTab positions={positions} />}
-        {activeTab === 'safety'          && <SafetyTab          positions={positions} />}
-        {activeTab === 'goal'            && <GoalTab            positions={positions} />}
-        {activeTab === 'rebalancing'     && <RebalancingTab     positions={positions} />}
-        {activeTab === 'quality'         && <QualityTab         positions={positions} />}
+        <Suspense fallback={<div className="text-sm text-zinc-500">Lädt …</div>}>
+          {activeTab === 'overview'   && <OverviewTab   positions={positions} />}
+          {activeTab === 'dividends'  && <DividendTab   positions={positions} />}
+          {activeTab === 'cagr'       && <CAGRTab        positions={positions} />}
+          {activeTab === 'savings'    && <SavingsTab     positions={positions} />}
+          {activeTab === 'calendar'   && <CalendarTab    positions={positions} />}
+          {activeTab === 'rankings'   && <RankingTab     positions={positions} />}
+          {activeTab === 'findings'   && <FindingsTab    positions={positions} />}
+          {activeTab === 'depot-check'     && <DepotCheckTab      positions={positions} />}
+          {activeTab === 'motivation'      && <MotivationTab      positions={positions} />}
+          {activeTab === 'projection'      && <ProjectionTab      positions={positions} />}
+          {activeTab === 'diversification' && <DiversificationTab positions={positions} />}
+          {activeTab === 'safety'          && <SafetyTab          positions={positions} />}
+          {activeTab === 'goal'            && <GoalTab            positions={positions} />}
+          {activeTab === 'rebalancing'     && <RebalancingTab     positions={positions} />}
+          {activeTab === 'quality'         && <QualityTab         positions={positions} />}
+        </Suspense>
       </main>
 
       <footer className="max-w-screen-xl mx-auto px-6 py-6 text-xs text-zinc-600 text-center">
