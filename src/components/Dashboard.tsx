@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { DepotPosition, TabId } from '../lib/types';
 import { OverviewTab } from './tabs/OverviewTab';
 import { DividendTab } from './tabs/DividendTab';
@@ -53,8 +53,8 @@ interface Props {
 
 export function Dashboard({ positions, filename, onReset }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const totals = computeTotals(positions);
-  const health = computeHealthScore(positions);
+  const totals = useMemo(() => computeTotals(positions), [positions]);
+  const health = useMemo(() => computeHealthScore(positions), [positions]);
 
   const exportCSV = () => {
     const headers = ['Symbol','Name','Status','Prio','Broker','Wert (€)','Gewicht %','Yield %','CAGR 5J %','Jährl. Div. (€)','Monatl. Div. (€)','Div-Beitrag %','Chowder','Div-Score','Ausschüttungsfrequenz','Ausschüttungsmonate','Typ','Kategorie','ISIN','WKN'];

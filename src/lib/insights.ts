@@ -1,5 +1,5 @@
 import type { DepotPosition } from './types';
-import { computeTotals, computeMonthlyCalendar, computeProjection } from './calculations';
+import { computeTotals, computeMonthlyCalendar, computeProjection, topDividendContributors } from './calculations';
 
 export interface HealthDimension {
   key: string;
@@ -267,8 +267,7 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
     });
   }
 
-  const top3DivContrib = [...active].sort((a, b) => b.dividendContribution - a.dividendContribution).slice(0, 3);
-  const top3Pct = top3DivContrib.reduce((s, p) => s + p.dividendContribution, 0);
+  const { top: top3DivContrib, pct: top3Pct } = topDividendContributors(active, 3);
   if (top3Pct > 50) {
     recommendations.push({
       id: 'income-concentration', priority: 'medium',

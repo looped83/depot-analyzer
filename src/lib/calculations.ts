@@ -93,6 +93,13 @@ export function calculateDerived(positions: DepotPosition[]): DepotPosition[] {
   });
 }
 
+/** Top N positions by dividend contribution and their combined share of total dividend income. */
+export function topDividendContributors(positions: DepotPosition[], n: number): { top: DepotPosition[]; pct: number } {
+  const top = [...positions].sort((a, b) => b.dividendContribution - a.dividendContribution).slice(0, n);
+  const pct = top.reduce((s, p) => s + p.dividendContribution, 0);
+  return { top, pct };
+}
+
 export function computeTotals(positions: DepotPosition[]) {
   const totalWert = positions.reduce((s, p) => s + p.wert, 0);
   const totalAnnualDiv = positions.reduce((s, p) => s + p.annualDividend, 0);

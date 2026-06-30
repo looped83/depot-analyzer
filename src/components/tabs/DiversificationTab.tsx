@@ -9,6 +9,7 @@ import { Card } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
+import { topDividendContributors } from '../../lib/calculations';
 import { PALETTE, AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
@@ -118,8 +119,7 @@ export function DiversificationTab({ positions }: Props) {
     : divGrade.startsWith('B') ? 'text-blue-600 dark:text-blue-400'
     : divGrade.startsWith('C') ? 'text-amber-500' : 'text-red-500';
 
-  const top3DivContrib = [...active].sort((a, b) => b.dividendContribution - a.dividendContribution).slice(0, 3);
-  const top3DivPct = top3DivContrib.reduce((s, p) => s + p.dividendContribution, 0);
+  const { top: top3DivContrib, pct: top3DivPct } = topDividendContributors(active, 3);
 
   const brokerCount = new Set(active.map(p => p.broker)).size;
   const typCount = new Set(active.map(p => p.typ)).size;

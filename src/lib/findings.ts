@@ -1,5 +1,5 @@
 import type { DepotPosition } from './types';
-import { computeTotals, computeMonthlyCalendar } from './calculations';
+import { computeTotals, computeMonthlyCalendar, topDividendContributors } from './calculations';
 
 export interface Finding {
   id: string;
@@ -201,15 +201,14 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
   }
 
   // Einkommensabhängigkeit: Top 3 Positionen liefern >50% der Dividende
-  const sortedByDivContrib = [...active].sort((a, b) => b.dividendContribution - a.dividendContribution);
-  const top3DivPct = sortedByDivContrib.slice(0, 3).reduce((s, p) => s + p.dividendContribution, 0);
+  const { top: top3DivContrib, pct: top3DivPct } = topDividendContributors(active, 3);
   if (top3DivPct > 50) {
     findings.push({
       id: 'income-dependency',
       category: 'warning',
       title: 'Einkommensabhängigkeit: Top 3 liefern >50 % der Dividende',
-      detail: `${sortedByDivContrib.slice(0, 3).map(p => `${p.symbol} (${p.dividendContribution.toFixed(1)}%)`).join(', ')} liefern zusammen ${top3DivPct.toFixed(1)}% der gesamten Dividende. Eine Kürzung bei einer dieser Positionen hätte starken Einfluss auf dein Einkommen.`,
-      symbols: sortedByDivContrib.slice(0, 3).map(p => p.symbol),
+      detail: `${top3DivContrib.map(p => `${p.symbol} (${p.dividendContribution.toFixed(1)}%)`).join(', ')} liefern zusammen ${top3DivPct.toFixed(1)}% der gesamten Dividende. Eine Kürzung bei einer dieser Positionen hätte starken Einfluss auf dein Einkommen.`,
+      symbols: top3DivContrib.map(p => p.symbol),
     });
   }
 
