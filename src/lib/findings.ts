@@ -111,7 +111,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'zero-data',
       category: 'danger',
       title: 'Fehlende Daten: Yield oder CAGR = 0',
-      detail: `${zeroYield.length > 0 ? `Yield = 0: ${zeroYield.join(', ')}. ` : ''}${zeroCagr.length > 0 ? `CAGR = 0: ${zeroCagr.join(', ')}.` : ''}. Diese Werte sollten überprüft werden, da sie die Analysequalität beeinflussen.`,
+      detail: `${zeroYield.length > 0 ? `Yield = 0: ${zeroYield.join(', ')}. ` : ''}${zeroCagr.length > 0 ? `CAGR = 0: ${zeroCagr.join(', ')}. ` : ''}Diese Werte sollten überprüft werden, da sie die Analysequalität beeinflussen.`,
       symbols: zeroData.map((p) => p.symbol),
     });
   }
@@ -233,22 +233,23 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
     });
   }
 
-  // Sparerpauschbetrag Check
-  if (totals.totalAnnualDiv > 1000) {
-    const taxable = totals.totalAnnualDiv - 1000;
+  // Sparerpauschbetrag Check (2.000 € verheiratet, gemeinsam veranlagt)
+  const FREIBETRAG = 2000;
+  if (totals.totalAnnualDiv > FREIBETRAG) {
+    const taxable = totals.totalAnnualDiv - FREIBETRAG;
     const taxAmount = taxable * 0.26375;
     findings.push({
       id: 'freibetrag-exceeded',
       category: 'info',
       title: 'Sparerpauschbetrag überschritten',
-      detail: `Deine jährliche Bruttodividende (${totals.totalAnnualDiv.toFixed(0)} €) übersteigt den Freibetrag von 1.000 €. Ca. ${taxAmount.toFixed(0)} € Steuern fallen an (KapESt + SolZ 26,375 %).`,
+      detail: `Deine jährliche Bruttodividende (${totals.totalAnnualDiv.toFixed(0)} €) übersteigt den Freibetrag von 2.000 €. Ca. ${taxAmount.toFixed(0)} € Steuern fallen an (KapESt + SolZ 26,375 %).`,
     });
-  } else if (totals.totalAnnualDiv > 800) {
+  } else if (totals.totalAnnualDiv > FREIBETRAG * 0.8) {
     findings.push({
       id: 'freibetrag-near',
       category: 'success',
       title: 'Sparerpauschbetrag fast ausgeschöpft',
-      detail: `Deine jährliche Dividende (${totals.totalAnnualDiv.toFixed(0)} €) nähert sich dem Freibetrag von 1.000 €. Noch ${(1000 - totals.totalAnnualDiv).toFixed(0)} € sind steuerfrei.`,
+      detail: `Deine jährliche Dividende (${totals.totalAnnualDiv.toFixed(0)} €) nähert sich dem Freibetrag von 2.000 €. Noch ${(FREIBETRAG - totals.totalAnnualDiv).toFixed(0)} € sind steuerfrei.`,
     });
   }
 

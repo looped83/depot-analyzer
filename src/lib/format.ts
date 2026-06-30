@@ -24,10 +24,3 @@ export const fmtNum = (v: number | null | undefined, decimals = 0): string => {
   }).format(v);
 };
 
-export const fmtInt = (v: number | null | undefined): string => {
-  if (v === null || v === undefined) return '—';
-  return new Intl.NumberFormat('de-DE', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(v);
-};
