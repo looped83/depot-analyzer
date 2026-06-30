@@ -148,9 +148,9 @@ export function FindingsTab({ positions }: Props) {
             {candidates.map((p, i) => (
               <div key={p.symbol} className="flex items-center gap-2 bg-white/70 dark:bg-zinc-800/60 border border-indigo-100 dark:border-indigo-900/40 rounded-lg px-3 py-2">
                 <span className="text-xs font-bold text-indigo-400 w-4">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <span className="text-xs font-mono font-semibold text-slate-800 dark:text-zinc-200">{p.symbol}</span>
-                  <span className="text-xs text-slate-400 dark:text-zinc-500 ml-1.5 truncate">{p.name}</span>
+                <div className="flex-1 min-w-0 flex items-baseline gap-1.5">
+                  <span className="text-xs font-mono font-semibold text-slate-800 dark:text-zinc-200 shrink-0">{p.symbol}</span>
+                  <span className="text-xs text-slate-400 dark:text-zinc-500 truncate">{p.name}</span>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${p.prio === 'A' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'}`}>{p.prio}</span>
