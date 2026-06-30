@@ -9,6 +9,7 @@ import { KPICard } from '../KPICard';
 import { Card } from '../Card';
 import { fmt, fmtNum, fmtPct } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
+import { ChartTooltip } from '../ChartTooltip';
 
 interface Props { positions: DepotPosition[] }
 
@@ -53,13 +54,13 @@ export function ProjectionTab({ positions }: Props) {
         <KPICard title="Depot-Yield"              value={fmtPct(totals.weightedYield)} sub="Gewichtet" info="Nach Depotwert gewichtete Dividendenrendite aller aktiven Positionen." />
       </div>
 
-      <Card title="Annahmen (editierbar)">
+      <Card title="Annahmen">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mt-1">
           {[
-            { label: 'Dividendenwachstum / Jahr (%)', key: 'dividendGrowthRate' as const, min: 0, max: 20, step: 0.5 },
-            { label: 'Monatliche Sparrate (€)',        key: 'monthlySavings'     as const, min: 0, max: 5000, step: 50 },
-            { label: 'Erwart. Kurszuwachs / Jahr (%)', key: 'capitalGrowthRate'  as const, min: 0, max: 20, step: 0.5 },
-          ].map(({ label, key, min, max, step }) => (
+            { label: 'Dividendenwachstum / Jahr', key: 'dividendGrowthRate' as const, min: 0, max: 20, step: 0.5, unit: '%' as const },
+            { label: 'Monatliche Sparrate',        key: 'monthlySavings'     as const, min: 0, max: 5000, step: 50, unit: '€' as const },
+            { label: 'Erwart. Kurszuwachs / Jahr', key: 'capitalGrowthRate'  as const, min: 0, max: 20, step: 0.5, unit: '%' as const },
+          ].map(({ label, key, min, max, step, unit }) => (
             <div key={key}>
               <label className="text-xs font-medium text-slate-500 dark:text-zinc-400 block mb-2">{label}</label>
               <div className="flex items-center gap-3">
@@ -69,7 +70,9 @@ export function ProjectionTab({ positions }: Props) {
                   onChange={(e) => upd(key, Number(e.target.value))}
                   className="flex-1 accent-blue-500"
                 />
-                <span className="text-sm font-mono tabular-nums w-10 text-right text-slate-700 dark:text-zinc-300">{params[key] as number}</span>
+                <span className="text-sm font-mono tabular-nums w-20 text-right text-slate-700 dark:text-zinc-300">
+                  {fmtNum(params[key] as number, unit === '€' ? 0 : 1)} {unit}
+                </span>
               </div>
             </div>
           ))}
@@ -133,11 +136,7 @@ export function ProjectionTab({ positions }: Props) {
               <XAxis dataKey="year" {...AXIS} />
               <YAxis yAxisId="left"  {...AXIS} tickFormatter={(v) => `${fmtNum(v / 1000)}k`} />
               <YAxis yAxisId="right" orientation="right" {...AXIS} tickFormatter={(v) => `${fmtNum(v / 1000)}k`} />
-              <Tooltip
-                formatter={(v: unknown, name: unknown) => [fmt(v as number), name === 'portfolioValue' ? 'Depotwert' : 'Jährl. Dividende']}
-                labelFormatter={(l) => `Jahr: ${l}`}
-                contentStyle={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: 12, fontSize: 12, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}
-              />
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(Number(v))} labelFormatter={(l) => `Jahr: ${l}`} />} />
               <Legend formatter={(v) => v === 'portfolioValue' ? 'Depotwert (€)' : 'Jährl. Dividende (€)'} wrapperStyle={{ fontSize: 12 }} />
               <Area yAxisId="left"  type="monotone" dataKey="portfolioValue"  stroke="#3b82f6" fill="url(#gradPortfolio)" strokeWidth={2} />
               <Area yAxisId="right" type="monotone" dataKey="annualDividend"  stroke="#10b981" fill="url(#gradDiv)"       strokeWidth={2} />

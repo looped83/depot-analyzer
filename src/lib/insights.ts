@@ -295,7 +295,7 @@ export function computeMotivationMetrics(positions: DepotPosition[]): Motivation
   const URLAUB = 100;
   const LEBENSMITTEL = 15;
   const MIN_WAGE = 12.82;
-  const LIVING = 2500;
+  const LIVING = 2000;
 
   return {
     netflixAbos: monthlyDiv / NETFLIX,

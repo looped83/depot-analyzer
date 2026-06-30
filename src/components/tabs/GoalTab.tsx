@@ -9,6 +9,7 @@ import { KPICard } from '../KPICard';
 import { Card } from '../Card';
 import { fmt, fmtNum } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
+import { ChartTooltip } from '../ChartTooltip';
 
 interface Props { positions: DepotPosition[] }
 
@@ -70,18 +71,20 @@ export function GoalTab({ positions }: Props) {
       <Card title="Ziel & Annahmen">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mt-2">
           {[
-            { label: 'Monatsziel (€)', val: goalMonthly, set: setGoalMonthly, min: 100, max: 10000, step: 100 },
-            { label: 'Monatliche Sparrate (€)', val: savings, set: setSavings, min: 0, max: 5000, step: 50 },
-            { label: 'Dividendenwachstum / Jahr (%)', val: divGrowth, set: setDivGrowth, min: 0, max: 15, step: 0.5 },
-            { label: 'Kurszuwachs / Jahr (%)', val: capGrowth, set: setCapGrowth, min: 0, max: 20, step: 0.5 },
-          ].map(({ label, val, set, min, max, step }) => (
+            { label: 'Monatsziel', val: goalMonthly, set: setGoalMonthly, min: 100, max: 10000, step: 100, unit: '€' as const },
+            { label: 'Monatliche Sparrate', val: savings, set: setSavings, min: 0, max: 5000, step: 50, unit: '€' as const },
+            { label: 'Dividendenwachstum / Jahr', val: divGrowth, set: setDivGrowth, min: 0, max: 15, step: 0.5, unit: '%' as const },
+            { label: 'Kurszuwachs / Jahr', val: capGrowth, set: setCapGrowth, min: 0, max: 20, step: 0.5, unit: '%' as const },
+          ].map(({ label, val, set, min, max, step, unit }) => (
             <div key={label}>
               <label className="text-xs font-medium text-slate-500 dark:text-zinc-400 block mb-2">{label}</label>
               <div className="flex items-center gap-3">
                 <input type="range" min={min} max={max} step={step} value={val}
                   onChange={(e) => set(Number(e.target.value))}
                   className="flex-1 accent-blue-500" />
-                <span className="text-sm font-mono tabular-nums w-12 text-right text-slate-700 dark:text-zinc-300">{val}</span>
+                <span className="text-sm font-mono tabular-nums w-20 text-right text-slate-700 dark:text-zinc-300">
+                  {fmtNum(val, unit === '€' ? 0 : 1)} {unit}
+                </span>
               </div>
             </div>
           ))}
@@ -131,11 +134,7 @@ export function GoalTab({ positions }: Props) {
               <YAxis {...AXIS} tickFormatter={(v) => `${fmtNum(v / 1000)}k`} />
               <ReferenceLine y={goalMonthly} stroke="#10b981" strokeDasharray="5 4" strokeWidth={2}
                 label={{ value: `Ziel ${fmt(goalMonthly)}`, position: 'right', fontSize: 10, fill: '#10b981' }} />
-              <Tooltip
-                formatter={(v: unknown) => [fmt(v as number), 'Monatl. Dividende']}
-                labelFormatter={(l) => `Jahr: ${l}`}
-                contentStyle={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: 12, fontSize: 12 }}
-              />
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(Number(v))} labelFormatter={(l) => `Jahr: ${l}`} />} />
               <Area type="monotone" dataKey="monthlyDiv" stroke="#3b82f6" fill="url(#gradGoal)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
@@ -216,11 +215,7 @@ export function GoalTab({ positions }: Props) {
               <YAxis {...AXIS} tickFormatter={v => `${fmtNum(v / 1000)}k`} />
               <ReferenceLine y={goalMonthly} stroke="#10b981" strokeDasharray="5 4" strokeWidth={2}
                 label={{ value: `Ziel ${fmt(goalMonthly)}`, position: 'right', fontSize: 10, fill: '#10b981' }} />
-              <Tooltip
-                formatter={(v: unknown, name: unknown) => [fmt(v as number), String(name)]}
-                labelFormatter={l => `Jahr: ${l}`}
-                contentStyle={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: 12, fontSize: 12 }}
-              />
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(Number(v))} labelFormatter={(l) => `Jahr: ${l}`} />} />
               <Area type="monotone" dataKey="optimistisch" stroke="#10b981" fill="url(#gradOpt)" strokeWidth={1.5} />
               <Area type="monotone" dataKey="realistisch" stroke="#3b82f6" fill="none" strokeWidth={2} />
               <Area type="monotone" dataKey="konservativ" stroke="#f59e0b" fill="none" strokeWidth={1.5} strokeDasharray="4 3" />
