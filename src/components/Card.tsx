@@ -5,19 +5,23 @@ interface Props {
   title?: string;
   sub?: string;
   info?: string;
+  headerRight?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   pad?: boolean;
 }
 
-export function Card({ title, sub, info, children, className = '', pad = true }: Props) {
+export function Card({ title, sub, info, headerRight, children, className = '', pad = true }: Props) {
   return (
     <div className={`bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm ${className}`}>
-      {(title || sub) && (
+      {(title || sub || headerRight) && (
         <div className="px-5 pt-5 pb-0">
-          <div className="flex items-center gap-1.5">
-            {title && <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">{title}</h3>}
-            {info && <InfoTip text={info} />}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
+              {title && <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 truncate">{title}</h3>}
+              {info && <InfoTip text={info} />}
+            </div>
+            {headerRight && <div className="shrink-0">{headerRight}</div>}
           </div>
           {sub && <p className="mt-0.5 text-xs text-slate-400 dark:text-zinc-500">{sub}</p>}
         </div>
