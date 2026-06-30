@@ -46,7 +46,7 @@ export function QualityTab({ positions }: Props) {
     { label: 'Priorität gesetzt',      count: withPrio,   total: all.length },
     { label: 'Ausschüttungsmonate',    count: withMonths, total: all.length },
     { label: 'Rating-Score vorhanden', count: withRating, total: all.length },
-  ].map((r) => ({ ...r, pct: (r.count / r.total) * 100 }));
+  ].map((r) => ({ ...r, pct: (r.count / (r.total || 1)) * 100 }));
 
   const avgCompleteness = completenessRows.reduce((s, r) => s + r.pct, 0) / completenessRows.length;
 
@@ -98,12 +98,12 @@ export function QualityTab({ positions }: Props) {
     },
     {
       label: 'Prioritäten-Abdeckung',
-      score: (withPrio / all.length) * 100,
+      score: (withPrio / (all.length || 1)) * 100,
       detail: `${withPrio} von ${all.length} Positionen mit Prio`,
     },
     {
       label: 'Rating-Abdeckung',
-      score: (withRating / all.length) * 100,
+      score: (withRating / (all.length || 1)) * 100,
       detail: `${withRating} von ${all.length} mit Rating-Score`,
     },
     {

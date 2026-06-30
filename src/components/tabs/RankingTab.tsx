@@ -123,7 +123,7 @@ export function RankingTab({ positions }: Props) {
         })
         .map((p) => ({
           pos: p,
-          value: fmt(p.wert === 0 ? 0 : p.wert),
+          value: fmt(p.wert),
           badge: p.prio ?? undefined,
         })),
     },
