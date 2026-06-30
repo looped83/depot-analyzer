@@ -3,7 +3,7 @@
 **Datum:** 2026-06-30
 **Branch:** `claude/data-insights-recommendations-172j1m`
 **Repo:** `looped83/depot-analyzer`
-**Build:** `npx tsc --noEmit` → 0 Fehler
+**Build:** `npx tsc --noEmit` → 0 Fehler · `npx eslint .` → 0 Fehler · `npm run build` → erfolgreich
 
 ---
 
@@ -17,79 +17,82 @@
 | Tailwind CSS | v4 |
 | Recharts | 3.8.1 |
 | lucide-react | 1.17 |
-| xlsx / jspdf / html2canvas | aktuelle Versionen |
+| xlsx | 0.18.5 |
 
 Sprache der UI: Deutsch (`de-DE` Formatierung via `Intl.NumberFormat`).
+**Nur Dark Mode** – kein Light-Mode mehr, kein Toggle (siehe unten).
+`jspdf` / `html2canvas` wurden entfernt (PDF-Export-Feature existiert nicht mehr).
 
 ---
 
-## Was in dieser Session gemacht wurde
+## Was seit dem letzten Handover gemacht wurde
 
-### Feature-Entwicklung (frühere Commits auf diesem Branch)
+Chronologisch, neueste zuerst sind unten in der Commit-Liste. Zusammengefasst:
 
-- `MotivationTab.tsx` neu angelegt – Gamification, Meilensteine, Streaks
-- `DepotCheckTab.tsx` neu angelegt – strukturierter Depot-Gesundheits-Check
-- `insights.ts` komplett neu (507 Zeilen) – `computeHealthScore`, `generateRecommendations`, `computeFreibetrag`, `computeAchievements`
-- `findings.ts` stark erweitert – regelbasierte Findings-Engine mit Kategorien `danger / warning / info / success`
-- Alle 13 bestehenden Tabs mit tieferen Analysen, Effizienz-Scores und Handlungsempfehlungen angereichert
-- Einheitliches Chart-Design via `src/lib/chartTheme.ts` (`PALETTE`, `AXIS`, `GRID`, `BAR_CURSOR`) sitewide ausgerollt
-- Freibetrag überall auf **2.000 €** (verheiratet / gemeinsam veranlagt) angehoben
-- Dunkelmodus-Tooltips, Slider-Units, Zielplanung mit 2.000 €-Preset
+### 1. Code-Qualitäts-Pass (Bugfixing / Clean Code / Green Code)
 
-### Clean-Code & Bug-Fixing (letzte 3 Commits)
+- **Bugfixes:** leere-Array-Guards in `computeDividendScore` (`calculations.ts`) und im Monats-Kalender-Loop (Bounds-Check `m < 1 || m > 12`), Sortier-Fallback für unbekannte Priority-Strings in `insights.ts`, sicheres `reduce` auf evtl. leerem Array in `CalendarTab.tsx`.
+- **Memoization:** `computeProjection` (teuer – 30-Jahres-Projektion) war in `ProjectionTab.tsx` und `GoalTab.tsx` mehrfach pro Render direkt im JSX (teils in IIFEs) aufgerufen worden → alle in `useMemo` extrahiert. `MotivationTab.tsx`, `CalendarTab.tsx`, `FindingsTab.tsx`, `Dashboard.tsx` ebenfalls memoized (`computeTotals`, `computeHealthScore` liefen vorher bei jedem Tab-Wechsel neu).
+- **Dead Code entfernt**, u. a. `data1`/`data3` in `ProjectionTab.tsx` (Duplikate von `data5[1]`/`data5[3]`).
+- **Duplikate konsolidiert:** neuer Helper `topDividendContributors(positions, n)` in `calculations.ts` ersetzt 4 identische „Top-N-Dividenden-Anteil"-Implementierungen (`findings.ts`, `insights.ts`, `FindingsTab.tsx`, `DiversificationTab.tsx`). `SafetyTab.tsx` nutzt jetzt `computeStressTest()` aus `insights.ts` statt einer eigenen Inline-Variante; `riskLevel`/`safetyScore` werden dort nur noch einmal berechnet statt doppelt.
+- **Bundle-Size:** `jspdf` + `html2canvas` (~34 MB node_modules, mehrere hundert KB Bundle) waren seit Entfernen des PDF-Exports ungenutzt → entfernt.
 
-**Commit `54def39` – Build-Fehler behoben:**
-- `RebalancingTab.tsx` und `DiversificationTab.tsx`: `BAR_CURSOR` fehlte im Import → `Cannot find name 'BAR_CURSOR'` Build-Fehler
+### 2. UI-Überarbeitung (Depot- & Dividenden-Tab)
 
-**Commit `59da450` – Dead Code & Inkonsistenz:**
-- `OverviewTab.tsx`: lokale doppelte `PALETTE`-Konstante durch Import aus `chartTheme` ersetzt
-- `calculations.ts`: unbenutzte `normalize()`-Funktion und toten Export entfernt
-- `WatchlistTab.tsx`: komplett gelöscht (Tab war aus Dashboard entfernt, Datei war orphaned)
-- `insights.ts`: `computeAchievements` Freibetrag-Meilenstein von 1.000 € → 2.000 € korrigiert
+- **Dark-Only Mode:** `document.documentElement.classList.add('dark')` permanent in `App.tsx`, Toggle-State und -Button entfernt. Alle `dark:`-Klassen bleiben im Quellcode bestehen (gelten jetzt immer), Light-Mode-Klassen wurden **nicht** überall entfernt (nur der Umschalt-Mechanismus).
+- PDF-Export-Button im Header entfernt, „Nächste Schritte"-Block aus `OverviewTab.tsx` entfernt, „Aktionen"-Button aus `Dashboard.tsx`-Header entfernt.
+- `Card.tsx`: neuer `headerRight`-Slot für Header-Inhalte rechtsbündig (z. B. Suchfelder).
+- `SortableTable.tsx`: kontrollierbare Filter-Props (`filter`, `onFilterChange`) – wenn gesetzt, wird das interne Suchfeld ausgeblendet und stattdessen der externe State genutzt.
+- Suchfelder bei „Alle Positionen" (OverviewTab) und „Dividendenanalyse" (DividendTab) in die obere rechte Box-Ecke verschoben (via `headerRight`).
+- Info-Tooltips (`InfoTip`) bei „Top 5 Konzentration" und „Top 10 Gewichtung" ergänzt.
+- „Income vs. Growth" (DividendTab) als Split-Proportions-Balken neu gestaltet; „Chowder Champions" als gerankte Liste mit Progress-Bars statt einfacher Tabelle.
 
-**Commit `570c6cc` – Round-2 Clean-up:**
-- `findings.ts` Zeile 114: Doppel-Punkt-Bug in `zero-data`-Detail-String behoben (`...join(', ')}.` + `. Diese...` → korrekt getrennt)
-- `findings.ts`: `FREIBETRAG = 2000` als Named Constant extrahiert (war als Magic Number `1000` / `800` verstreut)
-- `format.ts`: unbenutzter Export `fmtInt` entfernt (funktional identisch mit `fmtNum(v, 0)`)
-- `types.ts`: unbenutzte Interfaces `ProjectionScenario` und `RankingEntry` entfernt
-- `KPICard.tsx`: unbenutztes `color`-Prop aus `Props`-Interface entfernt (war deklariert, aber nie destrukturiert oder angewendet)
-- `OverviewTab.tsx`: `aggregateBy(positions,'broker')` wurde doppelt aufgerufen (einmal für `data=`, einmal für `Cell`-Mapping) → Ergebnis einmalig in `byBroker` gespeichert
+### 3. ESLint-Fehler (alle 13 behoben)
 
----
+- **2× echte Bugs** (`react-hooks/static-components`): `Btn` (Dashboard.tsx) und `TreemapContent`/`kategorieColors` (DiversificationTab.tsx) wurden bei **jedem Render neu erzeugt** statt einmalig außerhalb der Komponente definiert zu werden – das resettet React-internen Komponenten-State unnötig bei jedem Re-Render. Beide nach Modul-Ebene verschoben.
+- **10× unused vars/imports** entfernt (u. a. `top10Weight`, `divGradeColor` in DiversificationTab; `totalSpar`/`inBalance`/`maxDeviation` in RebalancingTab; `active` in SavingsTab; `byYield`/`byCagr` in findings.ts; `totals` in `computeHealthScore`).
+- **1× unnecessary regex escape** in `calculations.ts` (`/[\|,]+/` → `/[|,]+/`).
 
-## Aktueller Zustand der wichtigsten Dateien
+### 4. Weitere Bugfixes (Folgepass nach unreviewten Tabs)
 
-### `src/lib/`
+- **`QualityTab.tsx`:** Division-durch-Null-Risiko bei leerem Depot (`withPrio / all.length` etc. ohne Guard) – mit `(x || 1)`-Pattern abgesichert, konsistent zum Rest der Codebase. War durch den Upload-Check in `App.tsx` maskiert, aber `Dashboard.tsx` validiert nie erneut → latenter Bug.
+- **`parser.ts`:** Wenn keine Spalte „Symbol" im Header gefunden wird (`col('symbol') === -1`), wurden früher **alle Zeilen stillschweigend übersprungen** (`row[-1]` → `undefined`, kein Crash). Jetzt wird sofort eine klare Fehlermeldung geworfen statt der generischen „Keine Positionen gefunden".
+- **`RankingTab.tsx`:** toter No-op-Ternary `fmt(p.wert === 0 ? 0 : p.wert)` → `fmt(p.wert)`.
 
-| Datei | Zustand |
-|---|---|
-| `types.ts` | Sauber – `DepotPosition`, `ProjectionParams`, `MonthlyIncome`, `TabId` |
-| `format.ts` | Sauber – `fmt`, `fmtPct`, `fmtNum` (kein Dead Code mehr) |
-| `calculations.ts` | Sauber – `parsePaymentMonths`, `computeDividendScore`, `calculateDerived`, `computeTotals`, `computeMonthlyCalendar`, `computeProjection` |
-| `chartTheme.ts` | Sauber – `PALETTE`, `AXIS`, `GRID`, `BAR_CURSOR` |
-| `insights.ts` | Vollständig – Health Score, Empfehlungen, Freibetrag (2.000 €), Achievements |
-| `findings.ts` | Vollständig – Regelbasierte Findings mit Named Constant `FREIBETRAG = 2000` |
-| `parser.ts` | Unverändert – CSV/XLSX-Parser |
+### 5. Lazy Loading – inkl. eines Produktions-Bugs und Kurskorrektur
 
-### `src/components/tabs/`
+**Architektur jetzt (Stand HEAD):**
+- `App.tsx`: `Dashboard` wird per `React.lazy()` erst geladen, wenn eine Datei hochgeladen wurde (vorher: Upload-Screen lud bereits das komplette Dashboard + alle Tabs + Recharts + xlsx mit).
+- `App.tsx`: `parseExcel` (und damit `xlsx`, ~114 KB gzip) wird per dynamischem `import()` erst beim tatsächlichen Datei-Upload geladen, nicht beim initialen Seitenaufruf.
+- `Dashboard.tsx`: **alle 15 Tabs werden wieder statisch/eager importiert** (kein Per-Tab-`React.lazy()` mehr – siehe „Wichtige Pitfalls" unten, warum das zurückgebaut wurde).
+- `vite.config.ts`: `manualChunks` bündelt Recharts + alle seine Vendor-Abhängigkeiten (`@reduxjs/toolkit`, `react-redux`, `immer`, `reselect`, alle `d3-*`-Module, `victory-vendor` etc.) explizit in einen gemeinsamen `charts-vendor`-Chunk.
 
-15 aktive Tab-Komponenten (WatchlistTab entfernt):
+**Aktuelle Chunk-Größen (`npm run build`):**
+| Chunk | Größe (gzip) | Lädt wann |
+|---|---|---|
+| `index-*.js` (Entry/Upload-Screen) | ~61 KB | sofort |
+| `Dashboard-*.js` (alle 15 Tabs) | ~42 KB | nach Datei-Upload |
+| `charts-vendor-*.js` (Recharts + Redux + d3) | ~128 KB | nach Datei-Upload (parallel zu Dashboard) |
+| `parser-*.js` (xlsx) | ~114 KB | beim Datei-Upload (parallel) |
 
-```
-OverviewTab, DividendTab, CAGRTab, SavingsTab, CalendarTab,
-RankingTab, FindingsTab, DepotCheckTab, MotivationTab,
-ProjectionTab, DiversificationTab, SafetyTab, GoalTab,
-RebalancingTab, QualityTab
-```
-
-### `src/components/`
-
-- `KPICard.tsx` – Kein ungenutztes `color`-Prop mehr
-- `Card.tsx`, `ChartTooltip.tsx`, `SortableTable` – unverändert
+Effekt: Initial-Bundle (Upload-Screen) ist von ursprünglich ~344 KB gzip auf ~61 KB gzip gesunken. Nach dem einmaligen Datei-Upload (wo ohnehin eine kurze Wartezeit erwartet wird) sind **alle** Tabs sofort verfügbar – kein Netzwerk-Request mehr beim Tab-Wechsel.
 
 ---
 
-## Fachliche Domänen-Konventionen
+## Wichtige Muster / Pitfalls
+
+- **Per-Tab-Lazy-Loading wurde bewusst verworfen:** Ein früherer Zwischenstand splittete jeden der 15 Tabs einzeln via `React.lazy()`. Das führte zu zwei Problemen:
+  1. **Produktions-Crash** `"n is not a function"` beim Öffnen von `DepotCheckTab` (RadarChart) auf GitHub Pages. Ursache: Recharts 3.x bündelt intern Redux (`@reduxjs/toolkit`, `react-redux`, `immer`, `reselect`) und mehrere `d3-*`-Module mit zirkulären Referenzen untereinander. Rollups automatisches Chunk-Splitting über 14 separate dynamische Import-Boundaries hat diese zusammengehörigen Module über mehrere Chunks verstreut, teils an unpassende Chunks wie `KPICard.tsx` oder `chartTheme.ts` angehängt → Chunk A referenzierte eine Funktion aus Chunk B, bevor dieser fertig initialisiert war. **Fix:** `manualChunks` in `vite.config.ts` (siehe oben) – falls weitere Lazy-Loading-Boundaries eingeführt werden, **unbedingt diese Konfiguration beibehalten oder erneut prüfen.**
+  2. **Spürbare Ladeverzögerung** beim ersten Klick auf jeden Tab, selbst mit Hintergrund-Prefetch nach dem ersten Render (auf gedrosselten Verbindungen reichte die Zeit bis zum Tab-Klick nicht aus, um den 128 KB großen `charts-vendor`-Chunk fertig zu laden). Deshalb zurückgebaut auf einen einzigen Lazy-Boundary auf Dashboard-Ebene (alle Tabs eager innerhalb von `Dashboard.tsx`).
+  - **Lektion für künftige Optimierungsversuche:** Falls erneut über granulareres Code-Splitting nachgedacht wird, immer mit `vite preview` (nicht `vite dev`) und idealerweise gedrosselter Netzwerksimulation testen – der Dev-Server zeigt Chunking-Bugs nicht, da er unbundled ESM ausliefert.
+- `BAR_CURSOR` **muss** in jeden Tab importiert werden, der einen `<Tooltip cursor={...}>` auf einem BarChart hat – fehlt er, entsteht ein weißes Rechteck beim Hover.
+- `aggregateBy()` ist lokal in `OverviewTab` definiert; `groupBy()` ist lokal in `DiversificationTab` – **nicht** aus `calculations.ts`. Sollte eine dritte Komponente dasselbe brauchen, wäre eine Auslagerung in eine Util-Datei sinnvoll.
+- Recharts 3.x erwartet `isAnimationActive={false}` auf Treemap explizit, sonst gibt es Performance-Warnungen.
+- `Card.tsx` hat jetzt einen `headerRight`-Slot; `SortableTable` kann kontrolliert (`filter`/`onFilterChange`) oder unkontrolliert (eigener interner State) betrieben werden – beim Hinzufügen neuer Tabellen-Suchfelder im Header diesem Muster folgen.
+
+---
+
+## Fachliche Domänen-Konventionen (unverändert)
 
 - **Freibetrag:** 2.000 € (verheiratet / gemeinsam veranlagt) – gilt in `findings.ts`, `insights.ts`, `GoalTab.tsx`
 - **Steuer:** Kapitalertragsteuer + SolZ = **26,375 %** flat
@@ -97,7 +100,7 @@ RebalancingTab, QualityTab
 - **Chowder Score:** `yield + cagr5j` (einfach, ungewichtet)
 - **HHI:** Summe der quadrierten Portfolio-Gewichte; < 1.000 = gut, > 2.500 = hoch konzentriert
 - **Ausschüttungsfrequenz Scores:** monatlich = 3, quartalsweise = 2, jährlich = 1 (implizit via `freqScore`)
-- Alle Geldwerte in **EUR**, alle Prozente als Prozent-Zahl (z.B. `2.24` für 2,24 %)
+- Alle Geldwerte in **EUR**, alle Prozente als Prozent-Zahl (z. B. `2.24` für 2,24 %)
 - **Status-Werte:** `Aufbau`, `Erledigt`, `Beobachten`, `Verkauf`
 - **Prio-Werte:** `A`, `B`, `C`, `D`, `E`, `null`
 
@@ -105,18 +108,26 @@ RebalancingTab, QualityTab
 
 ## Offene Punkte / mögliche nächste Schritte
 
-1. **Tests:** Keine Unit-Tests vorhanden. Kritische Logik in `calculations.ts` und `findings.ts` wäre ein guter Einstieg (insbesondere `computeDividendScore`, `parsePaymentMonths`, Freibetrag-Logik).
-2. **PR erstellen:** Der aktuelle Branch `claude/data-insights-recommendations-172j1m` ist noch nicht als Pull Request gegen `main` geöffnet.
-3. **Deployment:** GitHub Pages auto-deployt bei Merge auf `main`.
-4. **`parser.ts`:** Noch nicht im Rahmen dieser Session geprüft – könnte weitere Aufräumarbeiten vertragen.
-5. **`DepotCheckTab.tsx`:** Wurde neu angelegt, aber noch nicht im gleichen Maß wie andere Tabs poliert.
-6. **Responsive Mobile:** Wurde nicht explizit getestet, Tailwind-Klassen sind vorhanden aber ungeprüft auf kleinen Viewports.
+1. **Tests:** Weiterhin keine Unit-Tests vorhanden. Kritische Logik in `calculations.ts`, `findings.ts`, `insights.ts` wäre ein guter Einstieg.
+2. **PR erstellen:** Der Branch `claude/data-insights-recommendations-172j1m` ist noch nicht als Pull Request gegen `main` geöffnet. Der Produktions-Crash-Report kam von der live GitHub-Pages-Seite (`looped83.github.io/depot-analyzer`), die vermutlich von `main` deployt wird – die Fixes in diesem Branch sind also noch **nicht live**, bis gemerged wird.
+3. **`npm audit` – 2 offene High-Severity-Findings (bewusst nicht automatisch gefixt):**
+   - `vite` (devDependency): Fix erfordert Major-Upgrade auf eine Rolldown-basierte Vite-Version (zieht komplett neue Build-Toolchain nach) – nicht ungefragt gemacht, da Build-Risiko. Betrifft nur lokale Dev-/Build-Umgebung.
+   - `xlsx`: bekannte Prototype-Pollution-/ReDoS-Lücken in SheetJS, kein Fix über npm verfügbar (SheetJS pflegt Patches nur noch über eigene CDN-Distribution). Risiko in diesem Kontext überschaubar, da nur lokal vom Nutzer hochgeladene Dateien geparst werden.
+4. **Mobile/Responsive:** weiterhin nicht explizit getestet.
+5. **`DepotCheckTab.tsx`:** funktional vollständig und inzwischen Teil des Lazy-Loading-Crash-Fixes (RadarChart), aber UI-Politur nicht explizit geprüft.
 
 ---
 
-## Wichtige Muster / Pitfalls
+## Commit-Historie dieser Session (neueste zuerst)
 
-- `BAR_CURSOR` **muss** in jeden Tab importiert werden, der einen `<Tooltip cursor={...}>` auf einem BarChart hat – fehlt er, entsteht ein weißes Rechteck beim Hover (war der ursprüngliche Build-Fehler in dieser Session).
-- `aggregateBy()` ist lokal in `OverviewTab` definiert; `groupBy()` ist lokal in `DiversificationTab` – **nicht** aus `calculations.ts`. Sollte eine dritte Komponente dasselbe brauchen, wäre eine Auslagerung in eine Util-Datei sinnvoll.
-- `fmtNum(v, 0)` ersetzt vollständig das entfernte `fmtInt` – bei Suche/Replace beachten.
-- Recharts 3.x erwartet `isAnimationActive={false}` auf Treemap explizit, sonst gibt es Performance-Warnungen.
+```
+1b81966 perf: drop per-tab lazy loading, keep only the Dashboard-level split
+16a45a1 fix: production crash "n is not a function" caused by chart vendor code splitting across lazy-loaded tabs
+806c347 fix: guard QualityTab against empty-depot NaN, surface missing Symbol column
+7e8bf83 perf: code-split tabs and defer xlsx parser via lazy loading
+3beabab fix: resolve all 13 ESLint errors
+80b8d33 perf: remove unused PDF deps, memoize Dashboard/Findings, dedupe stress-test logic
+c238dbb feat: dark-only mode, UI cleanup and visual improvements
+c135e30 fix: restore Search import in RankingTab — used in Underweight section
+a26a6cc fix: bugfixes, dead code removal and memoization for heavy projection tabs
+```
