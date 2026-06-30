@@ -9,7 +9,7 @@ import { Card } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
-import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
+import { PALETTE, AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
 
