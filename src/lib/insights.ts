@@ -279,8 +279,8 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
     });
   }
 
-  const prioOrder = { high: 0, medium: 1, low: 2 };
-  return recommendations.sort((a, b) => prioOrder[a.priority] - prioOrder[b.priority]);
+  const prioOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+  return recommendations.sort((a, b) => (prioOrder[a.priority] ?? 99) - (prioOrder[b.priority] ?? 99));
 }
 
 export function computeMotivationMetrics(positions: DepotPosition[]): MotivationMetrics {

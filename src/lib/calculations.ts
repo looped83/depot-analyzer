@@ -39,6 +39,8 @@ export function computeDividendScore(
   allCagrs: number[],
   maxFreq: number
 ): number {
+  if (allYields.length === 0 || allCagrs.length === 0) return 0;
+
   const yieldMin = Math.min(...allYields);
   const yieldMax = Math.max(...allYields);
   const cagrMin = Math.min(...allCagrs);
@@ -126,6 +128,7 @@ export function computeMonthlyCalendar(positions: DepotPosition[]): MonthlyIncom
     const incomePerPayment = p.annualDividend / payMonths.length;
 
     for (const m of payMonths) {
+      if (m < 1 || m > 12) continue;
       calendar[m - 1].expectedIncome += incomePerPayment;
       calendar[m - 1].positions.push(p.symbol);
     }

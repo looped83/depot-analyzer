@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine,
@@ -36,14 +36,38 @@ export function GoalTab({ positions }: Props) {
   const [savings, setSavings]           = useState(4200);
   const [reinvest, setReinvest]         = useState(true);
 
-  const params = { dividendGrowthRate: divGrowth, monthlySavings: savings, reinvest, capitalGrowthRate: capGrowth };
+  const params = useMemo(
+    () => ({ dividendGrowthRate: divGrowth, monthlySavings: savings, reinvest, capitalGrowthRate: capGrowth }),
+    [divGrowth, savings, reinvest, capGrowth],
+  );
 
-  // Project 30 years
-  const proj30 = computeProjection(positions, params, 30);
+  const proj30 = useMemo(() => computeProjection(positions, params, 30), [positions, params]);
+
+  const scenariosChartData = useMemo(() => {
+    const conservative = computeProjection(positions, { ...params, dividendGrowthRate: 3, capitalGrowthRate: 3 }, 20);
+    const realistic    = computeProjection(positions, params, 20);
+    const optimistic   = computeProjection(positions, { ...params, dividendGrowthRate: 8, capitalGrowthRate: 10 }, 20);
+    return conservative.map((c, i) => ({
+      year: c.year,
+      konservativ:  Math.round(c.annualDividend / 12),
+      realistisch:  Math.round((realistic[i]?.annualDividend ?? 0) / 12),
+      optimistisch: Math.round((optimistic[i]?.annualDividend ?? 0) / 12),
+    }));
+  }, [positions, params]);
 
   const goalAnnual = goalMonthly * 12;
   const hitYear = proj30.find((d) => d.annualDividend >= goalAnnual);
   const yearsToGoal = hitYear ? hitYear.year - new Date().getFullYear() : null;
+
+  const fasterHintText = useMemo(() => {
+    if (yearsToGoal === null || yearsToGoal <= 3) return null;
+    const faster = computeProjection(positions, { ...params, monthlySavings: savings + 100 }, 30);
+    const fasterHit = faster.find(d => d.annualDividend >= goalAnnual);
+    const fasterYears = fasterHit ? fasterHit.year - new Date().getFullYear() : null;
+    return fasterYears && fasterYears < yearsToGoal
+      ? `Mit 100 € mehr Sparrate pro Monat (${savings + 100} € statt ${savings} €) erreichst du dein Ziel bereits in ${fasterYears} Jahren – ${yearsToGoal - fasterYears} Jahre früher.`
+      : `Erhöhe deine Sparrate oder den Anteil an Dividendenwachstumswerten, um schneller zum Ziel zu kommen.`;
+  }, [positions, params, savings, yearsToGoal, goalAnnual]);
 
   const progress = Math.min(100, (currentMonthly / goalMonthly) * 100);
   const remaining = Math.max(0, goalMonthly - currentMonthly);
@@ -192,18 +216,7 @@ export function GoalTab({ positions }: Props) {
       <Card title="Szenario-Vergleich – 3 Wege zum Ziel" sub="Konservativ / Realistisch / Optimistisch im Vergleich">
         <div className="mt-3">
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart margin={{ top: 4, right: 20, bottom: 0, left: 0 }}
-              data={(() => {
-                const conservative = computeProjection(positions, { ...params, dividendGrowthRate: 3, capitalGrowthRate: 3 }, 20);
-                const realistic = computeProjection(positions, params, 20);
-                const optimistic = computeProjection(positions, { ...params, dividendGrowthRate: 8, capitalGrowthRate: 10 }, 20);
-                return conservative.map((c, i) => ({
-                  year: c.year,
-                  konservativ: Math.round(c.annualDividend / 12),
-                  realistisch: Math.round((realistic[i]?.annualDividend ?? 0) / 12),
-                  optimistisch: Math.round((optimistic[i]?.annualDividend ?? 0) / 12),
-                }));
-              })()}>
+            <AreaChart margin={{ top: 4, right: 20, bottom: 0, left: 0 }} data={scenariosChartData}>
               <defs>
                 <linearGradient id="gradOpt" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
@@ -234,14 +247,7 @@ export function GoalTab({ positions }: Props) {
         <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4">
           <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">Tipp: Schneller zum Ziel</p>
           <p className="text-xs text-blue-600/80 dark:text-blue-300/70 leading-relaxed">
-            {(() => {
-              const faster = computeProjection(positions, { ...params, monthlySavings: savings + 100 }, 30);
-              const fasterHit = faster.find(d => d.annualDividend >= goalAnnual);
-              const fasterYears = fasterHit ? fasterHit.year - new Date().getFullYear() : null;
-              return fasterYears && fasterYears < yearsToGoal
-                ? `Mit 100 € mehr Sparrate pro Monat (${savings + 100} € statt ${savings} €) erreichst du dein Ziel bereits in ${fasterYears} Jahren – ${yearsToGoal - fasterYears} Jahre früher.`
-                : `Erhöhe deine Sparrate oder den Anteil an Dividendenwachstumswerten, um schneller zum Ziel zu kommen.`;
-            })()}
+            {fasterHintText}
           </p>
         </div>
       )}
