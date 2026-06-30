@@ -7,6 +7,7 @@ import { computeTotals, computeMonthlyCalendar } from '../../lib/calculations';
 import { computeHealthScore, generateRecommendations, computeFreibetrag } from '../../lib/insights';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
+import { BAR_CURSOR } from '../../lib/chartTheme';
 import { AlertTriangle, Zap } from 'lucide-react';
 
 const PALETTE = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#06b6d4','#f97316','#ec4899','#84cc16','#ef4444','#6366f1'];
@@ -197,7 +198,7 @@ export function OverviewTab({ positions }: Props) {
             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} horizontal={false} />
             <XAxis type="number" tickFormatter={(v) => `${fmtNum(v / 1000)}k`} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
             <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} width={30} axisLine={false} tickLine={false} />
-            <Tooltip content={<Tip />} />
+            <Tooltip cursor={BAR_CURSOR} content={<Tip />} />
             <Bar dataKey="value" radius={[0,6,6,0]} maxBarSize={18}>
               {aggregateBy(positions,'broker').map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
             </Bar>

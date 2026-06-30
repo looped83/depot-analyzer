@@ -47,13 +47,14 @@ export function RebalancingTab({ positions }: Props) {
     return { ...p, targetPct, deltaPct, deltaEur };
   }).sort((a, b) => b.deltaPct - a.deltaPct);
 
-  // Monthly buy list: only underweights, allocate budget proportionally
+  // 1.000 € fixed tranches: pick the most underweight positions
+  const TRANCHE = 1000;
+  const numTranches = Math.max(1, Math.floor(budget / TRANCHE));
   const underweight = rows.filter((r) => r.deltaPct > 0.1);
-  const totalDeficit = underweight.reduce((s, r) => s + r.deltaPct, 0);
-  const buyList = underweight
-    .map((r) => ({ ...r, monthlyBuy: totalDeficit > 0 ? (r.deltaPct / totalDeficit) * budget : 0 }))
-    .sort((a, b) => b.monthlyBuy - a.monthlyBuy)
-    .slice(0, 10);
+  const buyList = [...underweight]
+    .sort((a, b) => b.deltaPct - a.deltaPct)
+    .slice(0, numTranches)
+    .map((r) => ({ ...r, monthlyBuy: TRANCHE }));
 
   const overweight  = rows.filter((r) => r.deltaPct < -0.5).sort((a, b) => a.deltaPct - b.deltaPct);
   const inBalance   = rows.filter((r) => Math.abs(r.deltaPct) <= 0.5);
@@ -113,15 +114,18 @@ export function RebalancingTab({ positions }: Props) {
 
       {/* Monthly buy list */}
       {buyList.length > 0 && (
-        <Card title={`Empfohlene Käufe diesen Monat – Budget ${fmt(budget)}`}
-          sub="Untergewichtete Positionen proportional aufstocken">
+        <Card title={`Empfohlene Käufe – ${numTranches} × 1.000 € Tranchen`}
+          sub="Stärkst untergewichtete Positionen – je 1.000 € Einmalkauf">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-3">
             {buyList.map((r, i) => (
               <div key={r.symbol}
                 className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-mono font-bold text-sm text-slate-800 dark:text-zinc-200">{r.symbol}</span>
-                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{fmt(r.monthlyBuy)}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-blue-300 dark:text-blue-600 w-4">{i + 1}</span>
+                    <span className="font-mono font-bold text-sm text-slate-800 dark:text-zinc-200">{r.symbol}</span>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">1.000 €</span>
                 </div>
                 <p className="text-xs text-slate-400 dark:text-zinc-500 truncate">{r.name}</p>
                 <div className="flex gap-2 mt-1.5 text-xs">
@@ -148,7 +152,7 @@ export function RebalancingTab({ positions }: Props) {
               <XAxis dataKey="symbol" {...AXIS} angle={-35} textAnchor="end" interval={0} />
               <YAxis {...AXIS} tickFormatter={(v) => `${fmtNum(v, 1)} %`} />
               <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${fmtNum(Number(v), 2)} %`} />} />
+              <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => `${fmtNum(Number(v), 2)} %`} />} />
               <Bar dataKey="delta" radius={[4, 4, 0, 0]} maxBarSize={28}>
                 {chartData.map((d, i) => (
                   <Cell key={i} fill={d.delta > 0 ? '#10b981' : '#f97316'} fillOpacity={0.82} />

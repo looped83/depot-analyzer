@@ -9,7 +9,7 @@ import { Card, InfoTip } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmtPct, fmtNum } from '../../lib/format';
-import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
+import { PALETTE, AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
 
@@ -237,7 +237,7 @@ export function QualityTab({ positions }: Props) {
               <CartesianGrid {...GRID} horizontal={false} />
               <XAxis type="number" {...AXIS} domain={[0, 100]} tickFormatter={(v) => `${v} %`} />
               <YAxis type="category" dataKey="label" {...AXIS} width={160} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${fmtNum(v as number)} %`} />} />
+              <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => `${fmtNum(v as number)} %`} />} />
               <Bar dataKey="pct" radius={[0, 4, 4, 0]} maxBarSize={20}>
                 {completenessRows.map((r, i) => (
                   <Cell key={i} fill={r.pct >= 80 ? '#10b981' : r.pct >= 50 ? '#3b82f6' : '#f59e0b'} fillOpacity={0.85} />
@@ -256,7 +256,7 @@ export function QualityTab({ positions }: Props) {
               <CartesianGrid {...GRID} vertical={false} />
               <XAxis dataKey="label" {...AXIS} />
               <YAxis {...AXIS} allowDecimals={false} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} Positionen`} />} />
+              <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} Positionen`} />} />
               <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
                 {scoreDistrib.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} fillOpacity={0.85} />)}
               </Bar>
@@ -270,7 +270,7 @@ export function QualityTab({ positions }: Props) {
               <CartesianGrid {...GRID} vertical={false} />
               <XAxis dataKey="label" {...AXIS} />
               <YAxis {...AXIS} allowDecimals={false} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} Positionen`} />} />
+              <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} Positionen`} />} />
               <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
                 {ratingDistrib.map((_, i) => <Cell key={i} fill={PALETTE[(i + 2) % PALETTE.length]} fillOpacity={0.85} />)}
               </Bar>
@@ -286,7 +286,7 @@ export function QualityTab({ positions }: Props) {
                 paddingAngle={2} strokeWidth={0}>
                 {prioDistrib.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} fillOpacity={0.85} />)}
               </Pie>
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} Positionen`} />} />
+              <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} Positionen`} />} />
               <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
             </PieChart>
           </ResponsiveContainer>
@@ -300,7 +300,7 @@ export function QualityTab({ positions }: Props) {
                 paddingAngle={2} strokeWidth={0}>
                 {statusDistrib.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} fillOpacity={0.85} />)}
               </Pie>
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} Positionen`} />} />
+              <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} Positionen`} />} />
               <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
             </PieChart>
           </ResponsiveContainer>

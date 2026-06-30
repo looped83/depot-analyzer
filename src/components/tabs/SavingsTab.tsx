@@ -9,7 +9,7 @@ import { Card } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
-import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
+import { PALETTE, AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
 
@@ -206,7 +206,7 @@ export function SavingsTab({ positions }: Props) {
               <CartesianGrid {...GRID} vertical={false} />
               <XAxis dataKey="name" {...AXIS} />
               <YAxis {...AXIS} tickFormatter={(v) => `${v} €`} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} €`} />} />
+              <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} €`} />} />
               <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={40}>
                 {byZyklus.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} fillOpacity={0.85} />)}
               </Bar>
