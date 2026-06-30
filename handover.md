@@ -7,6 +7,28 @@
 
 ---
 
+## Update (gleicher Tag, Folgepass): npm audit + Mobile/Responsive
+
+### npm audit
+- **vite-Finding war kein Major-Upgrade nötig** (anders als im ursprünglichen Handover vermutet): `npm audit fix` hat `vite` 8.0.15 → 8.1.2 gehoben (reines Patch-Release, kein Rolldown-Migrationsrisiko). Beide High-Severity-Findings dadurch behoben.
+- **xlsx** weiterhin ungefixt: Gepatchte Version (0.19.3+) existiert nur über `cdn.sheetjs.com`, nicht über npm – SheetJS pflegt das npm-Paket nicht mehr. Nutzer-Entscheidung: **so belassen** (Risiko gering, da nur lokal hochgeladene Dateien geparst werden). Falls das nochmal aufkommt: Optionen waren (a) so lassen, (b) auf CDN-Bezug wechseln (Supply-Chain-Trust-Frage), (c) Alternative Library (z. B. exceljs) prüfen.
+
+### Mobile/Responsive – echter Bug gefunden und behoben: Dark-Only Mode war kaputt
+Tailwind v4 bindet `dark:` standardmäßig an `prefers-color-scheme`, **nicht** an eine CSS-Klasse. Es fehlte `@custom-variant dark (&:where(.dark, .dark *));` in `index.css`. Das von `App.tsx` per JS gesetzte `.dark` auf `<html>` hatte dadurch **keine Wirkung** auf die ~20 Komponenten mit `dark:`-Klassen (500+ Stellen) – die App fiel auf Systemen mit hellem OS-Theme in einen kaputten Light/Dark-Mix zurück (nur hart codierte `bg-zinc-950`-Stellen wie `Dashboard.tsx` blieben dunkel). **Fix:** `@custom-variant dark (&:where(.dark, .dark *));` direkt nach `@import "tailwindcss";` ergänzt. Verifiziert mit Playwright bei `colorScheme: 'light'`.
+
+### Mobile/Responsive – Layout-Bugs (alle mit Playwright bei 375px verifiziert und gefixt)
+- `OverviewTab.tsx` „Depotwert je Broker"-Chart: `YAxis width={30}` zu schmal für Broker-Namen wie „Scalable Capital" → abgeschnitten zu „blic"/„ital" – **trat auch auf Desktop auf**, kein reiner Mobile-Bug. Fix: `width={100}`.
+- `DividendTab.tsx` Steuer-Box: `grid-cols-4` ließ „Steuerpflichtig" mit der Nachbarspalte kollidieren auf 375px. Fix: `grid-cols-2 sm:grid-cols-4`.
+- `SavingsTab.tsx` Zukunftsprojektion: gleiches Problem, aber mit fett/groß gesetzten Eurobeträgen → auf Mobile komplett unleserlicher Textmatsch. Fix: `grid-cols-2 sm:grid-cols-4`.
+- `ProjectionTab.tsx` + `GoalTab.tsx` Annahmen-Regler: `<input type="range">` hat eine intrinsische Mindestbreite (~129px), die `flex-1` ohne `min-w-0` nicht überschreiben kann (klassisches Flexbox-Gotcha) → Regler liefen auf 2-spaltigem Mobile-Grid in die Nachbarspalte über, Werte wurden abgeschnitten/überlappten. Fix: `min-w-0` zur Range-Input-Klasse ergänzt. **Pitfall für künftige Slider:** `flex-1` auf `<input type="range">` braucht praktisch immer `min-w-0` daneben.
+- `Card.tsx`: `title` + `headerRight` (Suchbox) saßen immer in einer Zeile (`flex items-center justify-between`) – bei langen Titeln (z. B. „Dividendenanalyse – Alle Positionen") plus fixer `w-36`-Suchbox wurde der Titel auf Mobile auf wenige Zeichen abgeschnitten. Fix: `flex-col sm:flex-row` – Titel und Suchbox stapeln sich jetzt auf schmalen Screens statt sich zu quetschen. Generischer Fix in der Card-Komponente, betrifft alle `headerRight`-Nutzer.
+
+**Test-Methodik:** Kein vorhandenes Playwright-Setup im Projekt – Chromium liegt aber unter `/opt/pw-browsers/chromium-1194/chrome-linux/chrome` vor, Playwright-Paket ist global installiert (`NODE_PATH=$(npm root -g) node …`). Alle 14 Tabs wurden bei 375px (Mobile) per Skript durchgeklickt + gescreenshottet, dabei wurden Console-Errors mitgeloggt (keine gefunden). Testdatei wurde synthetisch mit 5 Positionen erzeugt (kein Sample-XLSX im Repo vorhanden).
+
+**Noch nicht geprüft:** Tablet-Breakpoint (768px) nur stichprobenartig, nicht für jeden Tab einzeln durchgeklickt. Landscape-Orientierung auf Mobile nicht getestet.
+
+---
+
 ## Tech Stack
 
 | Technologie | Version |
@@ -110,17 +132,18 @@ Effekt: Initial-Bundle (Upload-Screen) ist von ursprünglich ~344 KB gzip auf ~6
 
 1. **Tests:** Weiterhin keine Unit-Tests vorhanden. Kritische Logik in `calculations.ts`, `findings.ts`, `insights.ts` wäre ein guter Einstieg.
 2. **PR erstellen:** Der Branch `claude/data-insights-recommendations-172j1m` ist noch nicht als Pull Request gegen `main` geöffnet. Der Produktions-Crash-Report kam von der live GitHub-Pages-Seite (`looped83.github.io/depot-analyzer`), die vermutlich von `main` deployt wird – die Fixes in diesem Branch sind also noch **nicht live**, bis gemerged wird.
-3. **`npm audit` – 2 offene High-Severity-Findings (bewusst nicht automatisch gefixt):**
-   - `vite` (devDependency): Fix erfordert Major-Upgrade auf eine Rolldown-basierte Vite-Version (zieht komplett neue Build-Toolchain nach) – nicht ungefragt gemacht, da Build-Risiko. Betrifft nur lokale Dev-/Build-Umgebung.
-   - `xlsx`: bekannte Prototype-Pollution-/ReDoS-Lücken in SheetJS, kein Fix über npm verfügbar (SheetJS pflegt Patches nur noch über eigene CDN-Distribution). Risiko in diesem Kontext überschaubar, da nur lokal vom Nutzer hochgeladene Dateien geparst werden.
-4. **Mobile/Responsive:** weiterhin nicht explizit getestet.
-5. **`DepotCheckTab.tsx`:** funktional vollständig und inzwischen Teil des Lazy-Loading-Crash-Fixes (RadarChart), aber UI-Politur nicht explizit geprüft.
+3. ~~`npm audit` – 2 offene High-Severity-Findings~~ → **erledigt für vite** (Patch-Update, kein Major nötig), **`xlsx` bewusst offen gelassen** (kein npm-Fix verfügbar, Risiko als gering eingeschätzt). Details siehe Update-Abschnitt oben.
+4. ~~Mobile/Responsive: weiterhin nicht explizit getestet.~~ → **Erledigt:** alle 14 Tabs bei 375px durchgetestet, 5 Bugs gefunden und gefixt (siehe Update-Abschnitt oben). Tablet-Breakpoint nur stichprobenartig geprüft, Landscape nicht getestet.
+5. **`DepotCheckTab.tsx`:** funktional vollständig und inzwischen Teil des Lazy-Loading-Crash-Fixes (RadarChart), UI-Politur auf Mobile jetzt mitgeprüft (sah unauffällig aus), aber kein dedizierter Deep-Dive.
+6. **Tablet-Breakpoint (768px) und Landscape-Mobile:** nicht systematisch getestet, nur Dashboard-Übersicht stichprobenartig.
 
 ---
 
 ## Commit-Historie dieser Session (neueste zuerst)
 
 ```
+581aa1c fix: npm audit vite patch, force dark mode via Tailwind v4 custom-variant, mobile layout overlaps
+9595e95 docs: update handover.md with code quality, lint, lazy-loading and bugfix work
 1b81966 perf: drop per-tab lazy loading, keep only the Dashboard-level split
 16a45a1 fix: production crash "n is not a function" caused by chart vendor code splitting across lazy-loaded tabs
 806c347 fix: guard QualityTab against empty-depot NaN, surface missing Symbol column

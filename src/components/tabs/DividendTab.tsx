@@ -69,7 +69,7 @@ export function DividendTab({ positions }: Props) {
             freibetragInfo.remaining > 0 ? 'bg-emerald-500' : 'bg-amber-500'
           }`} style={{ width: `${Math.min(100, (freibetragInfo.used / freibetragInfo.freibetrag) * 100)}%` }} />
         </div>
-        <div className="grid grid-cols-4 gap-3 text-center text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">
           <div>
             <div className="text-slate-400 dark:text-zinc-500">Brutto</div>
             <div className="font-semibold text-slate-700 dark:text-zinc-300">{fmt(freibetragInfo.annualDiv)}</div>

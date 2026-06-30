@@ -146,7 +146,7 @@ export function SavingsTab({ positions }: Props) {
       {/* Future Value Projection */}
       {totalSpar > 0 && (
         <Card title="Sparplan-Zukunftsprojektion" sub={`Sparrate ${fmtNum(totalSpar)} € + 3.000 € Einmalkäufe = ${fmtNum(totalMonthlyInvest)} €/Monat · 6 % Wachstum p.a.`}>
-          <div className="grid grid-cols-4 gap-3 mt-3 mb-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 mb-3">
             {futureProjection.map(f => (
               <div key={f.year} className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-3 text-center">
                 <div className="text-xs text-slate-400 dark:text-zinc-500 mb-1">In {f.year} {f.year === 1 ? 'Jahr' : 'Jahren'}</div>
