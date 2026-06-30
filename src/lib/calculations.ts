@@ -14,7 +14,7 @@ export function parsePaymentMonths(monate: string): number[] {
 
   const found: number[] = [];
   // Split on | or , or space
-  const parts = monate.split(/[\|,]+/).map((p) => p.trim().toLowerCase());
+  const parts = monate.split(/[|,]+/).map((p) => p.trim().toLowerCase());
   for (const part of parts) {
     for (const [key, months] of Object.entries(MONTH_MAP)) {
       if (part.startsWith(key)) {

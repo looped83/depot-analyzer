@@ -9,7 +9,7 @@ import { Card } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
-import { PALETTE, AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
+import { AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
 
@@ -32,7 +32,6 @@ function calcTargets(active: DepotPosition[], strategy: Strategy): Map<string, n
 export function RebalancingTab({ positions }: Props) {
   const active = positions.filter((p) => p.wert > 0);
   const totalWert = active.reduce((s, p) => s + p.wert, 0);
-  const totalSpar = positions.reduce((s, p) => s + p.sparbetrag, 0);
 
   const [strategy, setStrategy] = useState<Strategy>('prio');
   const [budget, setBudget]     = useState(3000);
@@ -57,9 +56,7 @@ export function RebalancingTab({ positions }: Props) {
     .map((r) => ({ ...r, monthlyBuy: TRANCHE }));
 
   const overweight  = rows.filter((r) => r.deltaPct < -0.5).sort((a, b) => a.deltaPct - b.deltaPct);
-  const inBalance   = rows.filter((r) => Math.abs(r.deltaPct) <= 0.5);
 
-  const maxDeviation = Math.max(...rows.map((r) => Math.abs(r.deltaPct)));
   const avgDeviation = rows.reduce((s, r) => s + Math.abs(r.deltaPct), 0) / (rows.length || 1);
 
   const chartData = rows.map((r) => ({

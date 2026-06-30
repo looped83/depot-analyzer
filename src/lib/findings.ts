@@ -17,8 +17,6 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
   // Sort by wert for convenience
   const byWert = [...positions].sort((a, b) => b.wert - a.wert);
   const byScore = [...positions].sort((a, b) => b.dividendScore - a.dividendScore);
-  const byYield = [...positions].sort((a, b) => b.yield - a.yield);
-  const byCagr = [...positions].sort((a, b) => b.cagr5j - a.cagr5j);
   const active = positions.filter((p) => p.wert > 0);
 
   // Konzentrationsrisiko Top 5

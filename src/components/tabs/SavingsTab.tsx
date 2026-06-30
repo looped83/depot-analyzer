@@ -40,7 +40,6 @@ export function SavingsTab({ positions }: Props) {
 
   const bySpar = [...saved].sort((a, b) => b.sparbetrag - a.sparbetrag);
 
-  const active = positions.filter(p => p.wert > 0);
   const aufbauPositions = positions.filter(p => p.status === 'Aufbau');
   const aufbauSaved = aufbauPositions.filter(p => p.sparbetrag > 0);
   const prioAPositions = positions.filter(p => p.prio === 'A');
