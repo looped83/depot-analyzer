@@ -45,7 +45,7 @@ export function DividendTab({ positions }: Props) {
     <div className="space-y-5">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KPICard title="Brutto / Jahr"       value={fmt(totals.totalAnnualDiv)}    sub="Vor Steuern" info="Jährliche Dividende vor Abzug von Kapitalertragsteuer und Solidaritätszuschlag." />
-        <KPICard title="Netto / Jahr"         value={fmt(netAnnualDiv)}             sub={freibetragInfo.taxAmount > 0 ? `${fmt(freibetragInfo.taxAmount)} Steuer` : 'Kein Steuerabzug'} info="Nach Abzug von 26,375 % KapESt + SolZ auf den Betrag über dem Sparerpauschbetrag (1.000 €)." />
+        <KPICard title="Netto / Jahr"         value={fmt(netAnnualDiv)}             sub={freibetragInfo.taxAmount > 0 ? `${fmt(freibetragInfo.taxAmount)} Steuer` : 'Kein Steuerabzug'} info="Nach Abzug von 26,375 % KapESt + SolZ auf den Betrag über dem Sparerpauschbetrag (2.000 €, verheiratet)." />
         <KPICard title="Netto / Monat"        value={fmt(netAnnualDiv / 12)}        sub="Nach Steuer" />
         <KPICard title="Depot-Yield"          value={fmtPct(totals.weightedYield)}  sub="Gewichtet" info="Nach Depotwert gewichtete Dividendenrendite. Große Positionen beeinflussen den Wert stärker." />
         <KPICard title="Dividende je 1.000 €" value={fmt(divPerThousand)}           sub="Effizienz-Kennzahl" info="Wie viel Dividende du pro 1.000 € investiertem Kapital erhältst." />
@@ -124,19 +124,37 @@ export function DividendTab({ positions }: Props) {
           </div>
         </Card>
 
-        <Card title="Yield-Ausreißer">
-          <div className="mt-2 space-y-2">
+        <Card title="Yield-Ausreißer" info="Positionen mit ungewöhnlich hohem (> 6 %) oder niedrigem (< 1,5 %) Yield im Vergleich zum Depot-Durchschnitt.">
+          <div className="mt-3 space-y-3">
             <div>
-              <span className="text-xs font-medium text-amber-600 dark:text-amber-400">High Yield &gt; 6 %&nbsp;</span>
-              <span className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
-                {highYield.length ? highYield.map((p) => p.symbol).join('  ') : '—'}
-              </span>
+              <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1.5 flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+                High Yield &gt; 6 % ({highYield.length})
+              </div>
+              {highYield.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {highYield.map((p) => (
+                    <span key={p.symbol} className="text-xs font-mono bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-lg">
+                      {p.symbol} <span className="opacity-60">{fmtPct(p.yield, 1)}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : <span className="text-xs text-slate-300 dark:text-zinc-600">—</span>}
             </div>
-            <div>
-              <span className="text-xs font-medium text-slate-400 dark:text-zinc-500">Low Yield &lt; 1.5 %&nbsp;</span>
-              <span className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
-                {lowYield.length ? lowYield.map((p) => p.symbol).join('  ') : '—'}
-              </span>
+            <div className="border-t border-slate-100 dark:border-zinc-800 pt-3">
+              <div className="text-xs font-semibold text-slate-400 dark:text-zinc-500 mb-1.5 flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-slate-300 dark:bg-zinc-600" />
+                Low Yield &lt; 1,5 % ({lowYield.length})
+              </div>
+              {lowYield.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {lowYield.map((p) => (
+                    <span key={p.symbol} className="text-xs font-mono bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-500 dark:text-zinc-400 px-2 py-0.5 rounded-lg">
+                      {p.symbol} <span className="opacity-60">{fmtPct(p.yield, 1)}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : <span className="text-xs text-slate-300 dark:text-zinc-600">—</span>}
             </div>
           </div>
         </Card>

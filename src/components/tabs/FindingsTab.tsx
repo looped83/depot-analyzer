@@ -115,17 +115,53 @@ export function FindingsTab({ positions }: Props) {
         </div>
         <div className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
           <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Freibetrag-Status</div>
-          <div className={`text-lg font-bold ${totals.totalAnnualDiv >= 1000 ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
-            {fmtNum(Math.min(100, totals.totalAnnualDiv / 1000 * 100))} %
+          <div className={`text-lg font-bold ${totals.totalAnnualDiv >= 2000 ? 'text-amber-500' : 'text-emerald-600 dark:text-emerald-400'}`}>
+            {fmtNum(Math.min(100, totals.totalAnnualDiv / 2000 * 100))} %
           </div>
           <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
-            {totals.totalAnnualDiv >= 1000
-              ? `${fmt(totals.totalAnnualDiv - 1000)} über Freibetrag`
-              : `${fmt(1000 - totals.totalAnnualDiv)} Freibetrag frei`
+            {totals.totalAnnualDiv >= 2000
+              ? `${fmt(totals.totalAnnualDiv - 2000)} über Freibetrag`
+              : `${fmt(2000 - totals.totalAnnualDiv)} Freibetrag frei`
             }
           </div>
         </div>
       </div>
+
+      {/* 1.000 € Tranchen Empfehlung */}
+      {(() => {
+        const candidates = active
+          .filter(p => p.status === 'Aufbau' && p.prio && ['A', 'B'].includes(p.prio))
+          .sort((a, b) => {
+            const scoreA = a.dividendScore * 0.5 + (a.prio === 'A' ? 30 : 15) - a.portfolioWeight * 2;
+            const scoreB = b.dividendScore * 0.5 + (b.prio === 'A' ? 30 : 15) - b.portfolioWeight * 2;
+            return scoreB - scoreA;
+          })
+          .slice(0, 6);
+        if (candidates.length === 0) return null;
+        return (
+          <div className="rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50/50 dark:bg-indigo-950/20 p-4">
+            <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 mb-1">1.000 € Tranchen – Priorisierte Investitionsempfehlung</p>
+            <p className="text-xs text-indigo-600/70 dark:text-indigo-300/60 mb-3 leading-relaxed">
+              In diese Werte sollten 1.000 € Einmalkäufe priorisiert investiert werden: hohe Scores, Prio A/B, Aufbau-Status und aktuell untergewichtet.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {candidates.map((p, i) => (
+                <div key={p.symbol} className="flex items-center gap-2 bg-white/70 dark:bg-zinc-800/60 border border-indigo-100 dark:border-indigo-900/40 rounded-lg px-3 py-2">
+                  <span className="text-xs font-bold text-indigo-400 w-4">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-mono font-semibold text-slate-800 dark:text-zinc-200">{p.symbol}</span>
+                    <span className="text-xs text-slate-400 dark:text-zinc-500 ml-1.5 truncate">{p.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${p.prio === 'A' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'}`}>{p.prio}</span>
+                    <span className="text-xs text-slate-500 dark:text-zinc-400 font-mono">{fmtNum(p.portfolioWeight, 1)} %</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="text-xs text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 rounded-xl px-4 py-3">
         Diese Analyse dient ausschließlich zur Information und stellt keine Finanzberatung dar. Alle Berechnungen basieren auf den hochgeladenen Daten.

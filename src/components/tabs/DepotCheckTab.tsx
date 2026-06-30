@@ -45,7 +45,7 @@ export function DepotCheckTab({ positions }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Depot Health Score" value={`${fmtNum(health.overall)} / 100`} sub={gradeLabel(health.overall)} info="Gewichteter Score aus 8 Dimensionen: Diversifikation, Qualität, Wachstum, Sicherheit, Cashflow, Effizienz u.a." />
         <KPICard title="Empfehlungen" value={String(recommendations.length)} sub={`${recommendations.filter(r => r.priority === 'high').length} mit hoher Priorität`} info="Automatisch generierte Handlungsempfehlungen basierend auf deiner Depotanalyse." />
-        <KPICard title="Freibetrag genutzt" value={`${fmtNum(Math.min(100, freibetrag.used / freibetrag.freibetrag * 100))} %`} sub={freibetrag.remaining > 0 ? `${fmt(freibetrag.remaining)} frei` : 'Vollständig ausgeschöpft'} info="Sparerpauschbetrag: 1.000 € für Einzelveranlagung. Dividenden bis dahin sind steuerfrei." />
+        <KPICard title="Freibetrag genutzt" value={`${fmtNum(Math.min(100, freibetrag.used / freibetrag.freibetrag * 100))} %`} sub={freibetrag.remaining > 0 ? `${fmt(freibetrag.remaining)} frei` : 'Vollständig ausgeschöpft'} info="Sparerpauschbetrag: 2.000 € für verheiratete Paare (gemeinsame Veranlagung). Dividenden bis dahin sind steuerfrei." />
         <KPICard title="Steuerbelastung" value={fmt(freibetrag.taxAmount)} sub={`${fmt(freibetrag.taxable)} steuerpflichtig`} info="Geschätzte Steuer auf Dividenden oberhalb des Freibetrags (KapESt + SolZ = 26,375 %)." />
       </div>
 
@@ -180,7 +180,7 @@ export function DepotCheckTab({ positions }: Props) {
       </Card>
 
       {/* Freibetrag Tracker */}
-      <Card title="Sparerpauschbetrag-Tracker" sub="1.000 € Freibetrag für Kapitaleinkünfte (Einzelveranlagung)">
+      <Card title="Sparerpauschbetrag-Tracker" sub="2.000 € Freibetrag für Kapitaleinkünfte (Gemeinsam veranlagt)">
         <div className="mt-3">
           <div className="flex justify-between text-xs mb-1.5">
             <span className="text-slate-500 dark:text-zinc-400">{fmt(freibetrag.used)} genutzt</span>

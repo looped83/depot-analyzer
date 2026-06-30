@@ -24,6 +24,28 @@ function groupBy(positions: DepotPosition[], key: keyof DepotPosition) {
     .sort((a, b) => b.value - a.value);
 }
 
+function inferCurrency(isin: string): string {
+  const prefix = (isin ?? '').substring(0, 2).toUpperCase();
+  if (prefix === 'US') return 'USD';
+  if (prefix === 'GB') return 'GBP';
+  if (prefix === 'CA') return 'CAD';
+  if (prefix === 'AU') return 'AUD';
+  if (prefix === 'JP') return 'JPY';
+  if (['DE','FR','NL','LU','IE','AT','BE','ES','IT','FI','PT','PL','SK','SI','EE','LV','LT','MT','CY'].includes(prefix)) return 'EUR';
+  return 'Sonstige';
+}
+
+function groupByCurrency(positions: DepotPosition[]) {
+  const map = new Map<string, number>();
+  for (const p of positions) {
+    const k = inferCurrency(p.isin ?? '');
+    map.set(k, (map.get(k) ?? 0) + p.wert);
+  }
+  return [...map.entries()]
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+}
+
 // Herfindahl-Hirschman Index: sum of squared weights, 0–10000
 function calcHHI(positions: DepotPosition[]) {
   return positions.reduce((s, p) => s + p.portfolioWeight ** 2, 0);
@@ -36,6 +58,9 @@ export function DiversificationTab({ positions }: Props) {
   const byTyp      = groupBy(active, 'typ');
   const byKategorie = groupBy(active, 'kategorie');
   const byBroker   = groupBy(active, 'broker');
+  const byWaehrung = groupByCurrency(active);
+  const eurWert = byWaehrung.find(w => w.name === 'EUR')?.value ?? 0;
+  const fremdwaehrungPct = totalWert > 0 ? ((totalWert - eurWert) / totalWert * 100) : 0;
 
   const sorted = [...active].sort((a, b) => b.portfolioWeight - a.portfolioWeight);
   const top5Weight  = sorted.slice(0, 5).reduce((s, p) => s + p.portfolioWeight, 0);
@@ -102,13 +127,14 @@ export function DiversificationTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         <KPICard title="Aktive Positionen"  value={String(active.length)}        sub="Positionen im Depot" info="Anzahl aller Positionen mit einem Depotwert > 0." />
         <KPICard title="HHI"                value={fmtNum(hhi)}                  sub={hhiLabel} info="Herfindahl-Hirschman-Index: Summe der quadrierten Gewichte. < 1.000 = gut diversifiziert, > 2.500 = hoch konzentriert." />
         <KPICard title="Div. Grade"         value={divGrade}                     sub={hhiLabel} info="Note basierend auf dem HHI: A+ (< 500) bis D (> 2.500)." />
         <KPICard title="Top 5 Gewicht"      value={fmtPct(top5Weight)}           sub="Anteil am Depot" info="Anteil der 5 größten Positionen am Gesamtdepot." />
         <KPICard title="Broker"             value={String(brokerCount)}           sub={`${typCount} Typen · ${katCount} Kategorien`} info="Anzahl verschiedener Broker, Anlagetypen und Kategorien im Depot." />
         <KPICard title="Top 3 Div-Anteil"   value={`${fmtNum(top3DivPct)} %`} sub={top3DivContrib.map(p => p.symbol).join(', ')} info="Anteil der 3 größten Dividendenzahler an der Gesamtdividende." />
+        <KPICard title="Fremdwährungs-Anteil" value={`${fmtNum(fremdwaehrungPct, 1)} %`} sub={`EUR: ${fmtNum(100 - fremdwaehrungPct, 1)} %`} info="Anteil des Depots in Fremdwährungen (nicht EUR). Höhere Werte bedeuten mehr Währungsrisiko, aber auch Diversifikation." />
       </div>
 
       {/* Dependency warning */}
@@ -155,11 +181,12 @@ export function DiversificationTab({ positions }: Props) {
       </Card>
 
       {/* Pie charts */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { title: 'Nach Typ', data: byTyp },
           { title: 'Nach Kategorie', data: byKategorie },
           { title: 'Nach Broker', data: byBroker },
+          { title: 'Nach Währung', data: byWaehrung },
         ].map(({ title, data }) => (
           <Card key={title} title={title}>
             <ResponsiveContainer width="100%" height={190}>
