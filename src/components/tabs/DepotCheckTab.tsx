@@ -24,6 +24,18 @@ const gradeColor = (score: number) =>
 const barColor = (score: number) =>
   score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-blue-500' : score >= 25 ? 'bg-amber-400' : 'bg-red-400';
 
+// Shortened labels for the radar chart axis – full names remain in the detail list below it.
+const radarShortLabel: Record<string, string> = {
+  diversification: 'Diversifikation',
+  incomeStability: 'Einkommen',
+  growthPotential: 'Wachstum',
+  dataQuality: 'Datenqualität',
+  riskDistribution: 'Risiko',
+  savingsEfficiency: 'Sparplan',
+  cashflowSmoothness: 'Cashflow',
+  chowderQuality: 'Chowder',
+};
+
 const prioConfig = {
   high: { icon: <Zap size={14} />, bg: 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/50', text: 'text-red-700 dark:text-red-400', label: 'Hoch' },
   medium: { icon: <AlertTriangle size={14} />, bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/50', text: 'text-amber-700 dark:text-amber-400', label: 'Mittel' },
@@ -38,7 +50,7 @@ export function DepotCheckTab({ positions }: Props) {
   const stress50 = useMemo(() => computeStressTest(positions, 50), [positions]);
 
   const top3 = recommendations.slice(0, 3);
-  const radarData = health.dimensions.map(d => ({ dimension: d.label, score: d.score, fullMark: 100 }));
+  const radarData = health.dimensions.map(d => ({ dimension: radarShortLabel[d.key] ?? d.label, score: d.score, fullMark: 100 }));
 
   return (
     <div className="space-y-5">
@@ -76,7 +88,7 @@ export function DepotCheckTab({ positions }: Props) {
 
         <Card title="Dimensionen-Radar">
           <ResponsiveContainer width="100%" height={260}>
-            <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+            <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="62%">
               <PolarGrid stroke="#e2e8f0" strokeOpacity={0.4} />
               <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 10, fill: '#94a3b8' }} />
               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
