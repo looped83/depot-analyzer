@@ -8,6 +8,7 @@ import { computeMotivationMetrics, computeAchievements, computeSnowballEffect } 
 import { computeTotals, computeProjection } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
+import { ChartTooltip } from '../ChartTooltip';
 import { fmt, fmtNum } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
 
@@ -49,7 +50,7 @@ export function MotivationTab({ positions }: Props) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Passives Einkommen" value={fmt(totals.totalMonthlyDiv)} sub="Pro Monat, brutto" info="Deine monatliche Brutto-Dividende aus allen aktiven Positionen." />
         <KPICard title="Tägliches Einkommen" value={fmt(metrics.dailyPassiveIncome)} sub="365 Tage im Jahr" info="Jahres-Dividende geteilt durch 365 – dein tägliches Passiveinkommen." />
-        <KPICard title="Freiheitsgrad" value={`${fmtNum(metrics.freedomDegree, 1)} %`} sub="Fixkosten gedeckt (Basis: 2.500 €)" info="Anteil deiner monatlichen Fixkosten (2.500 €), der durch Dividenden gedeckt ist." />
+        <KPICard title="Freiheitsgrad" value={`${fmtNum(metrics.freedomDegree, 1)} %`} sub="Fixkosten gedeckt (Basis: 2.000 €)" info="Anteil deiner monatlichen Fixkosten (2.000 €), der durch Dividenden gedeckt ist." />
         <KPICard title="Arbeitsstunden gespart" value={`${fmtNum(metrics.workHoursPerMonth, 1)} h`} sub="Pro Monat (Mindestlohn)" info="So viele Stunden Arbeit (zum Mindestlohn) ersetzt dein Dividendeneinkommen pro Monat." />
       </div>
 
@@ -58,7 +59,7 @@ export function MotivationTab({ positions }: Props) {
         <div className="mt-2">
           <div className="flex justify-between text-xs mb-1.5">
             <span className="text-slate-500 dark:text-zinc-400">{fmt(totals.totalMonthlyDiv)} / Monat passiv</span>
-            <span className="text-slate-500 dark:text-zinc-400">100 % = 2.500 € / Monat</span>
+            <span className="text-slate-500 dark:text-zinc-400">100 % = 2.000 € / Monat</span>
           </div>
           <div className="w-full h-5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden relative">
             <div className="h-full rounded-full bg-gradient-to-r from-blue-500 via-emerald-500 to-emerald-400 transition-all duration-700"
@@ -183,14 +184,7 @@ export function MotivationTab({ positions }: Props) {
               <CartesianGrid {...GRID} />
               <XAxis dataKey="year" {...AXIS} />
               <YAxis {...AXIS} tickFormatter={v => `${fmtNum(v / 1000)}k`} />
-              <Tooltip
-                formatter={(v: unknown, name: unknown) => [
-                  fmt(v as number),
-                  name === 'withReinvest' ? 'Mit Reinvestition' : 'Ohne Reinvestition',
-                ]}
-                labelFormatter={l => `Jahr: ${l}`}
-                contentStyle={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: 12, fontSize: 12, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}
-              />
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(Number(v))} labelFormatter={(l) => `Jahr: ${l}`} />} />
               <Legend formatter={v => v === 'withReinvest' ? 'Mit Reinvestition' : 'Ohne Reinvestition'} wrapperStyle={{ fontSize: 12 }} />
               <Area type="monotone" dataKey="withReinvest" stroke="#10b981" fill="url(#gradWith)" strokeWidth={2} />
               <Area type="monotone" dataKey="withoutReinvest" stroke="#94a3b8" fill="url(#gradWithout)" strokeWidth={1.5} strokeDasharray="4 3" />

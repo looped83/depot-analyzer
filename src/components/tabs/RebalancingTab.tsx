@@ -6,6 +6,7 @@ import {
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
+import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
@@ -98,7 +99,7 @@ export function RebalancingTab({ positions }: Props) {
               <input type="range" min={50} max={5000} step={50} value={budget}
                 onChange={(e) => setBudget(Number(e.target.value))}
                 className="w-40 accent-blue-500" />
-              <span className="text-sm font-mono tabular-nums w-16 text-slate-700 dark:text-zinc-300">{budget} €</span>
+              <span className="text-sm font-mono tabular-nums w-20 text-slate-700 dark:text-zinc-300">{fmtNum(budget)} €</span>
             </div>
           </div>
         </div>
@@ -147,10 +148,7 @@ export function RebalancingTab({ positions }: Props) {
               <XAxis dataKey="symbol" {...AXIS} angle={-35} textAnchor="end" interval={0} />
               <YAxis {...AXIS} tickFormatter={(v) => `${fmtNum(v, 1)} %`} />
               <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />
-              <Tooltip
-                formatter={(v: unknown) => [`${fmtNum(v as number, 2)} %`, 'Δ Gewicht']}
-                contentStyle={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: 12, fontSize: 12 }}
-              />
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${fmtNum(Number(v), 2)} %`} />} />
               <Bar dataKey="delta" radius={[4, 4, 0, 0]} maxBarSize={28}>
                 {chartData.map((d, i) => (
                   <Cell key={i} fill={d.delta > 0 ? '#10b981' : '#f97316'} fillOpacity={0.82} />

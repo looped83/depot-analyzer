@@ -7,6 +7,7 @@ import type { DepotPosition } from '../../lib/types';
 import { computeHealthScore, generateRecommendations, computeFreibetrag, computeStressTest } from '../../lib/insights';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
+import { ChartTooltip } from '../ChartTooltip';
 import { fmt, fmtNum } from '../../lib/format';
 import { ArrowRight, Zap, AlertTriangle, CheckCircle, Info, TrendingDown } from 'lucide-react';
 
@@ -80,10 +81,7 @@ export function DepotCheckTab({ positions }: Props) {
               <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 10, fill: '#94a3b8' }} />
               <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
               <Radar dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.15} strokeWidth={2} />
-              <Tooltip
-                formatter={(v: unknown) => [`${v} / 100`, 'Score']}
-                contentStyle={{ background: 'white', border: '1px solid #f1f5f9', borderRadius: 12, fontSize: 12, boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}
-              />
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} / 100`} />} />
             </RadarChart>
           </ResponsiveContainer>
         </Card>
