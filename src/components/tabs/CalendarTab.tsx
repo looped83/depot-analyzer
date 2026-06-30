@@ -7,7 +7,7 @@ import { computeMonthlyCalendar } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
 import { Card } from '../Card';
 import { fmt, fmtNum } from '../../lib/format';
-import { AXIS, GRID } from '../../lib/chartTheme';
+import { AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
 
@@ -71,7 +71,7 @@ export function CalendarTab({ positions }: Props) {
               <CartesianGrid {...GRID} vertical={false} />
               <XAxis dataKey="label" {...AXIS} />
               <YAxis {...AXIS} tickFormatter={(v) => `${fmtNum(v)}€`} />
-              <Tooltip
+              <Tooltip cursor={BAR_CURSOR}
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   const d = payload[0].payload;

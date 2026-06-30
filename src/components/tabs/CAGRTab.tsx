@@ -9,7 +9,7 @@ import { KPICard } from '../KPICard';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmtPct, fmtNum, fmt } from '../../lib/format';
-import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
+import { PALETTE, AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
 
@@ -97,7 +97,7 @@ export function CAGRTab({ positions }: Props) {
             <CartesianGrid {...GRID} vertical={false} />
             <XAxis dataKey="symbol" {...AXIS} angle={-35} textAnchor="end" interval={0} />
             <YAxis {...AXIS} tickFormatter={(v) => fmtNum(v)} />
-            <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmtNum(v as number, 1)} />} />
+            <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => fmtNum(v as number, 1)} />} />
             <Bar dataKey="chowderScore" radius={[4, 4, 0, 0]} maxBarSize={32}>
               {top10Chowder.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} fillOpacity={0.85} />)}
             </Bar>

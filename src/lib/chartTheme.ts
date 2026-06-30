@@ -24,3 +24,6 @@ export const GRID = {
   strokeOpacity: 0.08,
   stroke: '#94a3b8',
 };
+
+// Neutral cursor rectangle for bar charts — replaces the default white hover fill
+export const BAR_CURSOR = { fill: 'rgba(0,0,0,0.05)' };

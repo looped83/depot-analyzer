@@ -8,7 +8,7 @@ import { computeTotals } from '../../lib/calculations';
 import { computeFreibetrag } from '../../lib/insights';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
-import { PALETTE, AXIS, GRID } from '../../lib/chartTheme';
+import { PALETTE, AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 
 interface Props { positions: DepotPosition[] }
 
@@ -201,7 +201,7 @@ export function DividendTab({ positions }: Props) {
             <CartesianGrid {...GRID} vertical={false} />
             <XAxis dataKey="symbol" {...AXIS} angle={-35} textAnchor="end" interval={0} />
             <YAxis tickFormatter={(v) => `${fmtNum(v)} €`} {...AXIS} />
-            <Tooltip
+            <Tooltip cursor={BAR_CURSOR}
               content={(props) => (
                 <ChartTooltip
                   {...props}

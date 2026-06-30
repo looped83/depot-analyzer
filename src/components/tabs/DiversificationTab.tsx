@@ -212,7 +212,7 @@ export function DiversificationTab({ positions }: Props) {
               <CartesianGrid {...GRID} horizontal={false} />
               <XAxis type="number" {...AXIS} tickFormatter={(v) => `${fmtNum(v, 1)} %`} />
               <YAxis type="category" dataKey="symbol" {...AXIS} width={52} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${fmtNum(v as number, 2)} %`} />} />
+              <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => `${fmtNum(v as number, 2)} %`} />} />
               <Bar dataKey="portfolioWeight" radius={[0, 4, 4, 0]} maxBarSize={18}>
                 {sorted.slice(0, 15).map((p, i) => (
                   <Cell key={p.symbol} fill={p.portfolioWeight > 5 ? '#f59e0b' : PALETTE[i % PALETTE.length]} fillOpacity={0.85} />
