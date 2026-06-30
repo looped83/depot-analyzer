@@ -212,7 +212,7 @@ export function SafetyTab({ positions }: Props) {
 
       {/* Safety ranking table */}
       <Card title="Safety Ranking – Alle aktiven Positionen" pad={false}>
-        <div className="px-5 pb-5">
+        <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={sortedBySafety}
             rowKey={(r) => r.symbol}

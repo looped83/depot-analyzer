@@ -107,7 +107,7 @@ export function CAGRTab({ positions }: Props) {
 
       {/* CAGR table */}
       <Card title="CAGR & Wachstums-Ranking" pad={false}>
-        <div className="px-5 pb-5">
+        <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={byCagr}
             rowKey={(r) => r.symbol}

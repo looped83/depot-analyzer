@@ -309,7 +309,7 @@ export function QualityTab({ positions }: Props) {
 
       {/* Completeness table – worst first */}
       <Card title="Datenvollständigkeit je Position – schlechteste zuerst" pad={false}>
-        <div className="px-5 pb-5">
+        <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={withCompleteness}
             rowKey={(r) => r.symbol}

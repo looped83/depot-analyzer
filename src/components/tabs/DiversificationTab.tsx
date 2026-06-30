@@ -237,7 +237,7 @@ export function DiversificationTab({ positions }: Props) {
 
       {/* Full table */}
       <Card title="Alle Positionen – Gewichtung" pad={false}>
-        <div className="px-5 pb-5">
+        <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={sorted}
             rowKey={(r) => r.symbol}

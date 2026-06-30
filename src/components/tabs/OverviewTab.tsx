@@ -182,7 +182,7 @@ export function OverviewTab({ positions }: Props) {
       </Card>
 
       <Card title="Top 10 nach Depotwert" pad={false}>
-        <div className="px-5 pb-5">
+        <div className="px-5 pt-3 pb-5">
           <SortableTable data={top10} rowKey={(r) => r.symbol} columns={[
             { key: 'symbol', label: 'Symbol', width: '80px', render: (v) => <span className="font-mono font-semibold text-xs text-slate-800 dark:text-zinc-200">{String(v)}</span> },
             { key: 'name', label: 'Name' },
@@ -215,7 +215,7 @@ export function OverviewTab({ positions }: Props) {
           />
         }
       >
-        <div className="px-5 pb-5">
+        <div className="px-5 pt-3 pb-5">
           <SortableTable data={byWert} rowKey={(r) => r.symbol}
             filterKeys={['symbol','name','broker','kategorie','status']}
             filter={allSearch}
