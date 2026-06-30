@@ -192,15 +192,17 @@ export function OverviewTab({ positions }: Props) {
 
       <Card title="Depotwert je Broker">
         <ResponsiveContainer width="100%" height={150}>
-          <BarChart data={aggregateBy(positions,'broker')} layout="vertical" margin={{ left: 0, right: 40 }}>
+          {(() => { const byBroker = aggregateBy(positions,'broker'); return (
+          <BarChart data={byBroker} layout="vertical" margin={{ left: 0, right: 40 }}>
             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.12} horizontal={false} />
             <XAxis type="number" tickFormatter={(v) => `${fmtNum(v / 1000)}k`} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
             <YAxis type="category" dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} width={30} axisLine={false} tickLine={false} />
             <Tooltip cursor={BAR_CURSOR} content={<Tip />} />
             <Bar dataKey="value" radius={[0,6,6,0]} maxBarSize={18}>
-              {aggregateBy(positions,'broker').map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
+              {byBroker.map((_, i) => <Cell key={i} fill={PALETTE[i % PALETTE.length]} />)}
             </Bar>
           </BarChart>
+          ); })()}
         </ResponsiveContainer>
       </Card>
 

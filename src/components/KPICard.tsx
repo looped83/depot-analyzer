@@ -7,7 +7,6 @@ interface Props {
   sub?: string;
   info?: string;
   icon?: React.ReactNode;
-  color?: 'blue' | 'green' | 'yellow' | 'purple' | 'red' | 'teal';
 }
 
 export function KPICard({ title, value, sub, info, icon }: Props) {

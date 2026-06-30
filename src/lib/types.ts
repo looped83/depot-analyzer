@@ -35,25 +35,11 @@ export interface ProjectionParams {
   capitalGrowthRate: number;     // % per year
 }
 
-export interface ProjectionScenario {
-  label: string;
-  dividendGrowthRate: number;
-  capitalGrowthRate: number;
-}
-
 export interface MonthlyIncome {
   month: number; // 1-12
   label: string;
   expectedIncome: number;
   positions: string[];
-}
-
-export interface RankingEntry {
-  symbol: string;
-  name: string;
-  value: number;
-  score?: number;
-  label?: string;
 }
 
 export type TabId =
