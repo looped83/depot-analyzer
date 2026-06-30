@@ -16,7 +16,7 @@ export function Card({ title, sub, info, headerRight, children, className = '', 
     <div className={`bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm ${className}`}>
       {(title || sub || headerRight) && (
         <div className="px-5 pt-5 pb-0">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
               {title && <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 truncate">{title}</h3>}
               {info && <InfoTip text={info} />}

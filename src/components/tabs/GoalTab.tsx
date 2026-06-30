@@ -105,7 +105,7 @@ export function GoalTab({ positions }: Props) {
               <div className="flex items-center gap-3">
                 <input type="range" min={min} max={max} step={step} value={val}
                   onChange={(e) => set(Number(e.target.value))}
-                  className="flex-1 accent-blue-500" />
+                  className="flex-1 min-w-0 accent-blue-500" />
                 <span className="text-sm font-mono tabular-nums w-20 text-right text-slate-700 dark:text-zinc-300">
                   {fmtNum(val, unit === '€' ? 0 : 1)} {unit}
                 </span>

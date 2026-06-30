@@ -85,7 +85,7 @@ export function ProjectionTab({ positions }: Props) {
                   type="range" min={min} max={max} step={step}
                   value={params[key] as number}
                   onChange={(e) => upd(key, Number(e.target.value))}
-                  className="flex-1 accent-blue-500"
+                  className="flex-1 min-w-0 accent-blue-500"
                 />
                 <span className="text-sm font-mono tabular-nums w-20 text-right text-slate-700 dark:text-zinc-300">
                   {fmtNum(params[key] as number, unit === '€' ? 0 : 1)} {unit}
