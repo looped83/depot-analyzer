@@ -19,7 +19,7 @@ export function UploadZone({ onFile, loading, error }: Props) {
     <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col items-center justify-center px-6">
       {/* Wordmark */}
       <div className="mb-12 text-center">
-        <img src="/favicon.svg" alt="Depot Analyzer Logo" className="w-12 h-auto mx-auto mb-4" />
+        <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="Depot Analyzer Logo" className="w-12 h-auto mx-auto mb-4" />
         <span className="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">
           Depot Analyzer
         </span>
