@@ -122,10 +122,11 @@ export function Dashboard({ positions, filename, onReset }: Props) {
   };
 
   const exportCSV = () => {
-    const headers = ['Symbol','Name','Status','Prio','Broker','Wert (€)','Gewicht %','Yield %','CAGR 5J %','Jährl. Div. (€)','Monatl. Div. (€)','Div-Beitrag %','Chowder','Div-Score','Ausschüttungsfrequenz','Ausschüttungsmonate','Typ','Kategorie','ISIN','WKN'];
+    const headers = ['Symbol','Name','Status','Prio','Broker','Wert (€)','Kaufkurs (€)','Einstand (€)','Gewinn/Verlust (€)','Gewinn/Verlust %','Gewicht %','Yield %','CAGR 5J %','Jährl. Div. (€)','Monatl. Div. (€)','Div-Beitrag %','Chowder','Div-Score','Ausschüttungsfrequenz','Ausschüttungsmonate','Typ','Kategorie','ISIN','WKN'];
     const rows = positions.map((p) => [
       p.symbol, p.name, p.status, p.prio ?? '', p.broker,
-      p.wert.toFixed(2), p.portfolioWeight.toFixed(2), p.yield.toFixed(4), p.cagr5j.toFixed(2),
+      p.wert.toFixed(2), p.kaufkurs.toFixed(2), p.einstandswert.toFixed(2), p.gewinnVerlust.toFixed(2), p.gewinnVerlustPct.toFixed(2),
+      p.portfolioWeight.toFixed(2), p.yield.toFixed(4), p.cagr5j.toFixed(2),
       p.annualDividend.toFixed(2), p.monthlyDividend.toFixed(2), p.dividendContribution.toFixed(2),
       p.chowderScore.toFixed(1), p.dividendScore, p.ausschuettungsfrequenz, p.ausschuettungsmonate,
       p.typ, p.kategorie, p.isin, p.wkn,
