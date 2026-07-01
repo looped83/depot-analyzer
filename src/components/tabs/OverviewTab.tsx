@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
-import { Card, StatusBadge, PrioBadge, InfoTip } from '../Card';
+import { Card, StatusBadge, PrioBadge, InfoTip, PageHeading } from '../Card';
 import { computeTotals, computeMonthlyCalendar } from '../../lib/calculations';
 import { computeHealthScore, computeFreibetrag } from '../../lib/insights';
 import { SortableTable } from '../tables/SortableTable';
@@ -51,6 +51,7 @@ export function OverviewTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Übersicht" />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KPICard title="Gesamtwert"      value={fmt(totals.totalWert)}        sub="Alle Positionen" info="Summe aller Positionswerte im Depot." />
         <KPICard title="Positionen"       value={fmtNum(positions.length)}      sub={`${fmtNum(aufbau.length)} Aufbau · ${fmtNum(erledigt.length)} Erledigt`} />

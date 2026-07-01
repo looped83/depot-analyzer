@@ -6,7 +6,7 @@ import {
 import type { DepotPosition } from '../../lib/types';
 import { computeProjection, computeTotals } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { fmt, fmtNum } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
 import { ChartTooltip } from '../ChartTooltip';
@@ -84,6 +84,7 @@ export function GoalTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Zielplanung" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Aktuell / Monat"   value={fmt(currentMonthly)}   sub="Monatliche Dividende" info="Deine aktuelle monatliche Brutto-Dividende aus allen aktiven Positionen." />
         <KPICard title="Ziel / Monat"      value={fmt(goalMonthly)}      sub="Einstellbar" info="Dein gewünschtes monatliches Dividendenziel – über den Regler anpassbar." />

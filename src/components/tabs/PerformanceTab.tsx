@@ -4,7 +4,7 @@ import {
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct } from '../../lib/format';
@@ -18,12 +18,15 @@ export function PerformanceTab({ positions }: Props) {
 
   if (withCostBasis.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center">
-        <p className="text-sm font-semibold text-slate-700 dark:text-zinc-200 mb-1">Keine Kaufkurs-Daten vorhanden</p>
-        <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-md mx-auto">
-          Ergänze die Spalten „Kaufkurs" (Kaufpreis pro Anteil) und „Stückzahl" in deiner Depot-Datei,
-          um hier Gewinn und Verlust je Position auszuwerten.
-        </p>
+      <div className="space-y-5">
+        <PageHeading title="Performance" />
+        <div className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center">
+          <p className="text-sm font-semibold text-slate-700 dark:text-zinc-200 mb-1">Keine Kaufkurs-Daten vorhanden</p>
+          <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-md mx-auto">
+            Ergänze die Spalten „Kaufkurs" (Kaufpreis pro Anteil) und „Stückzahl" in deiner Depot-Datei,
+            um hier Gewinn und Verlust je Position auszuwerten.
+          </p>
+        </div>
       </div>
     );
   }
@@ -43,6 +46,7 @@ export function PerformanceTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Performance" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Einstandswert" value={fmt(totalEinstand)} sub={`${withCostBasis.length} Positionen mit Kaufkurs`} info="Summe aus Kaufkurs × Stückzahl über alle Positionen mit hinterlegtem Kaufkurs." />
         <KPICard title="Aktueller Wert" value={fmt(totalWert)} sub="Zum Kurs von heute" />

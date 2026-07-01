@@ -7,7 +7,7 @@ import type { DepotPosition } from '../../lib/types';
 import { computeMotivationMetrics, computeAchievements, computeSnowballEffect } from '../../lib/insights';
 import { computeTotals, computeProjection } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { fmt, fmtNum } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
@@ -46,6 +46,7 @@ export function MotivationTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Motivation" />
       {/* Hero KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Passives Einkommen" value={fmt(totals.totalMonthlyDiv)} sub="Pro Monat, brutto" info="Deine monatliche Brutto-Dividende aus allen aktiven Positionen." />

@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { SortableTable } from '../tables/SortableTable';
 import { fmtPct, fmtNum, fmt } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
@@ -100,6 +100,7 @@ export function SafetyTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Sicherheit" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Sichere Positionen"   value={String(greens.length)}           sub={`von ${active.length} aktiven`} info="Positionen mit Yield ≤ 6,5 % und CAGR ≥ 2 %. Diese gelten als stabile Dividendenzahler ohne unmittelbaren Handlungsbedarf." />
         <KPICard title="Zu beobachten"        value={String(yellows.length)}          sub="Yield hoch od. CAGR niedrig" info="Positionen mit Yield > 6,5 % oder CAGR < 2 % oder Status 'Beobachten'. Regelmäßig auf Dividendenkürzungen prüfen." />

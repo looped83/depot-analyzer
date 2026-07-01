@@ -2,6 +2,7 @@ import React from 'react';
 import type { DepotPosition } from '../../lib/types';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { Trophy, TrendingUp, DollarSign, Star, AlertTriangle, Search } from 'lucide-react';
+import { PageHeading } from '../Card';
 
 interface Props { positions: DepotPosition[] }
 
@@ -180,6 +181,7 @@ export function RankingTab({ positions }: Props) {
 
   return (
     <div className="space-y-4">
+      <PageHeading title="Rankings" />
       <p className="text-sm text-gray-500 dark:text-gray-400">
         Transparentes Scoring: <span className="font-mono">Dividend Score = 40% norm. Yield + 40% norm. CAGR + 10% Ausschüttungsfrequenz + 10% Priorität/Status</span>
       </p>

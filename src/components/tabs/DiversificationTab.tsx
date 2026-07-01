@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
@@ -123,6 +123,7 @@ export function DiversificationTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Diversifikation" />
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         <KPICard title="Aktive Positionen"  value={String(active.length)}        sub="Positionen im Depot" info="Anzahl aller Positionen mit einem Depotwert > 0." />
         <KPICard title="HHI"                value={fmtNum(hhi)}                  sub={hhiLabel} info="Herfindahl-Hirschman-Index: Summe der quadrierten Gewichte. < 1.000 = gut diversifiziert, > 2.500 = hoch konzentriert." />

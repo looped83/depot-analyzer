@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell,
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { KPICard } from '../KPICard';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
@@ -47,6 +47,7 @@ export function CAGRTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Wachstum" />
       <div className="grid grid-cols-3 gap-3">
         <KPICard title="Ø CAGR 5J"      value={fmtPct(avgCagr)}    sub="Aktive Positionen" info="Compound Annual Growth Rate – durchschnittliches jährliches Dividendenwachstum über 5 Jahre." />
         <KPICard title="Ø Yield"         value={fmtPct(avgYield)}   sub="Aktive Positionen" info="Durchschnittliche Dividendenrendite aller aktiven Positionen." />

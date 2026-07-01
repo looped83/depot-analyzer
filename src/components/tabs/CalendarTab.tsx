@@ -5,7 +5,7 @@ import {
 import type { DepotPosition } from '../../lib/types';
 import { computeMonthlyCalendar } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { fmt, fmtNum } from '../../lib/format';
 import { AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 
@@ -41,6 +41,7 @@ export function CalendarTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Kalender" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Jährl. Gesamtdividende" value={fmt(totalAnnual)}           sub="Aus Cashflow-Analyse" />
         <KPICard title="Bester Monat"            value={maxMonth.label}            sub={fmt(maxMonth.expectedIncome)} />
