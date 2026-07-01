@@ -1,9 +1,42 @@
 # Handover – depot-analyzer
 
-**Datum:** 2026-06-30
+**Datum:** 2026-07-01
 **Branch:** `claude/data-insights-recommendations-172j1m`
 **Repo:** `looped83/depot-analyzer`
 **Build:** `npx tsc --noEmit` → 0 Fehler · `npx eslint .` → 0 Fehler · `npm run build` → erfolgreich
+
+---
+
+## Update (2026-07-01): Navigation-Umbau, Performance-Tab, CSV-Export
+
+Vier PRs, alle einzeln gegen `main` erstellt und **alle vier gemerged** (#31–#34).
+
+### Navigation: 15 flache Tabs → 5 thematische Gruppen mit Flyout (PR #31, #32)
+Auslöser: Nutzer-Feedback, dass die Navigation mit 15 Top-Level-Tabs zu unübersichtlich war (horizontales Scrollen nötig, gerade auf Mobile).
+
+- **`Dashboard.tsx`:** `TABS`-Array durch `TAB_GROUPS` ersetzt – 5 Gruppen (`depot`, `dividends`, `growth`, `analysis`, `actions`), jede mit 2–4 der bisherigen 15 Tabs. Alle `TabId`s und Tab-Inhalte unverändert, nur die Navigations-Struktur ist neu:
+  - **Depot**: Übersicht, Performance (neu, siehe unten), Rankings
+  - **Dividenden**: Analyse, Kalender, Motivation
+  - **Wachstum & Planung**: Wachstum, Sparpläne, Ausblick, Zielplanung
+  - **Analyse & Risiko**: Diversifikation, Sicherheit, Qualität, Depot-Check
+  - **Empfehlungen**: Findings, Rebalancing
+- Erster Wurf (PR #31) zeigte die Sub-Tabs der aktiven Gruppe permanent in einer zweiten Zeile unter den Gruppen-Pills. Auf Nutzer-Feedback hin („gefällt visuell nicht") in PR #32 zu einem **Klick-Flyout** umgebaut: Sub-Tabs erscheinen nur noch als Dropdown, wenn eine Gruppe angeklickt wird, und schließen sich bei Auswahl oder Klick außerhalb wieder.
+- **Bug gefunden & gefixt (PR #32):** Das Flyout wird mit `position: fixed` gerendert (Koordinaten aus `getBoundingClientRect()` der Gruppen-Schaltfläche zum Klick-Zeitpunkt) – **nicht** `position: absolute` innerhalb der Gruppen-Zeile. Grund: Die Gruppen-Zeile hat `overflow-x-auto` für horizontales Scrollen auf Mobile; das zwingt den Browser laut CSS-Spec implizit zu `overflow-y: auto`, was ein absolut positioniertes Flyout abgeschnitten hätte (verifiziert per `getComputedStyle`).
+- **Zweiter Bug gefunden & gefixt (PR #32):** Ein erster Ansatz schloss das Flyout zusätzlich bei jedem `scroll`-Event, um seine Position synchron zu halten. Das führte dazu, dass ein Klick auf eine (teilweise) außerhalb des sichtbaren Bereichs liegende Gruppen-Schaltfläche das Flyout **im selben Tick wieder schloss**: Der Browser scrollt fokussierte Elemente automatisch ins Sichtfeld, was ein `scroll`-Event auslöst – und genau das hat den eigenen Close-Handler direkt nach dem Öffnen erneut getriggert. Fix: Scroll/Resize-Auto-Close entfernt, nur noch Klick-außerhalb schließt das Flyout (Standard-Pattern für Dropdown-Menüs).
+
+### Neues Feature: Kaufkurs-Tracking & Performance-Tab (PR #33)
+Bisher gab es keine Möglichkeit, Einstandspreise oder Gewinn/Verlust zu erfassen – `DepotPosition` kannte nur den aktuellen Marktwert (`wert`), keinen Kaufkurs.
+
+- **`types.ts`:** `DepotPosition` um `stueckzahl` (Anzahl gehaltener Anteile) und `kaufkurs` (Kaufpreis pro Anteil, €) erweitert, dazu 4 neue berechnete Felder: `einstandswert`, `aktuellerKurs`, `gewinnVerlust`, `gewinnVerlustPct`. Neue `TabId`: `'performance'`.
+- **`parser.ts`:** Zwei neue optionale Spalten (`col('stückzahl')`, `col('kaufkurs')`) – fehlen sie in der Excel-Datei, defaulten beide auf `0` (bestehendes Verhalten für fehlende Spalten, kein Crash).
+- **`calculations.ts` (`calculateDerived`):** `einstandswert = kaufkurs * stueckzahl`, `aktuellerKurs = wert / stueckzahl` (Guard bei `stueckzahl === 0`), `gewinnVerlust`/`gewinnVerlustPct` nur berechnet wenn `einstandswert > 0`, sonst `0`.
+- **Neuer Tab `PerformanceTab.tsx`** (einsortiert in die Gruppe „Depot"): KPIs (Einstandswert, aktueller Wert, Gewinn/Verlust €+%, Gewinner/Verlierer-Anzahl), grün/rot eingefärbtes Balkendiagramm je Position, sortierbare Tabelle mit Kaufkurs/aktuellem Kurs/Einstand/Wert/G&V. Positionen ohne Kaufkurs+Stückzahl werden aus der P&L-Rechnung ausgeschlossen und in einer Warnbox gezählt. **Leerer State:** Hat keine einzige Position Kostenbasis-Daten, zeigt der Tab einen Hinweistext statt eines leeren/kaputt wirkenden Charts.
+- Mit Playwright gegen eine synthetische Datei mit gemischten Daten (4 Positionen mit Kaufkurs, 1 ohne) verifiziert – KPI-Summen, Chart-Farben und Tabellenwerte manuell nachgerechnet und abgeglichen. Alle 16 Tabs nach der Datenmodell-Änderung durchgeklickt, keine Console-Errors.
+
+### CSV-Export erweitert (PR #34)
+`Dashboard.tsx` → `exportCSV()`: neue Spalten `Kaufkurs (€)`, `Einstand (€)`, `Gewinn/Verlust (€)`, `Gewinn/Verlust %` direkt nach `Wert (€)` ergänzt, damit der Export zum Performance-Tab passt. Per Playwright-Download verifiziert (Werte stimmen exakt mit Performance-Tab überein, fehlender Kaufkurs exportiert korrekt als `0.00`).
+
+**Noch nicht geprüft:** Der neue Performance-Tab (breite Tabelle mit 6 Zahlen-Spalten) wurde noch nicht explizit bei 375px auf Mobile-Layout-Bugs getestet (nur die Flyout-Navigation selbst wurde auf Mobile verifiziert) – gleiches Muster wie frühere Tabellen-Overflow-Bugs in anderen Tabs ist hier denkbar.
 
 ---
 
@@ -124,6 +157,7 @@ Effekt: Initial-Bundle (Upload-Screen) ist von ursprünglich ~344 KB gzip auf ~6
 - **Dividend Score:** 40 % normierter Yield + 40 % normierter CAGR + 10 % Frequenz-Score + 10 % Priorität/Status
 - **Chowder Score:** `yield + cagr5j` (einfach, ungewichtet)
 - **HHI:** Summe der quadrierten Portfolio-Gewichte; < 1.000 = gut, > 2.500 = hoch konzentriert
+- **Einstandswert / Gewinn-Verlust:** `einstandswert = kaufkurs * stueckzahl`; `gewinnVerlust = wert - einstandswert` nur wenn `einstandswert > 0`, sonst `0` (Position ohne Kaufkurs-Daten). `aktuellerKurs = wert / stueckzahl` (Guard bei `stueckzahl === 0`).
 - **Ausschüttungsfrequenz Scores:** monatlich = 3, quartalsweise = 2, jährlich = 1 (implizit via `freqScore`)
 - Alle Geldwerte in **EUR**, alle Prozente als Prozent-Zahl (z. B. `2.24` für 2,24 %)
 - **Status-Werte:** `Aufbau`, `Erledigt`, `Beobachten`, `Verkauf`
@@ -134,17 +168,28 @@ Effekt: Initial-Bundle (Upload-Screen) ist von ursprünglich ~344 KB gzip auf ~6
 ## Offene Punkte / mögliche nächste Schritte
 
 1. **Tests:** Weiterhin keine Unit-Tests vorhanden. Kritische Logik in `calculations.ts`, `findings.ts`, `insights.ts` wäre ein guter Einstieg.
-2. **PR erstellen:** Der Branch `claude/data-insights-recommendations-172j1m` ist noch nicht als Pull Request gegen `main` geöffnet. Der Produktions-Crash-Report kam von der live GitHub-Pages-Seite (`looped83.github.io/depot-analyzer`), die vermutlich von `main` deployt wird – die Fixes in diesem Branch sind also noch **nicht live**, bis gemerged wird.
+2. ~~PR erstellen: Branch noch nicht als Pull Request gegen `main` geöffnet.~~ → **Erledigt:** Seit dem 2026-06-30-Handover wurden 8 PRs (#27–#34) gegen `main` erstellt und alle gemerged. Der Stand auf `main` ist damit aktuell (inkl. Navigation-Umbau, Performance-Tab, CSV-Export).
 3. ~~`npm audit` – 2 offene High-Severity-Findings~~ → **erledigt für vite** (Patch-Update, kein Major nötig), **`xlsx` bewusst offen gelassen** (kein npm-Fix verfügbar, Risiko als gering eingeschätzt). Details siehe Update-Abschnitt oben.
 4. ~~Mobile/Responsive: weiterhin nicht explizit getestet.~~ → **Erledigt:** alle 14 Tabs bei 375px durchgetestet, 5 Bugs gefunden und gefixt (siehe Update-Abschnitt oben). Tablet-Breakpoint nur stichprobenartig geprüft, Landscape nicht getestet.
 5. ~~`DepotCheckTab.tsx`: UI-Politur nicht explizit geprüft.~~ → **Erledigt:** dedizierter Deep-Dive auf Desktop/Tablet/Mobile. Ein Bug gefunden und gefixt (Radar-Chart-Labels abgeschnitten auf Tablet+Mobile, siehe Update-Abschnitt oben). Rest der Tab-Inhalte (Gauge, Stresstest, Freibetrag-Tracker, Empfehlungslisten) sah auf allen drei Breakpoints sauber aus.
 6. **Tablet-Breakpoint (768px) und Landscape-Mobile:** nicht systematisch getestet, nur Dashboard-Übersicht stichprobenartig.
+7. **Neuer Performance-Tab (2026-07-01) noch nicht auf Mobile-Layout-Bugs geprüft:** Die Tabelle hat 6 Zahlen-Spalten (Kaufkurs, Kurs aktuell, Einstand, Wert, G/V €, G/V %) – bei 375px potenziell zu breit/gequetscht, analog zu früheren Tabellen-Overflow-Bugs in anderen Tabs. Nur die Flyout-Navigation selbst wurde auf Mobile verifiziert, nicht der Tab-Inhalt.
+8. **CSV-Export-Konsumenten prüfen:** Falls der Nutzer die exportierte CSV in Excel/Sheets weiterverarbeitet, wurden die 4 neuen Spalten (Kaufkurs, Einstand, G/V €, G/V %) bisher nur automatisiert per Playwright-Download verifiziert, nicht manuell in einer Tabellenkalkulation geöffnet.
 
 ---
 
 ## Commit-Historie dieser Session (neueste zuerst)
 
 ```
+8677f19 feat: add Kaufkurs and Gewinn/Verlust columns to CSV export
+7eb1a88 feat: add Kaufkurs/Stückzahl columns and a Performance tab
+c8e51ee refactor: turn always-visible sub-tab row into a click-triggered flyout
+c9ccc4f feat: group navigation tabs into 5 thematic categories
+c59484e docs: note search-box/table spacing fix in handover.md
+203f97a fix: zero gap between Card header (title/search box) and table content
+f5ec4e9 fix: long ETF names overlap with prio badge in FindingsTab tranchen list
+b5c9aaa fix: radar chart axis labels clipped on tablet and mobile in DepotCheckTab
+7fff8d1 docs: update handover.md with npm audit and mobile/responsive findings
 581aa1c fix: npm audit vite patch, force dark mode via Tailwind v4 custom-variant, mobile layout overlaps
 9595e95 docs: update handover.md with code quality, lint, lazy-loading and bugfix work
 1b81966 perf: drop per-tab lazy loading, keep only the Dashboard-level split
