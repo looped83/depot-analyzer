@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
@@ -37,7 +37,9 @@ export function PerformanceTab({ positions }: Props) {
   const losers = withCostBasis.filter((p) => p.gewinnVerlust < 0);
 
   const sortedByPct = [...withCostBasis].sort((a, b) => b.gewinnVerlustPct - a.gewinnVerlustPct);
-  const barData = [...withCostBasis].sort((a, b) => b.gewinnVerlust - a.gewinnVerlust);
+  const TOP_N = 10;
+  const topWinners = [...winners].sort((a, b) => b.gewinnVerlust - a.gewinnVerlust).slice(0, TOP_N);
+  const topLosers = [...losers].sort((a, b) => a.gewinnVerlust - b.gewinnVerlust).slice(0, TOP_N);
 
   return (
     <div className="space-y-5">
@@ -58,21 +60,39 @@ export function PerformanceTab({ positions }: Props) {
         </div>
       )}
 
-      <Card title="Gewinn / Verlust je Position" sub="Grün = im Plus · Rot = im Minus">
-        <ResponsiveContainer width="100%" height={Math.max(220, barData.length * 26)}>
-          <BarChart data={barData} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
-            <CartesianGrid {...GRID} horizontal={false} />
-            <XAxis type="number" {...AXIS} tickFormatter={(v) => fmt(v as number)} />
-            <YAxis type="category" dataKey="symbol" {...AXIS} width={52} />
-            <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(v as number)} />} />
-            <Bar dataKey="gewinnVerlust" radius={[0, 4, 4, 0]} maxBarSize={18}>
-              {barData.map((p) => (
-                <Cell key={p.symbol} fill={p.gewinnVerlust >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.85} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card title="Top Gewinner" sub={`Größter Gewinn zuerst${winners.length > TOP_N ? ` · Top ${TOP_N} von ${winners.length}` : ''}`}>
+          {topWinners.length > 0 ? (
+            <ResponsiveContainer width="100%" height={Math.max(140, topWinners.length * 26)}>
+              <BarChart data={topWinners} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
+                <CartesianGrid {...GRID} horizontal={false} />
+                <XAxis type="number" {...AXIS} tickFormatter={(v) => fmt(v as number)} />
+                <YAxis type="category" dataKey="symbol" {...AXIS} width={52} />
+                <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(v as number)} />} />
+                <Bar dataKey="gewinnVerlust" fill="#10b981" fillOpacity={0.85} radius={[0, 4, 4, 0]} maxBarSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-xs text-slate-400 dark:text-zinc-500 text-center py-8">Keine Positionen im Plus.</p>
+          )}
+        </Card>
+
+        <Card title="Top Verlierer" sub={`Größter Verlust zuerst${losers.length > TOP_N ? ` · Top ${TOP_N} von ${losers.length}` : ''}`}>
+          {topLosers.length > 0 ? (
+            <ResponsiveContainer width="100%" height={Math.max(140, topLosers.length * 26)}>
+              <BarChart data={topLosers} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
+                <CartesianGrid {...GRID} horizontal={false} />
+                <XAxis type="number" {...AXIS} tickFormatter={(v) => fmt(v as number)} />
+                <YAxis type="category" dataKey="symbol" {...AXIS} width={52} />
+                <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(v as number)} />} />
+                <Bar dataKey="gewinnVerlust" fill="#ef4444" fillOpacity={0.85} radius={[0, 4, 4, 0]} maxBarSize={18} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-xs text-slate-400 dark:text-zinc-500 text-center py-8">Keine Positionen im Minus.</p>
+          )}
+        </Card>
+      </div>
 
       <Card title="Performance je Position" pad={false}>
         <div className="px-5 pt-3 pb-5">
