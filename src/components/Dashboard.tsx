@@ -118,7 +118,10 @@ export function Dashboard({ positions, filename, onReset }: Props) {
   const toggleGroup = (e: React.MouseEvent<HTMLButtonElement>, groupId: string) => {
     if (flyout?.groupId === groupId) { setFlyout(null); return; }
     const rect = e.currentTarget.getBoundingClientRect();
-    setFlyout({ groupId, top: rect.bottom + 4, left: rect.left });
+    // Clamp to the viewport so the flyout (min-w-[190px]) can't be pushed off-screen
+    // when its trigger sits near the right edge of a narrow (tablet/landscape) viewport.
+    const left = Math.min(rect.left, window.innerWidth - 190 - 8);
+    setFlyout({ groupId, top: rect.bottom + 4, left: Math.max(8, left) });
   };
 
   const exportCSV = () => {
@@ -210,7 +213,10 @@ export function Dashboard({ positions, filename, onReset }: Props) {
 
         {/* Tab groups */}
         <div ref={navRef} className="max-w-screen-xl mx-auto px-6">
-          <div className="flex gap-0 overflow-x-auto no-scrollbar">
+          {/* Fading edges hint that the row scrolls horizontally once the 5 groups no
+              longer fit — happens around the 768px tablet breakpoint, where the row is
+              too narrow to show every label but not narrow enough to look obviously cramped. */}
+          <div className="flex gap-0 overflow-x-auto no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-12px),transparent)]">
             {TAB_GROUPS.map((group) => (
               <button
                 key={group.id}

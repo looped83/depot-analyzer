@@ -249,7 +249,7 @@ export function QualityTab({ positions }: Props) {
       </Card>
 
       {/* Score distributions + prio + status */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card title="Dividenden-Score Verteilung">
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={scoreDistrib} margin={{ bottom: 4, top: 4, right: 8 }}>

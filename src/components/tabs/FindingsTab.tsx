@@ -92,7 +92,7 @@ export function FindingsTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {(['danger', 'warning', 'info', 'success'] as const).map((cat) => (
           <div key={cat} className={`rounded-2xl border p-4 text-center ${categoryConfig[cat].bg} ${categoryConfig[cat].border}`}>
             <div className={`text-2xl font-bold ${categoryConfig[cat].text}`}>{grouped[cat].length}</div>
