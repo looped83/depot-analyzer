@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { DepotPosition, TabId } from '../lib/types';
 // All tabs load together as part of the Dashboard chunk (see App.tsx, which lazy-loads
 // Dashboard itself). Splitting further, per-tab, caused a noticeable load flicker on every
@@ -26,15 +26,14 @@ import {
   LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
   Calendar, Trophy, Lightbulb, LineChart,
   Download, Upload, PieChart, ShieldCheck,
-  Target, Sliders, Star, HeartPulse, Sparkles,
+  Target, Sliders, Star, HeartPulse, Sparkles, ChevronDown,
 } from 'lucide-react';
 
 interface Tab { id: TabId; label: string; icon: React.ReactNode }
 interface TabGroup { id: string; label: string; icon: React.ReactNode; tabs: Tab[] }
 
 // Tabs are grouped thematically into 5 top-level groups so the nav bar shows
-// 5 items instead of 15; the sub-tab row underneath reveals only the tabs of
-// the currently active group.
+// 5 items instead of 15; clicking a group opens a flyout with that group's tabs.
 const TAB_GROUPS: TabGroup[] = [
   {
     id: 'depot', label: 'Depot', icon: <LayoutDashboard size={13} />,
@@ -95,9 +94,30 @@ const Btn = ({ onClick, children }: { onClick: () => void; children: React.React
 
 export function Dashboard({ positions, filename, onReset }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
+  // Position is captured at click time (fixed positioning) so the flyout escapes the
+  // group row's overflow-x-auto clipping — overflow-x: auto implicitly forces
+  // overflow-y: auto too, which would otherwise clip an absolutely positioned dropdown.
+  const [flyout, setFlyout] = useState<{ groupId: string; top: number; left: number } | null>(null);
   const totals = useMemo(() => computeTotals(positions), [positions]);
   const health = useMemo(() => computeHealthScore(positions), [positions]);
   const activeGroup = TAB_GROUPS.find((g) => g.tabs.some((t) => t.id === activeTab)) ?? TAB_GROUPS[0];
+  const flyoutGroup = flyout ? TAB_GROUPS.find((g) => g.id === flyout.groupId) : null;
+
+  const navRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!flyout) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) setFlyout(null);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [flyout]);
+
+  const toggleGroup = (e: React.MouseEvent<HTMLButtonElement>, groupId: string) => {
+    if (flyout?.groupId === groupId) { setFlyout(null); return; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    setFlyout({ groupId, top: rect.bottom + 4, left: rect.left });
+  };
 
   const exportCSV = () => {
     const headers = ['Symbol','Name','Status','Prio','Broker','Wert (€)','Gewicht %','Yield %','CAGR 5J %','Jährl. Div. (€)','Monatl. Div. (€)','Div-Beitrag %','Chowder','Div-Score','Ausschüttungsfrequenz','Ausschüttungsmonate','Typ','Kategorie','ISIN','WKN'];
@@ -186,12 +206,12 @@ export function Dashboard({ positions, filename, onReset }: Props) {
         </div>
 
         {/* Tab groups */}
-        <div className="max-w-screen-xl mx-auto px-6">
+        <div ref={navRef} className="max-w-screen-xl mx-auto px-6">
           <div className="flex gap-0 overflow-x-auto no-scrollbar">
             {TAB_GROUPS.map((group) => (
               <button
                 key={group.id}
-                onClick={() => setActiveTab(group.tabs[0].id)}
+                onClick={(e) => toggleGroup(e, group.id)}
                 className={`flex items-center gap-1.5 px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-all ${
                   activeGroup.id === group.id
                     ? 'border-blue-500 text-blue-400'
@@ -200,26 +220,31 @@ export function Dashboard({ positions, filename, onReset }: Props) {
               >
                 {group.icon}
                 {group.label}
+                <ChevronDown size={12} className={`transition-transform ${flyout?.groupId === group.id ? 'rotate-180' : ''}`} />
               </button>
             ))}
           </div>
-          {/* Sub-tabs of the active group */}
-          <div className="flex gap-0 overflow-x-auto no-scrollbar border-t border-zinc-800/60">
-            {activeGroup.tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-medium whitespace-nowrap border-b-2 transition-all ${
-                  activeTab === tab.id
-                    ? 'border-blue-400 text-blue-300'
-                    : 'border-transparent text-zinc-600 hover:text-zinc-300'
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          {flyout && flyoutGroup && (
+            <div
+              style={{ position: 'fixed', top: flyout.top, left: flyout.left }}
+              className="z-50 min-w-[190px] rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl py-1"
+            >
+              {flyoutGroup.tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); setFlyout(null); }}
+                  className={`flex w-full items-center gap-2 px-3.5 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
+                    activeTab === tab.id
+                      ? 'text-blue-400 bg-zinc-800/60'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                  }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 
