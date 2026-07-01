@@ -7,6 +7,7 @@ export interface HealthDimension {
   score: number;
   detail: string;
   tips: string[];
+  isGood: boolean;
 }
 
 export interface ActionRecommendation {
@@ -99,6 +100,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     {
       key: 'diversification', label: 'Diversifikation', score: divScore,
       detail: `HHI: ${hhi.toFixed(0)} · ${active.length} aktive Positionen`,
+      isGood: divScore >= 60,
       tips: divScore < 60
         ? ['Untergewichtete Positionen aufstocken', 'Neue Branchen/Regionen beimischen']
         : ['Gute Streuung beibehalten'],
@@ -106,6 +108,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     {
       key: 'incomeStability', label: 'Einkommensstabilität', score: incomeStabilityScore,
       detail: `${payerCount} verschiedene Dividendenzahler`,
+      isGood: incomeStabilityScore >= 60,
       tips: incomeStabilityScore < 60
         ? ['Mehr Dividendenzahler aufnehmen', 'Monatliche Zahler bevorzugen']
         : ['Stabile Einkommensbasis vorhanden'],
@@ -113,6 +116,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     {
       key: 'growthPotential', label: 'Wachstumspotenzial', score: growthScore,
       detail: `Gewichteter CAGR: ${weightedCagr.toFixed(1)} %`,
+      isGood: growthScore >= 60,
       tips: growthScore < 60
         ? ['Positionen mit CAGR > 7 % aufstocken', 'Dividenden-Aristokraten in Betracht ziehen']
         : ['Solides Wachstum im Depot'],
@@ -120,6 +124,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     {
       key: 'dataQuality', label: 'Datenqualität', score: dataQuality,
       detail: `${Math.round(dataQuality)} % der Felder befüllt`,
+      isGood: dataQuality >= 80,
       tips: dataQuality < 80
         ? ['Fehlende ISINs nachtragen', 'Prioritäten für alle Positionen setzen', 'Ausschüttungsmonate ergänzen']
         : ['Gute Datenbasis vorhanden'],
@@ -127,6 +132,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     {
       key: 'riskDistribution', label: 'Risikoverteilung', score: riskScore,
       detail: `${riskPositions.length} Risiko · ${watchPositions.length} Beobachten`,
+      isGood: riskScore >= 60,
       tips: riskScore < 60
         ? ['Risikopositionen prüfen und ggf. reduzieren', 'Yield-Trap-Positionen identifizieren']
         : ['Ausgewogene Risikoverteilung'],
@@ -134,6 +140,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     {
       key: 'savingsEfficiency', label: 'Sparplan-Effizienz', score: sparEfficiency,
       detail: `${aufbauWithSpar}/${aufbauTotal} Aufbau-Positionen bespart`,
+      isGood: sparEfficiency >= 60,
       tips: sparEfficiency < 60
         ? ['Sparpläne für Prio-A-Positionen einrichten', 'Übergewichtete Positionen nicht weiter besparen']
         : ['Sparpläne gut ausgerichtet'],
@@ -141,6 +148,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     {
       key: 'cashflowSmoothness', label: 'Cashflow-Gleichmäßigkeit', score: cashflowScore,
       detail: `Variationskoeff.: ${(cv * 100).toFixed(0)} % · Ø ${avgMonthly.toFixed(0)} €/Monat`,
+      isGood: cashflowScore >= 60,
       tips: cashflowScore < 60
         ? ['Monatliche Zahler aufstocken', 'Quartalsweise Zahler mit verschiedenen Monaten kombinieren']
         : ['Gleichmäßiger Cashflow'],
@@ -148,6 +156,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     {
       key: 'chowderQuality', label: 'Chowder-Qualität', score: chowderScore,
       detail: `Gewichteter Chowder: ${weightedChowder.toFixed(1)}`,
+      isGood: chowderScore >= 60,
       tips: chowderScore < 60
         ? ['Positionen mit Chowder > 12 bevorzugen', 'Schwache Chowder-Werte durch bessere ersetzen']
         : ['Gute Yield/Growth-Balance'],

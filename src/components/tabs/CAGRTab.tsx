@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell,
@@ -14,6 +14,7 @@ import { PALETTE, AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 interface Props { positions: DepotPosition[] }
 
 export function CAGRTab({ positions }: Props) {
+  const [search, setSearch] = useState('');
   const active  = positions.filter((p) => p.wert > 0 && (p.cagr5j > 0 || p.yield > 0));
   const byCagr  = [...active].sort((a, b) => b.cagr5j - a.cagr5j);
   const byChowder = [...active].sort((a, b) => b.chowderScore - a.chowderScore);
@@ -77,11 +78,11 @@ export function CAGRTab({ positions }: Props) {
 
         <div className="grid grid-cols-3 gap-3 mt-4">
           {[
-            { label: '⭐ Stars',           count: stars.length,              symbols: stars,              color: 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400' },
-            { label: '📈 Wachstum',        count: lowYieldHighGrowth.length, symbols: lowYieldHighGrowth, color: 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400' },
-            { label: '⚠ Einkommens-Falle', count: highYieldLowGrowth.length, symbols: highYieldLowGrowth, color: 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400' },
+            { label: '⭐ Stars',           count: stars.length,              symbols: stars,              color: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-400' },
+            { label: '📈 Wachstum',        count: lowYieldHighGrowth.length, symbols: lowYieldHighGrowth, color: 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/60 text-blue-700 dark:text-blue-400' },
+            { label: '⚠ Einkommens-Falle', count: highYieldLowGrowth.length, symbols: highYieldLowGrowth, color: 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/60 text-amber-700 dark:text-amber-400' },
           ].map(({ label, count, symbols, color }) => (
-            <div key={label} className={`rounded-xl p-3 ${color}`}>
+            <div key={label} className={`rounded-xl border p-3 ${color}`}>
               <p className="text-xs font-semibold">{label} ({count})</p>
               <p className="mt-1 text-xs opacity-70 font-mono leading-relaxed">
                 {symbols.map((p) => p.symbol).join('  ') || '—'}
@@ -107,12 +108,25 @@ export function CAGRTab({ positions }: Props) {
       </Card>
 
       {/* CAGR table */}
-      <Card title="CAGR & Wachstums-Ranking" pad={false}>
+      <Card
+        title="CAGR & Wachstums-Ranking"
+        pad={false}
+        headerRight={
+          <input
+            className="text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/40 placeholder-zinc-600 text-zinc-200 w-36"
+            placeholder="Suchen …"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        }
+      >
         <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={byCagr}
             rowKey={(r) => r.symbol}
             filterKeys={['symbol', 'name', 'typ', 'kategorie']}
+            filter={search}
+            onFilterChange={setSearch}
             columns={[
               { key: 'symbol', label: 'Symbol', width: '80px',
                 render: (v) => <span className="font-mono font-semibold text-xs text-slate-800 dark:text-zinc-200">{String(v)}</span> },

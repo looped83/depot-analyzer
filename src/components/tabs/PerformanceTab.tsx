@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -13,6 +13,7 @@ import { AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
 interface Props { positions: DepotPosition[] }
 
 export function PerformanceTab({ positions }: Props) {
+  const [search, setSearch] = useState('');
   const withCostBasis = positions.filter((p) => p.einstandswert > 0);
   const missingCostBasis = positions.filter((p) => p.wert > 0 && p.einstandswert <= 0).length;
 
@@ -98,12 +99,25 @@ export function PerformanceTab({ positions }: Props) {
         </Card>
       </div>
 
-      <Card title="Performance je Position" pad={false}>
+      <Card
+        title="Performance je Position"
+        pad={false}
+        headerRight={
+          <input
+            className="text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/40 placeholder-zinc-600 text-zinc-200 w-36"
+            placeholder="Suchen …"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        }
+      >
         <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={sortedByPct}
             rowKey={(r) => r.symbol}
             filterKeys={['symbol', 'name']}
+            filter={search}
+            onFilterChange={setSearch}
             columns={[
               { key: 'symbol', label: 'Symbol', width: '80px',
                 render: (v) => <span className="font-mono font-semibold text-xs text-slate-800 dark:text-zinc-200">{String(v)}</span> },

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, AreaChart, Area,
@@ -16,6 +16,7 @@ interface Props { positions: DepotPosition[] }
 const ZYKLUS_LABEL: Record<number, string> = { 0: 'Kein Sparplan', 1: 'Zyklus 1', 2: 'Zyklus 2', 3: 'Zyklus 3' };
 
 export function SavingsTab({ positions }: Props) {
+  const [search, setSearch] = useState('');
   const saved = positions.filter((p) => p.sparbetrag > 0);
   const totalSpar = positions.reduce((s, p) => s + p.sparbetrag, 0);
   const totalWert = positions.reduce((s, p) => s + p.wert, 0);
@@ -241,12 +242,25 @@ export function SavingsTab({ positions }: Props) {
         </div>
       )}
 
-      <Card title="Sparplan-Ranking – Kapitalfluss" pad={false}>
+      <Card
+        title="Sparplan-Ranking – Kapitalfluss"
+        pad={false}
+        headerRight={
+          <input
+            className="text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/40 placeholder-zinc-600 text-zinc-200 w-36"
+            placeholder="Suchen …"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        }
+      >
         <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={bySpar}
             rowKey={(r) => r.symbol}
             filterKeys={['symbol', 'name', 'broker', 'prio']}
+            filter={search}
+            onFilterChange={setSearch}
             columns={[
               { key: 'symbol', label: 'Symbol', width: '80px',
                 render: (v) => <span className="font-mono font-semibold text-xs text-slate-800 dark:text-zinc-200">{String(v)}</span> },

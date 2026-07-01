@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { DepotPosition, TabId } from '../lib/types';
 // All tabs load together as part of the Dashboard chunk (see App.tsx, which lazy-loads
 // Dashboard itself). Splitting further, per-tab, caused a noticeable load flicker on every
@@ -20,9 +20,6 @@ import { RebalancingTab } from './tabs/RebalancingTab';
 import { QualityTab } from './tabs/QualityTab';
 import { DepotCheckTab } from './tabs/DepotCheckTab';
 import { MotivationTab } from './tabs/MotivationTab';
-import { computeTotals } from '../lib/calculations';
-import { computeHealthScore } from '../lib/insights';
-import { fmt, fmtPct, fmtNum } from '../lib/format';
 import {
   LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
   Calendar, Trophy, Lightbulb, LineChart,
@@ -81,7 +78,6 @@ const TAB_GROUPS: TabGroup[] = [
 
 interface Props {
   positions: DepotPosition[];
-  filename: string;
   onReset: () => void;
 }
 
@@ -94,14 +90,12 @@ const Btn = ({ onClick, children }: { onClick: () => void; children: React.React
   </button>
 );
 
-export function Dashboard({ positions, filename, onReset }: Props) {
+export function Dashboard({ positions, onReset }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   // Position is captured at click time (fixed positioning) so the flyout escapes the
   // group row's overflow-x-auto clipping — overflow-x: auto implicitly forces
   // overflow-y: auto too, which would otherwise clip an absolutely positioned dropdown.
   const [flyout, setFlyout] = useState<{ groupId: string; top: number; left: number } | null>(null);
-  const totals = useMemo(() => computeTotals(positions), [positions]);
-  const health = useMemo(() => computeHealthScore(positions), [positions]);
   const activeGroup = TAB_GROUPS.find((g) => g.tabs.some((t) => t.id === activeTab)) ?? TAB_GROUPS[0];
   const flyoutGroup = flyout ? TAB_GROUPS.find((g) => g.id === flyout.groupId) : null;
 
@@ -145,7 +139,7 @@ export function Dashboard({ positions, filename, onReset }: Props) {
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800">
-        <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-center gap-4">
+        <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-stretch gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2 shrink-0">
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="Depot Analyzer Logo" className="w-6 h-auto" />
@@ -154,50 +148,53 @@ export function Dashboard({ positions, filename, onReset }: Props) {
             </span>
           </div>
 
-          <div className="h-4 w-px bg-zinc-700 hidden sm:block" />
-
-          {/* File info */}
-          <span className="text-xs text-zinc-500 truncate hidden sm:block max-w-[160px]">
-            {filename}
-          </span>
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Live KPIs */}
-          <div className="hidden lg:flex items-center gap-5 text-xs">
-            <div className="text-center">
-              <div className="text-zinc-500">Depotwert</div>
-              <div className="font-semibold text-zinc-200">{fmt(totals.totalWert)}</div>
+          {/* Tab groups */}
+          <div ref={navRef} className="relative flex-1 min-w-0">
+            {/* Fading edges hint that the row scrolls horizontally once the 5 groups no
+                longer fit — happens around the 768px tablet breakpoint, where the row is
+                too narrow to show every label but not narrow enough to look obviously cramped. */}
+            <div className="h-full flex items-stretch overflow-x-auto no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-12px),transparent)]">
+              {TAB_GROUPS.map((group) => (
+                <button
+                  key={group.id}
+                  onClick={(e) => toggleGroup(e, group.id)}
+                  className={`flex items-center gap-1.5 px-4 text-xs font-medium whitespace-nowrap border-b-2 shrink-0 transition-all ${
+                    activeGroup.id === group.id
+                      ? 'border-blue-500 text-blue-400'
+                      : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {group.icon}
+                  {group.label}
+                  <ChevronDown size={12} className={`transition-transform ${flyout?.groupId === group.id ? 'rotate-180' : ''}`} />
+                </button>
+              ))}
             </div>
-            <div className="h-6 w-px bg-zinc-800" />
-            <div className="text-center">
-              <div className="text-zinc-500">Yield</div>
-              <div className="font-semibold text-emerald-400">{fmtPct(totals.weightedYield)}</div>
-            </div>
-            <div className="h-6 w-px bg-zinc-800" />
-            <div className="text-center">
-              <div className="text-zinc-500">Dividende / Jahr</div>
-              <div className="font-semibold text-zinc-200">{fmt(totals.totalAnnualDiv)}</div>
-            </div>
-            <div className="h-6 w-px bg-zinc-800" />
-            <div className="text-center">
-              <div className="text-zinc-500">Ø / Monat</div>
-              <div className="font-semibold text-zinc-200">{fmt(totals.totalMonthlyDiv)}</div>
-            </div>
-            <div className="h-6 w-px bg-zinc-800" />
-            <div className="text-center">
-              <div className="text-zinc-500">Health</div>
-              <div className={`font-semibold ${health.overall >= 70 ? 'text-emerald-400' : health.overall >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
-                {fmtNum(health.overall)}
+            {flyout && flyoutGroup && (
+              <div
+                style={{ position: 'fixed', top: flyout.top, left: flyout.left }}
+                className="z-50 min-w-[190px] rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl py-1"
+              >
+                {flyoutGroup.tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => { setActiveTab(tab.id); setFlyout(null); }}
+                    className={`flex w-full items-center gap-2 px-3.5 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
+                      activeTab === tab.id
+                        ? 'text-blue-400 bg-zinc-800/60'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                  </button>
+                ))}
               </div>
-            </div>
+            )}
           </div>
 
-          <div className="flex-1 hidden lg:block" />
-
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <Btn onClick={exportCSV}><Download size={12} />CSV</Btn>
             <button
               onClick={onReset}
@@ -207,51 +204,6 @@ export function Dashboard({ positions, filename, onReset }: Props) {
               <Upload size={14} />
             </button>
           </div>
-        </div>
-
-        {/* Tab groups */}
-        <div ref={navRef} className="max-w-screen-xl mx-auto px-6">
-          {/* Fading edges hint that the row scrolls horizontally once the 5 groups no
-              longer fit — happens around the 768px tablet breakpoint, where the row is
-              too narrow to show every label but not narrow enough to look obviously cramped. */}
-          <div className="flex gap-0 overflow-x-auto no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-12px),transparent)]">
-            {TAB_GROUPS.map((group) => (
-              <button
-                key={group.id}
-                onClick={(e) => toggleGroup(e, group.id)}
-                className={`flex items-center gap-1.5 px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-all ${
-                  activeGroup.id === group.id
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-zinc-500 hover:text-zinc-300'
-                }`}
-              >
-                {group.icon}
-                {group.label}
-                <ChevronDown size={12} className={`transition-transform ${flyout?.groupId === group.id ? 'rotate-180' : ''}`} />
-              </button>
-            ))}
-          </div>
-          {flyout && flyoutGroup && (
-            <div
-              style={{ position: 'fixed', top: flyout.top, left: flyout.left }}
-              className="z-50 min-w-[190px] rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl py-1"
-            >
-              {flyoutGroup.tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => { setActiveTab(tab.id); setFlyout(null); }}
-                  className={`flex w-full items-center gap-2 px-3.5 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
-                    activeTab === tab.id
-                      ? 'text-blue-400 bg-zinc-800/60'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
-                  }`}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </header>
 
