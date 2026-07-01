@@ -148,9 +148,7 @@ export function Dashboard({ positions, filename, onReset }: Props) {
         <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-center gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2 shrink-0">
-            <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center">
-              <span className="text-white text-[10px] font-bold">D</span>
-            </div>
+            <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="Depot Analyzer Logo" className="w-6 h-auto" />
             <span className="text-sm font-semibold text-white hidden sm:block">
               Depot Analyzer
             </span>
