@@ -90,6 +90,8 @@ export function parseExcel(file: File): Promise<DepotPosition[]> {
         const iWKN = col('wkn');
         const iTyp = col('typ');
         const iKat = col('kategorie');
+        const iStueckzahl = col('stückzahl');
+        const iKaufkurs = col('kaufkurs');
 
         const positions: DepotPosition[] = [];
 
@@ -125,6 +127,8 @@ export function parseExcel(file: File): Promise<DepotPosition[]> {
             wkn: str(row[iWKN]),
             typ: str(row[iTyp], 'Aktie'),
             kategorie: str(row[iKat], 'Growth'),
+            stueckzahl: num(row[iStueckzahl]),
+            kaufkurs: num(row[iKaufkurs]),
             // computed fields placeholder – filled by calculateDerived
             annualDividend: 0,
             monthlyDividend: 0,
@@ -132,6 +136,10 @@ export function parseExcel(file: File): Promise<DepotPosition[]> {
             dividendContribution: 0,
             dividendScore: 0,
             chowderScore: 0,
+            einstandswert: 0,
+            aktuellerKurs: 0,
+            gewinnVerlust: 0,
+            gewinnVerlustPct: 0,
           });
         }
 

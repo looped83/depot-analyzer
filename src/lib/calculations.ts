@@ -80,6 +80,10 @@ export function calculateDerived(positions: DepotPosition[]): DepotPosition[] {
       p.yield, p.cagr5j, p.freqScore, p.prio, p.status,
       allYields, allCagrs, maxFreq
     );
+    const einstandswert = p.kaufkurs * p.stueckzahl;
+    const aktuellerKurs = p.stueckzahl > 0 ? p.wert / p.stueckzahl : 0;
+    const gewinnVerlust = einstandswert > 0 ? p.wert - einstandswert : 0;
+    const gewinnVerlustPct = einstandswert > 0 ? (gewinnVerlust / einstandswert) * 100 : 0;
 
     return {
       ...p,
@@ -89,6 +93,10 @@ export function calculateDerived(positions: DepotPosition[]): DepotPosition[] {
       dividendContribution,
       chowderScore,
       dividendScore,
+      einstandswert,
+      aktuellerKurs,
+      gewinnVerlust,
+      gewinnVerlustPct,
     };
   });
 }
