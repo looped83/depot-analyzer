@@ -57,7 +57,7 @@ export function UploadZone({ onFile, loading, error }: Props) {
               {dragging ? 'Datei loslassen …' : 'Datei hierher ziehen'}
             </p>
             <p className="mt-1 text-xs text-slate-400 dark:text-zinc-500">
-              oder <span className="text-blue-500 hover:underline">klicken zum Auswählen</span> · .xlsx
+              oder <span className="text-blue-500 hover:underline">klicken zum Auswählen</span>
             </p>
           </div>
         </div>
