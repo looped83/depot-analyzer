@@ -65,8 +65,8 @@ export function parseExcel(file: File): Promise<DepotPosition[]> {
           str(h).toLowerCase()
         );
 
-        const col = (name: string) =>
-          headers.findIndex((h) => h.includes(name.toLowerCase()));
+        const col = (...names: string[]) =>
+          headers.findIndex((h) => names.some((name) => h.includes(name.toLowerCase())));
 
         const iZyklus = col('zyklus');
         const iSymbol = col('symbol');
@@ -90,8 +90,8 @@ export function parseExcel(file: File): Promise<DepotPosition[]> {
         const iWKN = col('wkn');
         const iTyp = col('typ');
         const iKat = col('kategorie');
-        const iStueckzahl = col('stückzahl');
-        const iKaufkurs = col('kaufkurs');
+        const iStueckzahl = col('stückzahl', 'stueckzahl');
+        const iKaufkurs = col('kaufkurs', 'kaufpreis', 'einstandskurs', 'einstandspreis');
 
         const positions: DepotPosition[] = [];
 
