@@ -30,23 +30,52 @@ import {
 } from 'lucide-react';
 
 interface Tab { id: TabId; label: string; icon: React.ReactNode }
+interface TabGroup { id: string; label: string; icon: React.ReactNode; tabs: Tab[] }
 
-const TABS: Tab[] = [
-  { id: 'overview',   label: 'Depot',      icon: <LayoutDashboard size={13} /> },
-  { id: 'dividends',  label: 'Dividenden', icon: <TrendingUp size={13} /> },
-  { id: 'cagr',       label: 'Wachstum',   icon: <BarChart2 size={13} /> },
-  { id: 'savings',    label: 'Sparpläne',  icon: <PiggyBank size={13} /> },
-  { id: 'calendar',   label: 'Kalender',   icon: <Calendar size={13} /> },
-  { id: 'rankings',   label: 'Rankings',   icon: <Trophy size={13} /> },
-  { id: 'findings',   label: 'Findings',   icon: <Lightbulb size={13} /> },
-  { id: 'depot-check',     label: 'Depot-Check',     icon: <HeartPulse   size={13} /> },
-  { id: 'motivation',      label: 'Motivation',      icon: <Sparkles     size={13} /> },
-  { id: 'projection',      label: 'Ausblick',        icon: <LineChart    size={13} /> },
-  { id: 'diversification', label: 'Diversifikation', icon: <PieChart     size={13} /> },
-  { id: 'safety',          label: 'Sicherheit',      icon: <ShieldCheck  size={13} /> },
-  { id: 'goal',            label: 'Zielplanung',     icon: <Target       size={13} /> },
-  { id: 'rebalancing',     label: 'Rebalancing',     icon: <Sliders      size={13} /> },
-  { id: 'quality',         label: 'Qualität',        icon: <Star         size={13} /> },
+// Tabs are grouped thematically into 5 top-level groups so the nav bar shows
+// 5 items instead of 15; the sub-tab row underneath reveals only the tabs of
+// the currently active group.
+const TAB_GROUPS: TabGroup[] = [
+  {
+    id: 'depot', label: 'Depot', icon: <LayoutDashboard size={13} />,
+    tabs: [
+      { id: 'overview', label: 'Übersicht', icon: <LayoutDashboard size={13} /> },
+      { id: 'rankings', label: 'Rankings',  icon: <Trophy size={13} /> },
+    ],
+  },
+  {
+    id: 'dividends', label: 'Dividenden', icon: <TrendingUp size={13} />,
+    tabs: [
+      { id: 'dividends',  label: 'Analyse',    icon: <TrendingUp size={13} /> },
+      { id: 'calendar',   label: 'Kalender',   icon: <Calendar size={13} /> },
+      { id: 'motivation', label: 'Motivation', icon: <Sparkles size={13} /> },
+    ],
+  },
+  {
+    id: 'growth', label: 'Wachstum & Planung', icon: <LineChart size={13} />,
+    tabs: [
+      { id: 'cagr',       label: 'Wachstum',    icon: <BarChart2 size={13} /> },
+      { id: 'savings',    label: 'Sparpläne',   icon: <PiggyBank size={13} /> },
+      { id: 'projection', label: 'Ausblick',    icon: <LineChart size={13} /> },
+      { id: 'goal',       label: 'Zielplanung', icon: <Target size={13} /> },
+    ],
+  },
+  {
+    id: 'analysis', label: 'Analyse & Risiko', icon: <ShieldCheck size={13} />,
+    tabs: [
+      { id: 'diversification', label: 'Diversifikation', icon: <PieChart size={13} /> },
+      { id: 'safety',          label: 'Sicherheit',      icon: <ShieldCheck size={13} /> },
+      { id: 'quality',         label: 'Qualität',        icon: <Star size={13} /> },
+      { id: 'depot-check',     label: 'Depot-Check',     icon: <HeartPulse size={13} /> },
+    ],
+  },
+  {
+    id: 'actions', label: 'Empfehlungen', icon: <Lightbulb size={13} />,
+    tabs: [
+      { id: 'findings',     label: 'Findings',    icon: <Lightbulb size={13} /> },
+      { id: 'rebalancing',  label: 'Rebalancing', icon: <Sliders size={13} /> },
+    ],
+  },
 ];
 
 interface Props {
@@ -68,6 +97,7 @@ export function Dashboard({ positions, filename, onReset }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const totals = useMemo(() => computeTotals(positions), [positions]);
   const health = useMemo(() => computeHealthScore(positions), [positions]);
+  const activeGroup = TAB_GROUPS.find((g) => g.tabs.some((t) => t.id === activeTab)) ?? TAB_GROUPS[0];
 
   const exportCSV = () => {
     const headers = ['Symbol','Name','Status','Prio','Broker','Wert (€)','Gewicht %','Yield %','CAGR 5J %','Jährl. Div. (€)','Monatl. Div. (€)','Div-Beitrag %','Chowder','Div-Score','Ausschüttungsfrequenz','Ausschüttungsmonate','Typ','Kategorie','ISIN','WKN'];
@@ -155,17 +185,34 @@ export function Dashboard({ positions, filename, onReset }: Props) {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tab groups */}
         <div className="max-w-screen-xl mx-auto px-6">
           <div className="flex gap-0 overflow-x-auto no-scrollbar">
-            {TABS.map((tab) => (
+            {TAB_GROUPS.map((group) => (
+              <button
+                key={group.id}
+                onClick={() => setActiveTab(group.tabs[0].id)}
+                className={`flex items-center gap-1.5 px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-all ${
+                  activeGroup.id === group.id
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                }`}
+              >
+                {group.icon}
+                {group.label}
+              </button>
+            ))}
+          </div>
+          {/* Sub-tabs of the active group */}
+          <div className="flex gap-0 overflow-x-auto no-scrollbar border-t border-zinc-800/60">
+            {activeGroup.tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-all ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-medium whitespace-nowrap border-b-2 transition-all ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-400'
-                    : 'border-transparent text-zinc-500 hover:text-zinc-300'
+                    ? 'border-blue-400 text-blue-300'
+                    : 'border-transparent text-zinc-600 hover:text-zinc-300'
                 }`}
               >
                 {tab.icon}
