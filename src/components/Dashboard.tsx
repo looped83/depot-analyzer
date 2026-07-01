@@ -150,10 +150,7 @@ export function Dashboard({ positions, onReset }: Props) {
 
           {/* Tab groups */}
           <div ref={navRef} className="relative flex-1 min-w-0">
-            {/* Fading edges hint that the row scrolls horizontally once the 5 groups no
-                longer fit — happens around the 768px tablet breakpoint, where the row is
-                too narrow to show every label but not narrow enough to look obviously cramped. */}
-            <div className="h-full flex items-stretch overflow-x-auto no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-12px),transparent)]">
+            <div className="h-full flex items-stretch overflow-x-auto no-scrollbar">
               {TAB_GROUPS.map((group) => (
                 <button
                   key={group.id}
