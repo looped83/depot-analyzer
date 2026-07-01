@@ -19,15 +19,11 @@ export function UploadZone({ onFile, loading, error }: Props) {
     <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col items-center justify-center px-6">
       {/* Wordmark */}
       <div className="mb-12 text-center">
-        <div className="inline-flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-            <span className="text-white text-xs font-bold">D</span>
-          </div>
-          <span className="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">
-            Depot Analyzer
-          </span>
-        </div>
-        <p className="text-sm text-slate-400 dark:text-zinc-500">
+        <img src="/favicon.svg" alt="Depot Analyzer Logo" className="w-12 h-auto mx-auto mb-4" />
+        <span className="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">
+          Depot Analyzer
+        </span>
+        <p className="mt-3 text-sm text-slate-400 dark:text-zinc-500">
           Lade deine Excel-Datei hoch und erhalte eine vollständige Depotanalyse.
         </p>
       </div>
