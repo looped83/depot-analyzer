@@ -1,9 +1,67 @@
 # Handover – depot-analyzer
 
 **Datum:** 2026-07-01
-**Branch:** `claude/data-insights-recommendations-172j1m`
+**Branch:** `claude/tablet-landscape-breakpoint-mqnf8j` (PR #39, offen gegen `main`)
 **Repo:** `looped83/depot-analyzer`
 **Build:** `npx tsc --noEmit` → 0 Fehler · `npx eslint .` → 0 Fehler · `npm run build` → erfolgreich
+
+---
+
+## Update (2026-07-01, neuester Stand): Tablet/Landscape-Breakpoint, Favicon-Logo, Seiten-Titel, schlanker Header, Suchfeld-Konsistenz, echter Datenbug
+
+Ein Session mit vielen kleinen bis mittelgroßen Einzelaufträgen, alle auf einem Branch (`claude/tablet-landscape-breakpoint-mqnf8j` → PR #39, noch offen). Jede Änderung wurde per Playwright gegen eine synthetische Testdatei **und** gegen eine echte, vom Nutzer hochgeladene Depot-XLSX verifiziert (Screenshots vor/nach, Console-Error-Check über alle 16 Tabs).
+
+### 1. Tablet-Breakpoint (768px) & Landscape-Mobile – Audit + gezielte Fixes
+Erst ein Read-only-Audit-Subagent über alle Tab-Komponenten, dann jeden gemeldeten Verdachtsfall **einzeln im Browser nachgestellt** (375/768/812×375/1440px) statt blind allen Verdachtsfällen zu vertrauen – mehrere vom Audit gemeldete „Probleme" (z. B. 3-spaltige Grids ohne Breakpoint in CAGR-/Safety-/Projection-Tab) erwiesen sich bei echtem Rendering als unauffällig und wurden **nicht** angefasst, um den Diff klein zu halten. Tatsächlich bestätigte und gefixte Bugs:
+- **Nav-Gruppen-Zeile:** Bei 768px passen die 5 Gruppen-Labels nicht mehr vollständig, die Zeile scrollt horizontal ohne jeden visuellen Hinweis – ein Label wurde hart am Rand abgeschnitten. Fix: `[mask-image:linear-gradient(...)]` als Scroll-Fade an beiden Rändern.
+- **Flyout-Dropdown:** `left: rect.left` war nicht an den Viewport geklemmt – auf schmaleren Tablet-/Landscape-Breiten konnte das Flyout (`min-w-[190px]`) rechts über den Rand hinausragen. Fix: `left` wird jetzt auf `window.innerWidth - 190 - 8` geklemmt.
+- **`FindingsTab.tsx`** KPI-Zeile: `grid-cols-4` ganz ohne Breakpoint → auf schmalen Phones (375px) gequetscht/umgebrochen. Fix: `grid-cols-2 sm:grid-cols-4`.
+- **`QualityTab.tsx`** Chart-Karten-Grid: `grid-cols-2` ganz ohne Breakpoint → Karten-Titel wie „Dividenden-Score Verteilung" wurden bei 375px per `truncate` abgeschnitten. Fix: `grid-cols-1 sm:grid-cols-2`.
+
+**Test-Setup-Hinweis:** Kein `playwright`-Package im Projekt, aber global installiert (`/opt/node22/lib/node_modules/playwright`) – ESM-Module-Resolution findet es nur, wenn das Skript direkt aus diesem Verzeichnis heraus läuft (`cd /opt/node22/lib/node_modules && node script.mjs`), `NODE_PATH` allein reicht bei ESM nicht. Testdatei wurde per Node-Skript mit dem `xlsx`-Package synthetisch erzeugt (kein Sample im Repo).
+
+### 2. Favicon als Logo (Upload-Screen + Header) – inkl. eines echten Deployment-Bugs
+- `UploadZone.tsx`: Platzhalter-blaues „D"-Quadrat durch `public/favicon.svg` ersetzt, zentriert über der „Depot Analyzer"-Überschrift (vorher inline daneben).
+- `Dashboard.tsx`-Header: gleiche Ersetzung (blaues „D" → Favicon).
+- **Bug gefunden & gefixt:** Beide Stellen nutzten zunächst `src="/favicon.svg"` (hart kodierter Root-Pfad). Die App deployt auf GitHub Pages aber unter `/depot-analyzer/` (`vite.config.ts` → `base`). Vite schreibt Asset-Pfade in `index.html` automatisch für den `base`-Wert um, **aber nicht** rohe String-Literale in JSX/TSX – das Icon zeigte auf Pages daher ein kaputtes Bild-Symbol (Fragezeichen), lokal im Dev-Server (`base: '/'`) aber fielt es nicht auf. Fix: `src={`${import.meta.env.BASE_URL}favicon.svg`}` an beiden Stellen. Verifiziert durch Produktions-Build mit `GITHUB_ACTIONS=true` + Auslieferung unter einem `/depot-analyzer/`-Unterpfad via `http-server`.
+- **Wichtiger Merksatz für künftige Asset-Referenzen:** Jede neue hart kodierte `/…`-Pfadangabe auf eine Datei aus `public/` in einer `.tsx`-Datei (nicht `index.html`) muss `import.meta.env.BASE_URL` voranstellen, sonst bricht sie auf GitHub Pages.
+- Nebenbei: „ · .xlsx"-Hinweistext im Upload-Dropzone-Text entfernt (separater kleiner Auftrag).
+
+### 3. Seiten-Titel über den Kacheln (alle 16 Tabs)
+Neue `PageHeading`-Komponente in `Card.tsx` (`<h1 className="text-xl font-semibold …">`), in jedem der 16 Tabs als erstes Element vor dem KPI-Grid eingefügt (bei `PerformanceTab.tsx` zusätzlich im Empty-State-Zweig, da der early-return sonst ganz ohne Titel dastünde). Titel orientieren sich an den bestehenden Nav-Flyout-Labels, mit einer Ausnahme: `DividendTab` hieß im Flyout nur „Analyse" – als alleinstehende `<h1>` zu unspezifisch, daher zunächst „Dividenden-Analyse" gewählt, auf expliziten Nutzerwunsch später wieder zurück auf „Analyse" (siehe Abschnitt 5).
+
+### 4. Header-Redesign: einzeilig, schlanker
+Auftrag: Trennstrich, XLSX-Dateiname und die 5-Werte-KPI-Leiste (Depotwert/Yield/Dividende/Monat/Health) sollten weg, Navigation soll in die freigewordene Zeile rücken.
+- `Dashboard.tsx`-Header von zwei Zeilen (KPI-Leiste + darunter Nav-Zeile) auf **eine** Zeile umgebaut: Logo | Nav-Gruppen (flex-1, `items-stretch` damit die `border-b-2`-Active-Unterstreichung weiter am Zeilenboden sitzt) | Aktionen (CSV, Reset).
+- Damit wurden `totals`/`health` (`useMemo`) sowie die Imports `computeTotals`, `computeHealthScore`, `fmt`/`fmtPct`/`fmtNum` in `Dashboard.tsx` ungenutzt → entfernt.
+- `filename`-Prop komplett durchgängig entfernt (`Dashboard.tsx` Props-Interface, `App.tsx` State `filename`/`setFilename` und die JSX-Prop-Übergabe) statt es unbenutzt liegen zu lassen.
+
+### 5. Kleinteilige UI-Korrekturen (mehrere Tabs, ein Auftrag)
+- `DividendTab.tsx`: `PageHeading`-Titel „Dividenden-Analyse" → „Analyse" (siehe Abschnitt 3). „Steuer & Sparerpauschbetrag"-Balken von einfarbig auf Gradient umgestellt (`bg-gradient-to-r from-blue-500 via-emerald-500 to-emerald-400` bzw. Amber-Variante bei ausgeschöpftem Freibetrag), Vorbild war der Freiheitsgrad-Balken in `MotivationTab.tsx`.
+- `CAGRTab.tsx`: Die drei „Stars/Wachstum/Einkommens-Falle"-Kacheln unter der Yield-vs-CAGR-Matrix hatten nur Hintergrundfarbe, keinen Rahmen → `border`-Klasse (passend zur jeweiligen Akzentfarbe) ergänzt, analog zum bereits bestehenden Muster in `FindingsTab.tsx`.
+
+### 6. Suchfeld-Position seitenweit vereinheitlicht
+Auftrag: Suchfeld im CAGR-Tab soll wie im Dashboard/Overview-Tab positioniert sein – **und generell überall so**. Bisher gab es zwei Muster nebeneinander: (a) `SortableTable`s eigenes internes Suchfeld (volle Breite, oberhalb der Tabelle) und (b) ein kontrolliertes Suchfeld im `Card`-`headerRight`-Slot (kompakt, neben dem Karten-Titel), Muster (b) aber nur in `OverviewTab`/`DividendTab`/`PerformanceTab`. Alle übrigen Tabs mit Tabellen-Suche (`CAGRTab`, `DiversificationTab`, `QualityTab`, `RebalancingTab`, `SafetyTab`, `SavingsTab`) auf Muster (b) umgestellt: je ein lokaler `useState`, `filter`/`onFilterChange` an `SortableTable` durchgereicht, Suchfeld in `headerRight`. Damit haben jetzt **alle 9 Tabs mit Tabellen-Suche** exakt dasselbe Muster.
+
+### 7. Echter Datenbug: „Schlechte Qualität trotz vollständiger Datei"
+Nutzer meldete schlechte Werte im Qualitäts-Tab trotz augenscheinlich vollständiger XLSX – zunächst mit `AskUserQuestion` nachgefragt statt blind zu raten, da „zwei neue Felder" zu unspezifisch war, um ohne Rateversuche gezielt zu fixen. Nutzer lud danach die echte Datei hoch (48 Positionen).
+- **Root Cause gefunden:** Die Datei nutzt einen Status **„Pause"** (12 von 48 Positionen) zusätzlich zu den vier bekannten Status-Werten (`Aufbau`/`Erledigt`/`Beobachten`/`Verkauf`). `computeDividendScore()` (`calculations.ts`) hatte einen Status-Modifier-Ternary, dessen **letzter `:`-Zweig sowohl „Verkauf" als auch jeden unbekannten String** auf denselben harten 0,6-Faktor abbildete – „Pause"-Positionen wurden also trotz 100 % vollständiger Daten (Yield, ISIN, Prio, Ausschüttungsmonate, Rating) genauso hart abgewertet wie ein aktives Verkaufssignal.
+- **Fix:** `statusModMap`-Lookup mit explizitem Eintrag `Pause: 0.85` (wie „Erledigt" behandelt – hält die Position, baut nicht aktiv auf) und einem neutralen Fallback `0.75` für jeden anderen/zukünftigen unbekannten Status, statt der bisherigen impliziten Verkauf-Härte.
+- **Nebenbug im selben Aufwasch:** `StatusBadge` (`Card.tsx`) hatte für unbekannte Status-Strings einen Fallback **ohne** `dark:`-Variante (`bg-slate-100 text-slate-500`) – in der (permanent aktiven) Dark-Mode-UI erschien „Pause" dadurch als helles Light-Mode-Badge auf dunklem Hintergrund. Fix: expliziter `Pause`-Eintrag + `dark:`-fähiger Fallback.
+- **`parser.ts`:** Auf Nutzerhinweis „Bestand = Stückzahl" zusätzlich `'bestand'` als Alias-Substring für die Stückzahl-Spalte ergänzt (die hochgeladene Datei nutzte zwar schon „Stückzahl" direkt, aber der Nutzer kündigte an, dass andere Exporte „Bestand" heißen).
+- **Verifiziert** mit einem Node-Skript, das Parser- und Scoring-Logik 1:1 nachbildet und gegen die echte Datei rechnet: Gewichteter D-Score steigt von 28,7 → 31,3, Ø-Score der Pause-Positionen von 20,8 → 29,6, Gesamt-Note im Qualitäts-Tab ist jetzt korrekt „A" (83/100) mit „Gewichteter D-Score" als einzigem (legitim relativ berechneten) Schwachpunkt – keine Datenvollständigkeits-Probleme mehr.
+
+**Noch nicht geprüft:** PR #39 ist zum Zeitpunkt dieses Handover-Updates noch **offen**, nicht gemerged. CI/Review-Status vor Merge prüfen.
+
+---
+
+## Update (2026-07-01, davor, undokumentiert nachgetragen): Browser-Tab-Titel, Performance-Chart-Split, Kaufkurs/Kaufpreis-Parserfix
+
+Drei PRs (#36, #37, #38) aus der Session direkt vor der oben beschriebenen, die im vorherigen Handover-Stand nicht dokumentiert wurden:
+
+- **PR #36:** `parser.ts` `col('kaufkurs')` matchte nur einen einzelnen exakten Substring – bei einer echten Nutzerdatei mit Spaltenname „Kaufpreis" statt „Kaufkurs" schlug der Match fehl, `kaufkurs` defaultete auf `0`, `einstandswert` wurde für alle Positionen `0`, und `PerformanceTab.tsx` zeigte deshalb fälschlich den „keine Kaufkurs-Daten"-Leerzustand. Fix: `col()`-Aufruf akzeptiert jetzt mehrere Kandidaten-Substrings (`'kaufkurs', 'kaufpreis', 'einstandskurs', 'einstandspreis'`), zusätzlich `'stueckzahl'` (ASCII) als Alias neben `'stückzahl'`.
+- **PR #37:** `PerformanceTab.tsx`-Chart von einem einzelnen gemischten Balkendiagramm in zwei Karten „Top Gewinner"/„Top Verlierer" nebeneinander (gestapelt auf Mobile) aufgeteilt, je auf die 10 größten Gewinne/Verluste gedeckelt mit „Top N von M"-Hinweis.
+- **PR #38:** Browser-Tab-Titel war noch der Vite-Scaffold-Platzhalter („Vite + React + TS") – in `index.html` auf „Depot Analyzer – Dividenden & Performance" gesetzt (passend zur bereits vorhandenen `<meta name="description">`).
 
 ---
 
@@ -160,7 +218,7 @@ Effekt: Initial-Bundle (Upload-Screen) ist von ursprünglich ~344 KB gzip auf ~6
 - **Einstandswert / Gewinn-Verlust:** `einstandswert = kaufkurs * stueckzahl`; `gewinnVerlust = wert - einstandswert` nur wenn `einstandswert > 0`, sonst `0` (Position ohne Kaufkurs-Daten). `aktuellerKurs = wert / stueckzahl` (Guard bei `stueckzahl === 0`).
 - **Ausschüttungsfrequenz Scores:** monatlich = 3, quartalsweise = 2, jährlich = 1 (implizit via `freqScore`)
 - Alle Geldwerte in **EUR**, alle Prozente als Prozent-Zahl (z. B. `2.24` für 2,24 %)
-- **Status-Werte:** `Aufbau`, `Erledigt`, `Beobachten`, `Verkauf`
+- **Status-Werte:** `Aufbau`, `Erledigt`, `Pause`, `Beobachten`, `Verkauf` (Typ ist `| string`, also offen für weitere Werte – siehe „Status-Modifier"-Fix im Update-Abschnitt oben, jeder unbekannte Status bekommt seit dem Fix einen neutralen Fallback statt der „Verkauf"-Härte)
 - **Prio-Werte:** `A`, `B`, `C`, `D`, `E`, `null`
 
 ---
@@ -172,13 +230,37 @@ Effekt: Initial-Bundle (Upload-Screen) ist von ursprünglich ~344 KB gzip auf ~6
 3. ~~`npm audit` – 2 offene High-Severity-Findings~~ → **erledigt für vite** (Patch-Update, kein Major nötig), **`xlsx` bewusst offen gelassen** (kein npm-Fix verfügbar, Risiko als gering eingeschätzt). Details siehe Update-Abschnitt oben.
 4. ~~Mobile/Responsive: weiterhin nicht explizit getestet.~~ → **Erledigt:** alle 14 Tabs bei 375px durchgetestet, 5 Bugs gefunden und gefixt (siehe Update-Abschnitt oben). Tablet-Breakpoint nur stichprobenartig geprüft, Landscape nicht getestet.
 5. ~~`DepotCheckTab.tsx`: UI-Politur nicht explizit geprüft.~~ → **Erledigt:** dedizierter Deep-Dive auf Desktop/Tablet/Mobile. Ein Bug gefunden und gefixt (Radar-Chart-Labels abgeschnitten auf Tablet+Mobile, siehe Update-Abschnitt oben). Rest der Tab-Inhalte (Gauge, Stresstest, Freibetrag-Tracker, Empfehlungslisten) sah auf allen drei Breakpoints sauber aus.
-6. **Tablet-Breakpoint (768px) und Landscape-Mobile:** nicht systematisch getestet, nur Dashboard-Übersicht stichprobenartig.
-7. **Neuer Performance-Tab (2026-07-01) noch nicht auf Mobile-Layout-Bugs geprüft:** Die Tabelle hat 6 Zahlen-Spalten (Kaufkurs, Kurs aktuell, Einstand, Wert, G/V €, G/V %) – bei 375px potenziell zu breit/gequetscht, analog zu früheren Tabellen-Overflow-Bugs in anderen Tabs. Nur die Flyout-Navigation selbst wurde auf Mobile verifiziert, nicht der Tab-Inhalt.
+6. ~~Tablet-Breakpoint (768px) und Landscape-Mobile: nicht systematisch getestet.~~ → **Erledigt** (siehe Update-Abschnitt oben): gezielter Audit + Browser-Verifikation bei 375/768/812×375/1440px, 4 bestätigte Bugs gefixt (Nav-Scroll-Affordance, Flyout-Clamping, FindingsTab- und QualityTab-Grid).
+7. **Neuer Performance-Tab noch nicht auf Mobile-Layout-Bugs geprüft:** Die Tabelle hat 6 Zahlen-Spalten (Kaufkurs, Kurs aktuell, Einstand, Wert, G/V €, G/V %) – bei 375px potenziell zu breit/gequetscht. Wurde beim Tablet/Landscape-Audit nicht explizit mit abgedeckt (Fokus lag auf den dort gemeldeten Verdachtsfällen).
 8. **CSV-Export-Konsumenten prüfen:** Falls der Nutzer die exportierte CSV in Excel/Sheets weiterverarbeitet, wurden die 4 neuen Spalten (Kaufkurs, Einstand, G/V €, G/V %) bisher nur automatisiert per Playwright-Download verifiziert, nicht manuell in einer Tabellenkalkulation geöffnet.
+9. **PR #39 noch offen:** Alle Änderungen aus dem obersten Update-Abschnitt (Tablet/Landscape, Favicon, Seiten-Titel, Header-Redesign, Suchfeld-Konsistenz, Status-Modifier-Fix) liegen auf `claude/tablet-landscape-breakpoint-mqnf8j`, PR #39 ist erstellt aber noch nicht gemerged.
+10. **Relative Normierung des Dividend Score:** `computeDividendScore` normiert Yield/CAGR relativ zum Min/Max des eigenen Depots (`normYield`/`normCagr`). Bei einer echten Nutzerdatei getestet: Der gewichtete D-Score landet dadurch strukturell oft im 25–35er-Bereich, selbst wenn andere Qualitätsdimensionen bei 100 % liegen – kein Bug, aber ein Design-Aspekt, den man im Hinterkopf behalten sollte, falls Nutzer erneut „schlechte Qualität trotz guter Daten" melden. Eine absolute (statt rein relative) Skalierung wäre eine mögliche künftige Verbesserung, aber ein Scope-/Produktentscheid, kein Bugfix.
 
 ---
 
 ## Commit-Historie dieser Session (neueste zuerst)
+
+```
+ea0943a fix: don't penalize unrecognized position status as if it were "Verkauf"
+1280339 feat: rename Analyse title, gradient tax bar, bordered CAGR tiles, consistent search field
+da59b26 feat: slim header, fix radar decimals, add improvement tips, align search field
+a7342f6 feat: add page title heading above tiles on every tab
+8496f92 feat: use favicon icon in dashboard header instead of blue "D" box
+ecb48a3 fix: logo shows broken image on GitHub Pages deployment
+79228c6 fix: remove " · .xlsx" hint from upload dropzone text
+218171a feat: use favicon as centered logo above heading on upload screen
+4c7b69b fix: responsive issues at tablet (768px) and landscape mobile widths
+```
+
+Davor, aus der vorherigen (undokumentierten) Session – siehe „Update (davor, undokumentiert nachgetragen)" oben:
+
+```
+b7964fc fix: set proper browser tab title (was Vite scaffold placeholder) (#38)
+92b0963 refactor: split Performance tab chart into Top Gewinner/Verlierer (#37)
+f8ac743 fix: Performance tab stays empty when the cost-basis column is named "Kaufpreis" instead of "Kaufkurs" (#36)
+```
+
+Davor, aus der Navigation/Performance/CSV-Session:
 
 ```
 8677f19 feat: add Kaufkurs and Gewinn/Verlust columns to CSV export
