@@ -1,15 +1,17 @@
 # Handover – depot-analyzer
 
 **Datum:** 2026-07-01
-**Branch:** `claude/tablet-landscape-breakpoint-mqnf8j` (PR #39, offen gegen `main`)
+**Branch:** `claude/tablet-landscape-breakpoint-mqnf8j` (PR #49, offen gegen `main`)
 **Repo:** `looped83/depot-analyzer`
 **Build:** `npx tsc --noEmit` → 0 Fehler · `npx eslint .` → 0 Fehler · `npm run build` → erfolgreich
 
+**Wichtig zum PR-Workflow dieser Session:** Der Nutzer hat jede PR fast unmittelbar nach dem Push gemerged (PRs **#39–#48**, alle vom selben Branch-Namen, alle einzeln gemerged – Details siehe Update-Abschnitt unten). `main` ist dadurch aktuell auf dem Stand von PR #48. Für den allerletzten Fix (Nav-Unterstrich-Verlauf) wurde der Branch deshalb frisch von `main` neu aufgesetzt (`git checkout -B <branch> origin/main`) und als **neue** PR #49 geöffnet, statt die schon gemergte #48 weiterzuverwenden – siehe Pitfall-Hinweis unten.
+
 ---
 
-## Update (2026-07-01, neuester Stand): Tablet/Landscape-Breakpoint, Favicon-Logo, Seiten-Titel, schlanker Header, Suchfeld-Konsistenz, echter Datenbug
+## Update (2026-07-01, neuester Stand): Tablet/Landscape-Breakpoint, Favicon-Logo, Seiten-Titel, schlanker Header, Suchfeld-Konsistenz, echter Datenbug, Vite-Logo-Fix, Nav-Unterstrich
 
-Ein Session mit vielen kleinen bis mittelgroßen Einzelaufträgen, alle auf einem Branch (`claude/tablet-landscape-breakpoint-mqnf8j` → PR #39, noch offen). Jede Änderung wurde per Playwright gegen eine synthetische Testdatei **und** gegen eine echte, vom Nutzer hochgeladene Depot-XLSX verifiziert (Screenshots vor/nach, Console-Error-Check über alle 16 Tabs).
+Ein Session mit vielen kleinen bis mittelgroßen Einzelaufträgen, alle ursprünglich auf einem Branch (`claude/tablet-landscape-breakpoint-mqnf8j`). Jede Änderung wurde per Playwright gegen eine synthetische Testdatei **und** gegen eine echte, vom Nutzer hochgeladene Depot-XLSX verifiziert (Screenshots vor/nach, Console-Error-Check über alle 16 Tabs). Alle hier beschriebenen Punkte bis auf den letzten („Nav-Unterstrich-Fix") sind über die PRs #39–#48 bereits in `main` gemergt.
 
 ### 1. Tablet-Breakpoint (768px) & Landscape-Mobile – Audit + gezielte Fixes
 Erst ein Read-only-Audit-Subagent über alle Tab-Komponenten, dann jeden gemeldeten Verdachtsfall **einzeln im Browser nachgestellt** (375/768/812×375/1440px) statt blind allen Verdachtsfällen zu vertrauen – mehrere vom Audit gemeldete „Probleme" (z. B. 3-spaltige Grids ohne Breakpoint in CAGR-/Safety-/Projection-Tab) erwiesen sich bei echtem Rendering als unauffällig und wurden **nicht** angefasst, um den Diff klein zu halten. Tatsächlich bestätigte und gefixte Bugs:
@@ -51,7 +53,23 @@ Nutzer meldete schlechte Werte im Qualitäts-Tab trotz augenscheinlich vollstän
 - **`parser.ts`:** Auf Nutzerhinweis „Bestand = Stückzahl" zusätzlich `'bestand'` als Alias-Substring für die Stückzahl-Spalte ergänzt (die hochgeladene Datei nutzte zwar schon „Stückzahl" direkt, aber der Nutzer kündigte an, dass andere Exporte „Bestand" heißen).
 - **Verifiziert** mit einem Node-Skript, das Parser- und Scoring-Logik 1:1 nachbildet und gegen die echte Datei rechnet: Gewichteter D-Score steigt von 28,7 → 31,3, Ø-Score der Pause-Positionen von 20,8 → 29,6, Gesamt-Note im Qualitäts-Tab ist jetzt korrekt „A" (83/100) mit „Gewichteter D-Score" als einzigem (legitim relativ berechneten) Schwachpunkt – keine Datenvollständigkeits-Probleme mehr.
 
-**Noch nicht geprüft:** PR #39 ist zum Zeitpunkt dieses Handover-Updates noch **offen**, nicht gemerged. CI/Review-Status vor Merge prüfen.
+### 8. README.md komplett neu geschrieben (Deutsch → Englisch)
+Die bisherige README war veraltet und auf Deutsch: falscher 8-Tab-Stand (statt aktuell 16), erwähnte einen PDF-Export, der längst entfernt ist, veraltete Spaltenliste, veraltete Projektstruktur. Auf expliziten Wunsch komplett neu geschrieben, **Inhalt auf Englisch** (die App-UI selbst bleibt Deutsch – README beschreibt sie nur auf Englisch), gegen den tatsächlichen aktuellen Code verifiziert: alle 16 Tabs nach Nav-Gruppe, echte Parser-Spaltenerkennung (inkl. `Kaufpreis`/`Bestand`-Aliase), Dark-Only-Mode, nur-CSV-Export, Deployment-Hinweis zu `BASE_URL` für `public/`-Assets auf GitHub Pages.
+
+### 9. Logo war das Vite-Scaffold-Logo – echter Fund, kein Rate-Fix
+Nutzer meldete: „das verwendete Logo ist das Vite-Logo". Stimmte: `public/favicon.svg` (die Datei, die seit dem Favicon-Update in Abschnitt 2 überall referenziert wird) war eine umgefärbte Kopie des Vite-Projekt-Scaffold-Logos – identische Pfad-Geometrie wie `src/assets/vite.svg`, dessen Original sogar `<title id="vite-logo-title">Vite</title>` im SVG trägt. War schlicht die Datei, die beim ursprünglichen Favicon-Umbau bereits in `public/` lag, ohne dass hinterfragt wurde, ob es echtes Branding ist.
+- **Fix:** `public/favicon.svg`-Inhalt durch ein neues, eigenes Icon ersetzt (aufsteigende Balken, Blau-zu-Emerald-Verlauf, passend zur bestehenden `PALETTE` in `chartTheme.ts`). Da alle drei Stellen (`index.html`, `UploadZone.tsx`, `Dashboard.tsx`-Header) dieselbe Datei referenzieren, wirkt die Änderung überall gleichzeitig.
+- **Nebenaufräumung:** Beim Suchen nach weiteren Logo-Referenzen gefunden und entfernt, da nirgends importiert/referenziert: `src/App.css` (komplett totes Scaffold-CSS – `.hero`/`.vite`/`.framework`-3D-Transform-Spielerei, `.counter`-Button-Styling – nie in `App.tsx`/`main.tsx` importiert), `src/assets/vite.svg`, `react.svg`, `hero.png`.
+- `public/icons.svg` (Bluesky-Icon-Sprite, ebenfalls ungenutzt) bewusst **nicht** angefasst – nicht Teil der gemeldeten Beschwerde, kein sichtbarer Bug, um den Diff eng am Auftrag zu halten.
+- **Deploy verifiziert statt nur behauptet:** Direkter `curl` auf die Live-GitHub-Pages-URL war vom Sandbox-Netzwerk aus geblockt (Proxy-403) – stattdessen über `mcp__github__actions_list` (`list_workflow_runs`, `branch: main`) bestätigt, dass der `deploy.yml`-Lauf für den Merge-Commit mit dem Fix erfolgreich durchgelaufen ist. Nutzer sah trotzdem kurz noch das alte Icon → **Browser-Favicon-Cache**, klassisches Problem (Browser cachen Favicons unabhängig vom normalen Seiten-Cache, oft auch über Hard-Reload hinweg) – nach Tab neu öffnen / Inkognito war es korrekt.
+
+### 10. Nav-Unterstrich hatte auf dem ersten Tab einen Verlauf
+Nutzer-Beobachtung: Ist „Depot" (der linke, erste Gruppen-Button) aktiv, hat der blaue `border-b-2`-Unterstrich links einen Verlauf/Fade – bei allen anderen aktiven Tabs nicht.
+- **Ursache:** Der `[mask-image:linear-gradient(...)]`-Scroll-Fade aus dem Tablet/Landscape-Fix (Abschnitt 1) faded die ersten/letzten ~12px der **gesamten** Nav-Zeile **immer**, unabhängig davon, ob überhaupt gescrollt werden muss. Da „Depot" der erste Button ganz links ist, saß sein aktiver Unterstrich immer in dieser gefadeten Zone.
+- **Fix:** Die `mask-image`-Klasse komplett entfernt (kein bedingtes Ein-/Ausblenden je nach Overflow-Zustand implementiert, da der Nutzer explizit "ohne Verlauf" wollte) – Trade-off: der Tablet-Scroll-Affordance-Hinweis aus Abschnitt 1 ist damit wieder weg, aber das war explizit gewünscht.
+- **Wichtiger Workflow-Pitfall, hier zum ersten Mal aufgetreten:** Der vorherige Branch-Stand war bereits als PR #48 gemerged (Nutzer merged PRs praktisch sofort nach Push, siehe Hinweis oben im Dokument). Vor dem Fix daher `git fetch origin main && git checkout -B claude/tablet-landscape-breakpoint-mqnf8j origin/main` (Branch frisch von `main` aufgesetzt, uncommittete Änderung blieb dabei automatisch erhalten, da sie in einer Datei war, die zwischen altem Branch-HEAD und `main` identisch war), dann committed und als **neue** PR #49 geöffnet. **Faustregel für künftige Fixes auf diesem Branch:** vor jedem neuen Push erst prüfen, ob der letzte Stand schon in `main` gemerged wurde (`git merge-base --is-ancestor HEAD origin/main`) – wenn ja, Branch neu von `main` aufsetzen statt auf dem alten (jetzt bedeutungslosen) Branch-Stand weiterzuarbeiten.
+
+**Noch nicht geprüft:** PR #49 ist zum Zeitpunkt dieses Handover-Updates noch **offen**. CI-Status: Für PRs ist aktuell **kein** Workflow konfiguriert (`deploy.yml` triggert nur auf Push nach `main`), `get_status` liefert `total_count: 0` – das ist erwartet, kein Fehler, nur nicht mit einem klassischen „grünen Haken" verwechseln.
 
 ---
 
@@ -230,17 +248,29 @@ Effekt: Initial-Bundle (Upload-Screen) ist von ursprünglich ~344 KB gzip auf ~6
 3. ~~`npm audit` – 2 offene High-Severity-Findings~~ → **erledigt für vite** (Patch-Update, kein Major nötig), **`xlsx` bewusst offen gelassen** (kein npm-Fix verfügbar, Risiko als gering eingeschätzt). Details siehe Update-Abschnitt oben.
 4. ~~Mobile/Responsive: weiterhin nicht explizit getestet.~~ → **Erledigt:** alle 14 Tabs bei 375px durchgetestet, 5 Bugs gefunden und gefixt (siehe Update-Abschnitt oben). Tablet-Breakpoint nur stichprobenartig geprüft, Landscape nicht getestet.
 5. ~~`DepotCheckTab.tsx`: UI-Politur nicht explizit geprüft.~~ → **Erledigt:** dedizierter Deep-Dive auf Desktop/Tablet/Mobile. Ein Bug gefunden und gefixt (Radar-Chart-Labels abgeschnitten auf Tablet+Mobile, siehe Update-Abschnitt oben). Rest der Tab-Inhalte (Gauge, Stresstest, Freibetrag-Tracker, Empfehlungslisten) sah auf allen drei Breakpoints sauber aus.
-6. ~~Tablet-Breakpoint (768px) und Landscape-Mobile: nicht systematisch getestet.~~ → **Erledigt** (siehe Update-Abschnitt oben): gezielter Audit + Browser-Verifikation bei 375/768/812×375/1440px, 4 bestätigte Bugs gefixt (Nav-Scroll-Affordance, Flyout-Clamping, FindingsTab- und QualityTab-Grid).
+6. ~~Tablet-Breakpoint (768px) und Landscape-Mobile: nicht systematisch getestet.~~ → **Erledigt** (siehe Update-Abschnitt oben): gezielter Audit + Browser-Verifikation bei 375/768/812×375/1440px, 4 bestätigte Bugs gefixt (Nav-Scroll-Affordance, Flyout-Clamping, FindingsTab- und QualityTab-Grid). **Nachtrag:** Die Nav-Scroll-Affordance (Rand-Fade per `mask-image`) wurde in Abschnitt 10 des obersten Updates wieder entfernt, da sie den aktiven Unterstrich des ersten Tabs verlaufsartig aussehen ließ – der zugrundeliegende Overflow bei 768px besteht also wieder ohne visuellen Hinweis, war aber explizit gewünscht.
 7. **Neuer Performance-Tab noch nicht auf Mobile-Layout-Bugs geprüft:** Die Tabelle hat 6 Zahlen-Spalten (Kaufkurs, Kurs aktuell, Einstand, Wert, G/V €, G/V %) – bei 375px potenziell zu breit/gequetscht. Wurde beim Tablet/Landscape-Audit nicht explizit mit abgedeckt (Fokus lag auf den dort gemeldeten Verdachtsfällen).
 8. **CSV-Export-Konsumenten prüfen:** Falls der Nutzer die exportierte CSV in Excel/Sheets weiterverarbeitet, wurden die 4 neuen Spalten (Kaufkurs, Einstand, G/V €, G/V %) bisher nur automatisiert per Playwright-Download verifiziert, nicht manuell in einer Tabellenkalkulation geöffnet.
-9. **PR #39 noch offen:** Alle Änderungen aus dem obersten Update-Abschnitt (Tablet/Landscape, Favicon, Seiten-Titel, Header-Redesign, Suchfeld-Konsistenz, Status-Modifier-Fix) liegen auf `claude/tablet-landscape-breakpoint-mqnf8j`, PR #39 ist erstellt aber noch nicht gemerged.
+9. ~~PR #39 noch offen~~ → **Erledigt:** PRs #39–#48 (alle vom selben Branch, siehe Hinweis ganz oben im Dokument) sind gemerged, `main` ist aktuell. **Neu offen: PR #49** (Nav-Unterstrich-Fix, Abschnitt 10 oben) – klein, aber noch zu mergen. Für PRs läuft aktuell keine CI (nur `deploy.yml` auf Push nach `main`), also kein CI-Status abzuwarten, nur Review/Merge durch den Nutzer.
 10. **Relative Normierung des Dividend Score:** `computeDividendScore` normiert Yield/CAGR relativ zum Min/Max des eigenen Depots (`normYield`/`normCagr`). Bei einer echten Nutzerdatei getestet: Der gewichtete D-Score landet dadurch strukturell oft im 25–35er-Bereich, selbst wenn andere Qualitätsdimensionen bei 100 % liegen – kein Bug, aber ein Design-Aspekt, den man im Hinterkopf behalten sollte, falls Nutzer erneut „schlechte Qualität trotz guter Daten" melden. Eine absolute (statt rein relative) Skalierung wäre eine mögliche künftige Verbesserung, aber ein Scope-/Produktentscheid, kein Bugfix.
+11. **`public/icons.svg` (Bluesky-Icon-Sprite) ist ungenutzt**, wurde beim Vite-Logo-Cleanup (Abschnitt 9) bewusst nicht angefasst, da nicht Teil der gemeldeten Beschwerde. Falls „totes Zeug aufräumen" nochmal Thema wird: guter Kandidat.
 
 ---
 
 ## Commit-Historie dieser Session (neueste zuerst)
 
+Noch offen als PR #49 (Branch frisch von `main` neu aufgesetzt, siehe Hinweis oben):
+
 ```
+e0dd75f fix: remove nav underline scroll-fade causing inconsistent gradient on first tab
+```
+
+Bereits gemerged (PRs #39–#48):
+
+```
+8100982 fix: replace Vite scaffold logo with an actual app icon
+8976bc1 docs: rewrite README in English, reflect current app state
+b9be384 docs: update handover.md with tablet/landscape, favicon, header redesign, and status-modifier bugfix work
 ea0943a fix: don't penalize unrecognized position status as if it were "Verkauf"
 1280339 feat: rename Analyse title, gradient tax bar, bordered CAGR tiles, consistent search field
 da59b26 feat: slim header, fix radar decimals, add improvement tips, align search field
