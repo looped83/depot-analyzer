@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
-import { Card, InfoTip } from '../Card';
+import { Card, InfoTip, PageHeading } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmtPct, fmtNum } from '../../lib/format';
@@ -133,6 +133,7 @@ export function QualityTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Qualität" />
       {/* Grade + KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <div className={`rounded-2xl border bg-gradient-to-br ${gradeBg} p-5 text-center flex flex-col items-center justify-center`}>

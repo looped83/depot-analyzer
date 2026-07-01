@@ -31,6 +31,11 @@ export function Card({ title, sub, info, headerRight, children, className = '', 
   );
 }
 
+// Page-level heading shown above a tab's tiles, so each subpage carries its own title.
+export function PageHeading({ title }: { title: string }) {
+  return <h1 className="text-xl font-semibold text-slate-900 dark:text-white">{title}</h1>;
+}
+
 export function InfoTip({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   return (

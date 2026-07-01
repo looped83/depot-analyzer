@@ -6,7 +6,7 @@ import {
 import type { DepotPosition } from '../../lib/types';
 import { computeHealthScore, generateRecommendations, computeFreibetrag, computeStressTest } from '../../lib/insights';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { fmt, fmtNum } from '../../lib/format';
 import { ArrowRight, Zap, AlertTriangle, CheckCircle, Info, TrendingDown } from 'lucide-react';
@@ -54,6 +54,7 @@ export function DepotCheckTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Depot-Check" />
       {/* Overall Score + KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Depot Health Score" value={`${fmtNum(health.overall)} / 100`} sub={gradeLabel(health.overall)} info="Gewichteter Score aus 8 Dimensionen: Diversifikation, Qualität, Wachstum, Sicherheit, Cashflow, Effizienz u.a." />

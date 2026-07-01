@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { computeTotals } from '../../lib/calculations';
 import { computeFreibetrag } from '../../lib/insights';
@@ -46,6 +46,7 @@ export function DividendTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Dividenden-Analyse" />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KPICard title="Brutto / Jahr"       value={fmt(totals.totalAnnualDiv)}    sub="Vor Steuern" info="Jährliche Dividende vor Abzug von Kapitalertragsteuer und Solidaritätszuschlag." />
         <KPICard title="Netto / Jahr"         value={fmt(netAnnualDiv)}             sub={freibetragInfo.taxAmount > 0 ? `${fmt(freibetragInfo.taxAmount)} Steuer` : 'Kein Steuerabzug'} info="Nach Abzug von 26,375 % KapESt + SolZ auf den Betrag über dem Sparerpauschbetrag (2.000 €, verheiratet)." />

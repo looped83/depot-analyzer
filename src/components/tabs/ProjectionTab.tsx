@@ -6,7 +6,7 @@ import {
 import type { DepotPosition, ProjectionParams } from '../../lib/types';
 import { computeProjection, computeTotals } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { fmt, fmtNum, fmtPct } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
 import { ChartTooltip } from '../ChartTooltip';
@@ -64,6 +64,7 @@ export function ProjectionTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Ausblick" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Aktueller Depotwert"     value={fmt(totals.totalWert)}          sub="Stand jetzt" info="Summe aller aktiven Positionen zum aktuellen Kurs." />
         <KPICard title="Jährl. Dividende (jetzt)" value={fmt(totals.totalAnnualDiv)}    sub="Aktuelle Projektion" info="Erwartete jährliche Brutto-Dividende aller aktiven Positionen." />

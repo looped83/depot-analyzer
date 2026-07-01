@@ -4,6 +4,7 @@ import { generateFindings, type Finding } from '../../lib/findings';
 import { computeTotals, computeMonthlyCalendar, topDividendContributors } from '../../lib/calculations';
 import { fmt, fmtNum } from '../../lib/format';
 import { AlertTriangle, CheckCircle, Info, XCircle } from 'lucide-react';
+import { PageHeading } from '../Card';
 
 interface Props { positions: DepotPosition[] }
 
@@ -92,6 +93,7 @@ export function FindingsTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Findings" />
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {(['danger', 'warning', 'info', 'success'] as const).map((cat) => (
           <div key={cat} className={`rounded-2xl border p-4 text-center ${categoryConfig[cat].bg} ${categoryConfig[cat].border}`}>

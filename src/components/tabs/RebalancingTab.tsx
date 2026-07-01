@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
@@ -68,6 +68,7 @@ export function RebalancingTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Rebalancing" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Monatliches Budget" value={`${fmtNum(budget)} €`}       sub="Für Rebalancing" info="Dein monatliches Budget, das auf untergewichtete Positionen verteilt wird." />
         <KPICard title="Untergewichtet"     value={String(underweight.length)} sub="Positionen" info="Positionen, deren aktuelles Gewicht unter dem Zielgewicht liegt." />

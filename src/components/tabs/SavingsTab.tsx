@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { KPICard } from '../KPICard';
-import { Card } from '../Card';
+import { Card, PageHeading } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
@@ -90,6 +90,7 @@ export function SavingsTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
+      <PageHeading title="Sparpläne" />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KPICard title="Gesamte Sparrate"   value={`${fmtNum(totalSpar)} €`}    sub="Pro Zyklus" info="Summe aller aktiven Sparplanbeträge pro Ausführungszyklus." />
         <KPICard title="Aktive Sparpläne"   value={fmtNum(saved.length)}       sub={`von ${fmtNum(positions.length)} Positionen`} />
