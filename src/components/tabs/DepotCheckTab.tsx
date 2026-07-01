@@ -50,7 +50,7 @@ export function DepotCheckTab({ positions }: Props) {
   const stress50 = useMemo(() => computeStressTest(positions, 50), [positions]);
 
   const top3 = recommendations.slice(0, 3);
-  const radarData = health.dimensions.map(d => ({ dimension: radarShortLabel[d.key] ?? d.label, score: d.score, fullMark: 100 }));
+  const radarData = health.dimensions.map(d => ({ dimension: radarShortLabel[d.key] ?? d.label, score: Math.round(d.score), fullMark: 100 }));
 
   return (
     <div className="space-y-5">
@@ -149,9 +149,15 @@ export function DepotCheckTab({ positions }: Props) {
               </div>
               <div className="mt-1.5 flex flex-wrap gap-1.5">
                 {d.tips.map((tip, i) => (
-                  <span key={i} className="text-xs bg-slate-50 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-700 px-2 py-0.5 rounded-lg text-slate-500 dark:text-zinc-400">
-                    {d.score >= 75 ? <CheckCircle size={10} className="inline mr-1 text-emerald-500" /> : <ArrowRight size={10} className="inline mr-1 text-blue-400" />}
-                    {tip}
+                  <span key={i} className={`text-xs px-2 py-0.5 rounded-lg border ${
+                    d.isGood
+                      ? 'bg-slate-50 dark:bg-zinc-800/60 border-slate-100 dark:border-zinc-700 text-slate-500 dark:text-zinc-400'
+                      : 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-300'
+                  }`}>
+                    {d.isGood
+                      ? <CheckCircle size={10} className="inline mr-1 text-emerald-500" />
+                      : <ArrowRight size={10} className="inline mr-1 text-blue-400" />}
+                    {d.isGood ? tip : <><span className="font-semibold">Tipp:</span> {tip}</>}
                   </span>
                 ))}
               </div>

@@ -7,7 +7,6 @@ const Dashboard = lazy(() => import('./components/Dashboard').then((m) => ({ def
 
 export default function App() {
   const [positions, setPositions] = useState<DepotPosition[] | null>(null);
-  const [filename, setFilename] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,7 +23,6 @@ export default function App() {
       if (raw.length === 0) throw new Error('Keine Positionen in der Datei gefunden.');
       const derived = calculateDerived(raw);
       setPositions(derived);
-      setFilename(file.name);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Fehler beim Verarbeiten der Datei.');
     } finally {
@@ -37,7 +35,6 @@ export default function App() {
       <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
         <Dashboard
           positions={positions}
-          filename={filename}
           onReset={() => setPositions(null)}
         />
       </Suspense>
