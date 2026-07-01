@@ -90,7 +90,7 @@ export function parseExcel(file: File): Promise<DepotPosition[]> {
         const iWKN = col('wkn');
         const iTyp = col('typ');
         const iKat = col('kategorie');
-        const iStueckzahl = col('stückzahl', 'stueckzahl');
+        const iStueckzahl = col('stückzahl', 'stueckzahl', 'bestand');
         const iKaufkurs = col('kaufkurs', 'kaufpreis', 'einstandskurs', 'einstandspreis');
 
         const positions: DepotPosition[] = [];
