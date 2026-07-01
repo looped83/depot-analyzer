@@ -18,6 +18,8 @@ export interface DepotPosition {
   wkn: string;
   typ: 'Aktie' | 'ETF' | 'BDC' | 'ETP' | string;
   kategorie: 'Income' | 'Growth' | 'High Yield' | 'Accumulation' | string;
+  stueckzahl: number;  // Anzahl gehaltener Anteile
+  kaufkurs: number;    // Kaufkurs pro Anteil (€)
 
   // Computed fields
   annualDividend: number;     // wert * yield / 100
@@ -26,6 +28,10 @@ export interface DepotPosition {
   dividendContribution: number; // annualDividend / totalAnnualDividend
   dividendScore: number;      // composite score 0-100
   chowderScore: number;       // yield + cagr5j
+  einstandswert: number;      // kaufkurs * stueckzahl
+  aktuellerKurs: number;      // wert / stueckzahl
+  gewinnVerlust: number;      // wert - einstandswert
+  gewinnVerlustPct: number;   // gewinnVerlust / einstandswert * 100
 }
 
 export interface ProjectionParams {
@@ -44,6 +50,7 @@ export interface MonthlyIncome {
 
 export type TabId =
   | 'overview'
+  | 'performance'
   | 'dividends'
   | 'cagr'
   | 'savings'

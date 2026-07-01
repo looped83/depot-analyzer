@@ -5,6 +5,7 @@ import type { DepotPosition, TabId } from '../lib/types';
 // first tab visit since each tab pulled in the large shared recharts/d3 vendor code on
 // demand; bundling them together means one wait right after upload, then instant switching.
 import { OverviewTab } from './tabs/OverviewTab';
+import { PerformanceTab } from './tabs/PerformanceTab';
 import { DividendTab } from './tabs/DividendTab';
 import { CAGRTab } from './tabs/CAGRTab';
 import { SavingsTab } from './tabs/SavingsTab';
@@ -26,7 +27,7 @@ import {
   LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
   Calendar, Trophy, Lightbulb, LineChart,
   Download, Upload, PieChart, ShieldCheck,
-  Target, Sliders, Star, HeartPulse, Sparkles, ChevronDown,
+  Target, Sliders, Star, HeartPulse, Sparkles, ChevronDown, Activity,
 } from 'lucide-react';
 
 interface Tab { id: TabId; label: string; icon: React.ReactNode }
@@ -38,8 +39,9 @@ const TAB_GROUPS: TabGroup[] = [
   {
     id: 'depot', label: 'Depot', icon: <LayoutDashboard size={13} />,
     tabs: [
-      { id: 'overview', label: 'Übersicht', icon: <LayoutDashboard size={13} /> },
-      { id: 'rankings', label: 'Rankings',  icon: <Trophy size={13} /> },
+      { id: 'overview',    label: 'Übersicht',   icon: <LayoutDashboard size={13} /> },
+      { id: 'performance', label: 'Performance', icon: <Activity size={13} /> },
+      { id: 'rankings',    label: 'Rankings',    icon: <Trophy size={13} /> },
     ],
   },
   {
@@ -250,7 +252,8 @@ export function Dashboard({ positions, filename, onReset }: Props) {
 
       {/* Page content */}
       <main className="max-w-screen-xl mx-auto px-6 py-8">
-        {activeTab === 'overview'   && <OverviewTab   positions={positions} />}
+        {activeTab === 'overview'    && <OverviewTab    positions={positions} />}
+        {activeTab === 'performance' && <PerformanceTab positions={positions} />}
         {activeTab === 'dividends'  && <DividendTab   positions={positions} />}
         {activeTab === 'cagr'       && <CAGRTab        positions={positions} />}
         {activeTab === 'savings'    && <SavingsTab     positions={positions} />}
