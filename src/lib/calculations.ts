@@ -54,8 +54,13 @@ export function computeDividendScore(
   const prioMap: Record<string, number> = { A: 1.0, B: 0.75, C: 0.5, D: 0.25, E: 0.1 };
   const prioScore = prio ? (prioMap[prio] ?? 0.4) : 0.4;
 
-  // Status modifier
-  const statusMod = status === 'Aufbau' ? 1.0 : status === 'Erledigt' ? 0.85 : status === 'Beobachten' ? 0.7 : 0.6;
+  // Status modifier. Only 'Verkauf' (an active sell signal) gets the harshest
+  // penalty; any other/unrecognized status (e.g. 'Pause') falls back to a
+  // neutral value instead of silently being scored as if it were 'Verkauf'.
+  const statusModMap: Record<string, number> = {
+    Aufbau: 1.0, Erledigt: 0.85, Pause: 0.85, Beobachten: 0.7, Verkauf: 0.6,
+  };
+  const statusMod = statusModMap[status] ?? 0.75;
 
   const raw = 0.4 * normYield + 0.4 * normCagr + 0.1 * normFreq + 0.1 * prioScore;
   return Math.min(100, Math.round(raw * statusMod * 100));

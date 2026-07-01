@@ -65,11 +65,12 @@ export function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     Aufbau:     'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
     Erledigt:   'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
+    Pause:      'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400',
     Beobachten: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
     Verkauf:    'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400',
   };
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${map[status] ?? 'bg-slate-100 text-slate-500'}`}>
+    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${map[status] ?? 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
       {status}
     </span>
   );
