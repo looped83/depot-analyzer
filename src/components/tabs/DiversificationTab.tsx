@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Treemap,
@@ -89,6 +89,7 @@ function TreemapContent(props: {
 }
 
 export function DiversificationTab({ positions }: Props) {
+  const [search, setSearch] = useState('');
   const active = positions.filter((p) => p.wert > 0);
   const totalWert = active.reduce((s, p) => s + p.wert, 0);
 
@@ -237,12 +238,25 @@ export function DiversificationTab({ positions }: Props) {
       )}
 
       {/* Full table */}
-      <Card title="Alle Positionen – Gewichtung" pad={false}>
+      <Card
+        title="Alle Positionen – Gewichtung"
+        pad={false}
+        headerRight={
+          <input
+            className="text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/40 placeholder-zinc-600 text-zinc-200 w-36"
+            placeholder="Suchen …"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        }
+      >
         <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={sorted}
             rowKey={(r) => r.symbol}
             filterKeys={['symbol', 'name', 'typ', 'kategorie', 'broker']}
+            filter={search}
+            onFilterChange={setSearch}
             columns={[
               { key: 'symbol', label: 'Symbol', width: '80px',
                 render: (v) => <span className="font-mono font-semibold text-xs text-slate-800 dark:text-zinc-200">{String(v)}</span> },

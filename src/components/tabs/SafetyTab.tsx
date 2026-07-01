@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell,
@@ -59,6 +59,7 @@ const RISK_LABEL: Record<RiskLevel, string> = {
 };
 
 export function SafetyTab({ positions }: Props) {
+  const [search, setSearch] = useState('');
   const active = positions.filter((p) => p.wert > 0);
 
   const withRisk = active.map((p) => ({
@@ -212,12 +213,25 @@ export function SafetyTab({ positions }: Props) {
       </Card>
 
       {/* Safety ranking table */}
-      <Card title="Safety Ranking – Alle aktiven Positionen" pad={false}>
+      <Card
+        title="Safety Ranking – Alle aktiven Positionen"
+        pad={false}
+        headerRight={
+          <input
+            className="text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/40 placeholder-zinc-600 text-zinc-200 w-36"
+            placeholder="Suchen …"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        }
+      >
         <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={sortedBySafety}
             rowKey={(r) => r.symbol}
             filterKeys={['symbol', 'name', 'status']}
+            filter={search}
+            onFilterChange={setSearch}
             columns={[
               { key: 'symbol', label: 'Symbol', width: '80px',
                 render: (v) => <span className="font-mono font-semibold text-xs text-slate-800 dark:text-zinc-200">{String(v)}</span> },

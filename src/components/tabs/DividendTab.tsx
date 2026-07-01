@@ -46,7 +46,7 @@ export function DividendTab({ positions }: Props) {
 
   return (
     <div className="space-y-5">
-      <PageHeading title="Dividenden-Analyse" />
+      <PageHeading title="Analyse" />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KPICard title="Brutto / Jahr"       value={fmt(totals.totalAnnualDiv)}    sub="Vor Steuern" info="Jährliche Dividende vor Abzug von Kapitalertragsteuer und Solidaritätszuschlag." />
         <KPICard title="Netto / Jahr"         value={fmt(netAnnualDiv)}             sub={freibetragInfo.taxAmount > 0 ? `${fmt(freibetragInfo.taxAmount)} Steuer` : 'Kein Steuerabzug'} info="Nach Abzug von 26,375 % KapESt + SolZ auf den Betrag über dem Sparerpauschbetrag (2.000 €, verheiratet)." />
@@ -66,8 +66,8 @@ export function DividendTab({ positions }: Props) {
           }`}>{freibetragInfo.remaining > 0 ? `${fmt(freibetragInfo.remaining)} frei` : 'Ausgeschöpft'}</span>
         </div>
         <div className="w-full h-3 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden mb-2">
-          <div className={`h-full rounded-full transition-all ${
-            freibetragInfo.remaining > 0 ? 'bg-emerald-500' : 'bg-amber-500'
+          <div className={`h-full rounded-full transition-all duration-700 bg-gradient-to-r ${
+            freibetragInfo.remaining > 0 ? 'from-blue-500 via-emerald-500 to-emerald-400' : 'from-amber-600 via-amber-500 to-amber-400'
           }`} style={{ width: `${Math.min(100, (freibetragInfo.used / freibetragInfo.freibetrag) * 100)}%` }} />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-xs">

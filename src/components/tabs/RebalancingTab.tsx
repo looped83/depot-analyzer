@@ -35,6 +35,7 @@ export function RebalancingTab({ positions }: Props) {
 
   const [strategy, setStrategy] = useState<Strategy>('prio');
   const [budget, setBudget]     = useState(3000);
+  const [search, setSearch]     = useState('');
 
   const targets = calcTargets(active, strategy);
 
@@ -178,12 +179,25 @@ export function RebalancingTab({ positions }: Props) {
       )}
 
       {/* Full table */}
-      <Card title="Alle Positionen – Ist vs. Ziel" pad={false}>
+      <Card
+        title="Alle Positionen – Ist vs. Ziel"
+        pad={false}
+        headerRight={
+          <input
+            className="text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/40 placeholder-zinc-600 text-zinc-200 w-36"
+            placeholder="Suchen …"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        }
+      >
         <div className="px-5 pt-3 pb-5">
           <SortableTable
             data={rows}
             rowKey={(r) => r.symbol}
             filterKeys={['symbol', 'name', 'prio']}
+            filter={search}
+            onFilterChange={setSearch}
             columns={[
               { key: 'symbol', label: 'Symbol', width: '80px',
                 render: (v) => <span className="font-mono font-semibold text-xs text-slate-800 dark:text-zinc-200">{String(v)}</span> },
