@@ -15,6 +15,7 @@ import { ASSUMED_MONTHLY_INVESTMENT } from '../../lib/calculations';
 interface Props { positions: DepotPosition[] }
 
 const ZYKLUS_LABEL: Record<number, string> = { 0: 'Kein Sparplan', 1: 'Zyklus 1', 2: 'Zyklus 2', 3: 'Zyklus 3' };
+const CURRENT_YEAR = new Date().getFullYear();
 
 export function SavingsTab({ positions }: Props) {
   const [search, setSearch] = useState('');
@@ -82,7 +83,7 @@ export function SavingsTab({ positions }: Props) {
   const growthChart = Array.from({ length: 61 }, (_, m) => {
     let v = 0;
     for (let i = 0; i < m; i++) v = (v + totalMonthlyInvest) * (1 + growthRate / 12);
-    return { month: m, value: v, label: m % 12 === 0 ? `${m / 12}J` : '' };
+    return { month: m, value: v };
   }).filter((_, i) => i % 3 === 0);
 
   const noSparHighPrio = positions.filter(p =>
@@ -160,10 +161,10 @@ export function SavingsTab({ positions }: Props) {
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={growthChart} margin={{ top: 4, right: 20, bottom: 10 }}>
               <CartesianGrid {...GRID} vertical={false} />
-              <XAxis dataKey="month" {...AXIS} tickFormatter={(v) => `${fmtNum(v / 12)}J`}
+              <XAxis dataKey="month" {...AXIS} tickFormatter={(v) => `${CURRENT_YEAR + Math.floor(v / 12)}`}
                 ticks={[0, 12, 24, 36, 48, 60]} />
               <YAxis {...AXIS} tickFormatter={(v) => `${fmtNum(v / 1000)}k`} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(v as number)} labelFormatter={(l) => `Monat ${l}`} />} />
+              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(v as number)} labelFormatter={(l) => `Jahr ${CURRENT_YEAR + Math.floor(Number(l) / 12)}`} />} />
               <Area type="monotone" dataKey="value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.15} strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
