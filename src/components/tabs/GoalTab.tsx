@@ -65,14 +65,14 @@ export function GoalTab({ positions }: Props) {
     const fasterHit = faster.find(d => d.annualDividend >= goalAnnual);
     const fasterYears = fasterHit ? fasterHit.year - new Date().getFullYear() : null;
     return fasterYears && fasterYears < yearsToGoal
-      ? `Mit 100 € mehr Sparrate pro Monat (${savings + 100} € statt ${savings} €) erreichst du dein Ziel bereits in ${fasterYears} Jahren – ${yearsToGoal - fasterYears} Jahre früher.`
+      ? `Mit 100 € mehr Sparrate pro Monat (${fmtNum(savings + 100)} € statt ${fmtNum(savings)} €) erreichst du dein Ziel bereits in ${fasterYears} Jahren – ${yearsToGoal - fasterYears} Jahre früher.`
       : `Erhöhe deine Sparrate oder den Anteil an Dividendenwachstumswerten, um schneller zum Ziel zu kommen.`;
   }, [positions, params, savings, yearsToGoal, goalAnnual]);
 
   const progress = Math.min(100, (currentMonthly / goalMonthly) * 100);
   const remaining = Math.max(0, goalMonthly - currentMonthly);
 
-  // Chart data capped to 10 years beyond goal or 30 max
+  // Chart data capped to 5 years beyond goal or 30 max
   const chartEnd = Math.min(30, (yearsToGoal ?? 30) + 5);
   const chartData = proj30.slice(0, chartEnd + 1);
 

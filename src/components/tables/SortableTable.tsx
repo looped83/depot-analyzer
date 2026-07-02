@@ -55,7 +55,11 @@ export function SortableTable<T>({ data, columns, pageSize = 25, filterKeys, row
   }, [filtered, sortKey, sortDir, columns]);
 
   const pages = Math.ceil(sorted.length / pageSize);
-  const slice = sorted.slice(page * pageSize, (page + 1) * pageSize);
+  // Clamp instead of trusting `page`: a controlled filter (header search box) can
+  // shrink the result set without going through the internal setPage(0) reset,
+  // which would otherwise leave the table stuck on a now-empty page.
+  const safePage = Math.min(page, Math.max(0, pages - 1));
+  const slice = sorted.slice(safePage * pageSize, (safePage + 1) * pageSize);
 
   const handleSort = (key: string) => {
     if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -127,7 +131,7 @@ export function SortableTable<T>({ data, columns, pageSize = 25, filterKeys, row
               key={i}
               onClick={() => setPage(i)}
               className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors ${
-                page === i
+                safePage === i
                   ? 'bg-blue-600 text-white'
                   : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800'
               }`}

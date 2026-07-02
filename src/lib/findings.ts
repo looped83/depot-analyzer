@@ -1,5 +1,6 @@
 import type { DepotPosition } from './types';
 import { computeTotals, computeMonthlyCalendar, topDividendContributors } from './calculations';
+import { computeFreibetrag } from './insights';
 import { fmtNum } from './format';
 
 export interface Finding {
@@ -232,22 +233,20 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
   }
 
   // Sparerpauschbetrag Check (2.000 € verheiratet, gemeinsam veranlagt)
-  const FREIBETRAG = 2000;
-  if (totals.totalAnnualDiv > FREIBETRAG) {
-    const taxable = totals.totalAnnualDiv - FREIBETRAG;
-    const taxAmount = taxable * 0.26375;
+  const freibetragInfo = computeFreibetrag(positions);
+  if (freibetragInfo.taxable > 0) {
     findings.push({
       id: 'freibetrag-exceeded',
       category: 'info',
       title: 'Sparerpauschbetrag überschritten',
-      detail: `Deine jährliche Bruttodividende (${fmtNum(totals.totalAnnualDiv)} €) übersteigt den Freibetrag von 2.000 €. Ca. ${fmtNum(taxAmount)} € Steuern fallen an (KapESt + SolZ 26,375 %).`,
+      detail: `Deine jährliche Bruttodividende (${fmtNum(freibetragInfo.annualDiv)} €) übersteigt den Freibetrag von 2.000 €. Ca. ${fmtNum(freibetragInfo.taxAmount)} € Steuern fallen an (KapESt + SolZ 26,375 %).`,
     });
-  } else if (totals.totalAnnualDiv > FREIBETRAG * 0.8) {
+  } else if (freibetragInfo.annualDiv > freibetragInfo.freibetrag * 0.8) {
     findings.push({
       id: 'freibetrag-near',
       category: 'success',
       title: 'Sparerpauschbetrag fast ausgeschöpft',
-      detail: `Deine jährliche Dividende (${fmtNum(totals.totalAnnualDiv)} €) nähert sich dem Freibetrag von 2.000 €. Noch ${fmtNum(FREIBETRAG - totals.totalAnnualDiv)} € sind steuerfrei.`,
+      detail: `Deine jährliche Dividende (${fmtNum(freibetragInfo.annualDiv)} €) nähert sich dem Freibetrag von 2.000 €. Noch ${fmtNum(freibetragInfo.remaining)} € sind steuerfrei.`,
     });
   }
 
