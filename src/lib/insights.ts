@@ -1,5 +1,6 @@
 import type { DepotPosition } from './types';
 import { computeTotals, computeMonthlyCalendar, computeProjection, topDividendContributors } from './calculations';
+import { fmtNum } from './format';
 
 export interface HealthDimension {
   key: string;
@@ -100,64 +101,64 @@ export function computeHealthScore(positions: DepotPosition[]): {
     {
       key: 'diversification', label: 'Diversifikation', score: divScore,
       detail: `HHI: ${hhi.toFixed(0)} · ${active.length} aktive Positionen`,
-      isGood: divScore >= 60,
-      tips: divScore < 60
+      isGood: divScore >= 100,
+      tips: divScore < 100
         ? ['Untergewichtete Positionen aufstocken', 'Neue Branchen/Regionen beimischen']
         : ['Gute Streuung beibehalten'],
     },
     {
       key: 'incomeStability', label: 'Einkommensstabilität', score: incomeStabilityScore,
       detail: `${payerCount} verschiedene Dividendenzahler`,
-      isGood: incomeStabilityScore >= 60,
-      tips: incomeStabilityScore < 60
+      isGood: incomeStabilityScore >= 100,
+      tips: incomeStabilityScore < 100
         ? ['Mehr Dividendenzahler aufnehmen', 'Monatliche Zahler bevorzugen']
         : ['Stabile Einkommensbasis vorhanden'],
     },
     {
       key: 'growthPotential', label: 'Wachstumspotenzial', score: growthScore,
       detail: `Gewichteter CAGR: ${weightedCagr.toFixed(1)} %`,
-      isGood: growthScore >= 60,
-      tips: growthScore < 60
+      isGood: growthScore >= 100,
+      tips: growthScore < 100
         ? ['Positionen mit CAGR > 7 % aufstocken', 'Dividenden-Aristokraten in Betracht ziehen']
         : ['Solides Wachstum im Depot'],
     },
     {
       key: 'dataQuality', label: 'Datenqualität', score: dataQuality,
       detail: `${Math.round(dataQuality)} % der Felder befüllt`,
-      isGood: dataQuality >= 80,
-      tips: dataQuality < 80
+      isGood: dataQuality >= 100,
+      tips: dataQuality < 100
         ? ['Fehlende ISINs nachtragen', 'Prioritäten für alle Positionen setzen', 'Ausschüttungsmonate ergänzen']
         : ['Gute Datenbasis vorhanden'],
     },
     {
       key: 'riskDistribution', label: 'Risikoverteilung', score: riskScore,
       detail: `${riskPositions.length} Risiko · ${watchPositions.length} Beobachten`,
-      isGood: riskScore >= 60,
-      tips: riskScore < 60
+      isGood: riskScore >= 100,
+      tips: riskScore < 100
         ? ['Risikopositionen prüfen und ggf. reduzieren', 'Yield-Trap-Positionen identifizieren']
         : ['Ausgewogene Risikoverteilung'],
     },
     {
       key: 'savingsEfficiency', label: 'Sparplan-Effizienz', score: sparEfficiency,
       detail: `${aufbauWithSpar}/${aufbauTotal} Aufbau-Positionen bespart`,
-      isGood: sparEfficiency >= 60,
-      tips: sparEfficiency < 60
+      isGood: sparEfficiency >= 100,
+      tips: sparEfficiency < 100
         ? ['Sparpläne für Prio-A-Positionen einrichten', 'Übergewichtete Positionen nicht weiter besparen']
         : ['Sparpläne gut ausgerichtet'],
     },
     {
       key: 'cashflowSmoothness', label: 'Cashflow-Gleichmäßigkeit', score: cashflowScore,
       detail: `Variationskoeff.: ${(cv * 100).toFixed(0)} % · Ø ${avgMonthly.toFixed(0)} €/Monat`,
-      isGood: cashflowScore >= 60,
-      tips: cashflowScore < 60
+      isGood: cashflowScore >= 100,
+      tips: cashflowScore < 100
         ? ['Monatliche Zahler aufstocken', 'Quartalsweise Zahler mit verschiedenen Monaten kombinieren']
         : ['Gleichmäßiger Cashflow'],
     },
     {
       key: 'chowderQuality', label: 'Chowder-Qualität', score: chowderScore,
       detail: `Gewichteter Chowder: ${weightedChowder.toFixed(1)}`,
-      isGood: chowderScore >= 60,
-      tips: chowderScore < 60
+      isGood: chowderScore >= 100,
+      tips: chowderScore < 100
         ? ['Positionen mit Chowder > 12 bevorzugen', 'Schwache Chowder-Werte durch bessere ersetzen']
         : ['Gute Yield/Growth-Balance'],
     },
@@ -180,7 +181,7 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
       id: `spar-${p.symbol}`, priority: 'high',
       title: `Sparplan für ${p.symbol} starten`,
       description: `${p.name} hat Prio A und ist im Aufbau, wird aber nicht bespart.`,
-      impact: `+${estDiv.toFixed(0)} €/Jahr Dividende (bei 50 €/Monat)`,
+      impact: `+${fmtNum(estDiv)} €/Jahr Dividende (bei 50 €/Monat)`,
       effort: 'einfach', symbols: [p.symbol],
     });
   }
@@ -190,7 +191,7 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
     recommendations.push({
       id: `overweight-${p.symbol}`, priority: 'medium',
       title: `Sparplan ${p.symbol} pausieren`,
-      description: `${p.name} hat ${p.portfolioWeight.toFixed(1)} % Gewicht und wird weiter mit ${p.sparbetrag} €/Zyklus bespart. Kapital in untergewichtete Prio-A-Positionen umlenken.`,
+      description: `${p.name} hat ${p.portfolioWeight.toFixed(1)} % Gewicht und wird weiter mit ${fmtNum(p.sparbetrag)} €/Zyklus bespart. Kapital in untergewichtete Prio-A-Positionen umlenken.`,
       impact: 'Bessere Diversifikation, Risikoreduktion',
       effort: 'einfach', symbols: [p.symbol],
     });
@@ -225,8 +226,8 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
     recommendations.push({
       id: 'sell-pending', priority: 'high',
       title: 'Verkaufskandidaten umsetzen',
-      description: `${verkauf.length} Positionen zum Verkauf markiert. Gebundenes Kapital: ${verkaufWert.toFixed(0)} €.`,
-      impact: `${verkaufWert.toFixed(0)} € frei für Reinvestment`,
+      description: `${verkauf.length} Positionen zum Verkauf markiert. Gebundenes Kapital: ${fmtNum(verkaufWert)} €.`,
+      impact: `${fmtNum(verkaufWert)} € frei für Reinvestment`,
       effort: 'mittel', symbols: verkauf.map(p => p.symbol),
     });
   }
@@ -259,7 +260,7 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
     recommendations.push({
       id: 'increase-savings', priority: 'low',
       title: 'Sparrate erhöhen',
-      description: `Die aktuelle Sparrate (${totals.totalSparbetrag} €/Zyklus) beträgt weniger als 0,5 % des Depotwerts. Eine höhere Rate beschleunigt den Vermögensaufbau erheblich.`,
+      description: `Die aktuelle Sparrate (${fmtNum(totals.totalSparbetrag)} €/Zyklus) beträgt weniger als 0,5 % des Depotwerts. Eine höhere Rate beschleunigt den Vermögensaufbau erheblich.`,
       impact: 'Schnellerer Vermögensaufbau durch Zinseszins',
       effort: 'mittel',
     });
@@ -269,7 +270,7 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
     recommendations.push({
       id: 'reinvest-dividends', priority: 'low',
       title: 'Dividenden systematisch reinvestieren',
-      description: `Mit ${totals.totalMonthlyDiv.toFixed(0)} € monatlicher Dividende lohnt sich die systematische Wiederanlage. Der Schneeball-Effekt verstärkt das Wachstum exponentiell.`,
+      description: `Mit ${fmtNum(totals.totalMonthlyDiv)} € monatlicher Dividende lohnt sich die systematische Wiederanlage. Der Schneeball-Effekt verstärkt das Wachstum exponentiell.`,
       impact: 'Zinseszins-Effekt auf Dividenden',
       effort: 'einfach',
     });
