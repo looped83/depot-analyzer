@@ -30,8 +30,16 @@ export function parsePaymentMonths(monate: string): number[] {
   return [...new Set(found)].sort((a, b) => a - b);
 }
 
+export interface ScoreRanges {
+  yieldMin: number;
+  yieldMax: number;
+  cagrMin: number;
+  cagrMax: number;
+}
+
 /**
  * Dividend Score = 40% norm. Yield + 40% norm. CAGR + 10% FreqScore (norm) + 10% Priorität/Status
+ * Ranges are precomputed once by the caller so scoring a full depot stays O(n).
  */
 export function computeDividendScore(
   yieldPct: number,
@@ -39,16 +47,10 @@ export function computeDividendScore(
   freqScore: number,
   prio: string | null,
   status: string,
-  allYields: number[],
-  allCagrs: number[],
+  ranges: ScoreRanges,
   maxFreq: number
 ): number {
-  if (allYields.length === 0 || allCagrs.length === 0) return 0;
-
-  const yieldMin = Math.min(...allYields);
-  const yieldMax = Math.max(...allYields);
-  const cagrMin = Math.min(...allCagrs);
-  const cagrMax = Math.max(...allCagrs);
+  const { yieldMin, yieldMax, cagrMin, cagrMax } = ranges;
 
   const normYield = yieldMax === yieldMin ? 0.5 : (yieldPct - yieldMin) / (yieldMax - yieldMin);
   const normCagr = cagrMax === cagrMin ? 0.5 : (cagr - cagrMin) / (cagrMax - cagrMin);
@@ -77,6 +79,12 @@ export function calculateDerived(positions: DepotPosition[]): DepotPosition[] {
 
   const allYields = positions.map((p) => p.yield);
   const allCagrs = positions.map((p) => p.cagr5j);
+  const ranges: ScoreRanges = {
+    yieldMin: Math.min(...allYields),
+    yieldMax: Math.max(...allYields),
+    cagrMin: Math.min(...allCagrs),
+    cagrMax: Math.max(...allCagrs),
+  };
   const maxFreq = 3;
 
   return positions.map((p) => {
@@ -87,7 +95,7 @@ export function calculateDerived(positions: DepotPosition[]): DepotPosition[] {
     const chowderScore = p.yield + p.cagr5j;
     const dividendScore = computeDividendScore(
       p.yield, p.cagr5j, p.freqScore, p.prio, p.status,
-      allYields, allCagrs, maxFreq
+      ranges, maxFreq
     );
     const einstandswert = p.kaufkurs * p.stueckzahl;
     const aktuellerKurs = p.stueckzahl > 0 ? p.wert / p.stueckzahl : 0;
@@ -171,11 +179,12 @@ export function computeProjection(
 
   let portfolioValue = totals.totalWert;
   let annualDividend = totals.totalAnnualDiv;
+  const startYear = new Date().getFullYear();
   const results = [];
 
   for (let y = 0; y <= years; y++) {
     results.push({
-      year: new Date().getFullYear() + y,
+      year: startYear + y,
       portfolioValue: Math.round(portfolioValue),
       annualDividend: Math.round(annualDividend),
       cumSavings: Math.round(y * 12 * monthlySavings),

@@ -76,6 +76,26 @@ const TAB_GROUPS: TabGroup[] = [
   },
 ];
 
+// TabId → component, replaces a 16-way conditional in the render body.
+const TAB_COMPONENTS: Record<TabId, React.ComponentType<{ positions: DepotPosition[] }>> = {
+  overview: OverviewTab,
+  performance: PerformanceTab,
+  dividends: DividendTab,
+  cagr: CAGRTab,
+  savings: SavingsTab,
+  calendar: CalendarTab,
+  rankings: RankingTab,
+  findings: FindingsTab,
+  'depot-check': DepotCheckTab,
+  motivation: MotivationTab,
+  projection: ProjectionTab,
+  diversification: DiversificationTab,
+  safety: SafetyTab,
+  goal: GoalTab,
+  rebalancing: RebalancingTab,
+  quality: QualityTab,
+};
+
 interface Props {
   positions: DepotPosition[];
   onReset: () => void;
@@ -90,8 +110,9 @@ const Btn = ({ onClick, children }: { onClick: () => void; children: React.React
   </button>
 );
 
-export function Dashboard({ positions, onReset }: Props) {
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
+// Owns the flyout state so opening/closing a group dropdown re-renders only the
+// nav — not the whole dashboard with the active tab's charts and tables.
+function TabNav({ activeTab, onSelect }: { activeTab: TabId; onSelect: (id: TabId) => void }) {
   // Position is captured at click time (fixed positioning) so the flyout escapes the
   // group row's overflow-x-auto clipping — overflow-x: auto implicitly forces
   // overflow-y: auto too, which would otherwise clip an absolutely positioned dropdown.
@@ -118,6 +139,54 @@ export function Dashboard({ positions, onReset }: Props) {
     setFlyout({ groupId, top: rect.bottom + 4, left: Math.max(8, left) });
   };
 
+  return (
+    <div ref={navRef} className="relative flex-1 min-w-0">
+      <div className="h-full flex items-stretch overflow-x-auto no-scrollbar">
+        {TAB_GROUPS.map((group) => (
+          <button
+            key={group.id}
+            onClick={(e) => toggleGroup(e, group.id)}
+            className={`flex items-center gap-1.5 px-4 text-xs font-medium whitespace-nowrap border-b-2 shrink-0 transition-all ${
+              activeGroup.id === group.id
+                ? 'border-blue-500 text-blue-400'
+                : 'border-transparent text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            {group.icon}
+            {group.label}
+            <ChevronDown size={12} className={`transition-transform ${flyout?.groupId === group.id ? 'rotate-180' : ''}`} />
+          </button>
+        ))}
+      </div>
+      {flyout && flyoutGroup && (
+        <div
+          style={{ position: 'fixed', top: flyout.top, left: flyout.left }}
+          className="z-50 min-w-[190px] rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl py-1"
+        >
+          {flyoutGroup.tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => { onSelect(tab.id); setFlyout(null); }}
+              className={`flex w-full items-center gap-2 px-3.5 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? 'text-blue-400 bg-zinc-800/60'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function Dashboard({ positions, onReset }: Props) {
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const ActiveTab = TAB_COMPONENTS[activeTab];
+
   const exportCSV = () => {
     const headers = ['Symbol','Name','Status','Prio','Broker','Wert (€)','Kaufkurs (€)','Einstand (€)','Gewinn/Verlust (€)','Gewinn/Verlust %','Gewicht %','Yield %','CAGR 5J %','Jährl. Div. (€)','Monatl. Div. (€)','Div-Beitrag %','Chowder','Div-Score','Ausschüttungsfrequenz','Ausschüttungsmonate','Typ','Kategorie','ISIN','WKN'];
     const rows = positions.map((p) => [
@@ -128,7 +197,9 @@ export function Dashboard({ positions, onReset }: Props) {
       p.chowderScore.toFixed(1), p.dividendScore, p.ausschuettungsfrequenz, p.ausschuettungsmonate,
       p.typ, p.kategorie, p.isin, p.wkn,
     ]);
-    const csv = [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(',')).join('\n');
+    // RFC-4180 quoting: double quotes inside a value must be doubled, otherwise
+    // a quote in e.g. a position name silently corrupts the row.
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     Object.assign(document.createElement('a'), { href: url, download: `depot-analyse-${new Date().toISOString().slice(0, 10)}.csv` }).click();
@@ -149,46 +220,7 @@ export function Dashboard({ positions, onReset }: Props) {
           </div>
 
           {/* Tab groups */}
-          <div ref={navRef} className="relative flex-1 min-w-0">
-            <div className="h-full flex items-stretch overflow-x-auto no-scrollbar">
-              {TAB_GROUPS.map((group) => (
-                <button
-                  key={group.id}
-                  onClick={(e) => toggleGroup(e, group.id)}
-                  className={`flex items-center gap-1.5 px-4 text-xs font-medium whitespace-nowrap border-b-2 shrink-0 transition-all ${
-                    activeGroup.id === group.id
-                      ? 'border-blue-500 text-blue-400'
-                      : 'border-transparent text-zinc-500 hover:text-zinc-300'
-                  }`}
-                >
-                  {group.icon}
-                  {group.label}
-                  <ChevronDown size={12} className={`transition-transform ${flyout?.groupId === group.id ? 'rotate-180' : ''}`} />
-                </button>
-              ))}
-            </div>
-            {flyout && flyoutGroup && (
-              <div
-                style={{ position: 'fixed', top: flyout.top, left: flyout.left }}
-                className="z-50 min-w-[190px] rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl py-1"
-              >
-                {flyoutGroup.tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => { setActiveTab(tab.id); setFlyout(null); }}
-                    className={`flex w-full items-center gap-2 px-3.5 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
-                      activeTab === tab.id
-                        ? 'text-blue-400 bg-zinc-800/60'
-                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
-                    }`}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <TabNav activeTab={activeTab} onSelect={setActiveTab} />
 
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
@@ -206,22 +238,7 @@ export function Dashboard({ positions, onReset }: Props) {
 
       {/* Page content */}
       <main className="max-w-screen-xl mx-auto px-6 py-8">
-        {activeTab === 'overview'    && <OverviewTab    positions={positions} />}
-        {activeTab === 'performance' && <PerformanceTab positions={positions} />}
-        {activeTab === 'dividends'  && <DividendTab   positions={positions} />}
-        {activeTab === 'cagr'       && <CAGRTab        positions={positions} />}
-        {activeTab === 'savings'    && <SavingsTab     positions={positions} />}
-        {activeTab === 'calendar'   && <CalendarTab    positions={positions} />}
-        {activeTab === 'rankings'   && <RankingTab     positions={positions} />}
-        {activeTab === 'findings'   && <FindingsTab    positions={positions} />}
-        {activeTab === 'depot-check'     && <DepotCheckTab      positions={positions} />}
-        {activeTab === 'motivation'      && <MotivationTab      positions={positions} />}
-        {activeTab === 'projection'      && <ProjectionTab      positions={positions} />}
-        {activeTab === 'diversification' && <DiversificationTab positions={positions} />}
-        {activeTab === 'safety'          && <SafetyTab          positions={positions} />}
-        {activeTab === 'goal'            && <GoalTab            positions={positions} />}
-        {activeTab === 'rebalancing'     && <RebalancingTab     positions={positions} />}
-        {activeTab === 'quality'         && <QualityTab         positions={positions} />}
+        <ActiveTab positions={positions} />
       </main>
 
       <footer className="max-w-screen-xl mx-auto px-6 py-6 text-xs text-zinc-600 text-center">

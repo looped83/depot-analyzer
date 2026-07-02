@@ -44,7 +44,7 @@ export function CalendarTab({ positions }: Props) {
       <PageHeading title="Kalender" />
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KPICard title="Jährl. Gesamtdividende" value={fmt(totalAnnual)}           sub="Aus Cashflow-Analyse" />
-        <KPICard title="Bester Monat"            value={maxMonth.label}            sub={fmt(maxMonth.expectedIncome)} />
+        <KPICard title="Bester Monat"            value={FULL_MONTH[maxMonth.label] ?? maxMonth.label} sub={fmt(maxMonth.expectedIncome)} />
         <KPICard title="Schwächster Monat"       value={minMonth ? (FULL_MONTH[minMonth.label] ?? minMonth.label) : '—'} sub={minMonth ? fmt(minMonth.expectedIncome) : '—'} />
         <KPICard title="Ø Monatlicher Cashflow"  value={fmt(avgIncome)}            sub="Dividende / 12" />
       </div>
