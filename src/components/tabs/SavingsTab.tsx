@@ -10,6 +10,7 @@ import { ChartTooltip } from '../ChartTooltip';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { PALETTE, AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
+import { ASSUMED_MONTHLY_INVESTMENT } from '../../lib/calculations';
 
 interface Props { positions: DepotPosition[] }
 
@@ -64,8 +65,7 @@ export function SavingsTab({ positions }: Props) {
     (overweight.length === 0 ? 10 : 0)
   ));
 
-  const EXTRA_MONTHLY = 3000;
-  const totalMonthlyInvest = totalSpar + EXTRA_MONTHLY;
+  const totalMonthlyInvest = ASSUMED_MONTHLY_INVESTMENT;
 
   const avgYieldSaved = saved.length > 0 ? saved.reduce((s, p) => s + p.yield, 0) / saved.length : 0;
   const futureYears = [1, 3, 5, 10];
@@ -147,7 +147,7 @@ export function SavingsTab({ positions }: Props) {
 
       {/* Future Value Projection */}
       {totalSpar > 0 && (
-        <Card title="Sparplan-Zukunftsprojektion" sub={`Sparrate ${fmtNum(totalSpar)} € + 3.000 € Einmalkäufe = ${fmtNum(totalMonthlyInvest)} €/Monat · 6 % Wachstum p.a.`}>
+        <Card title="Sparplan-Zukunftsprojektion" sub={`3.000 € Einmalkäufe + 1.200 € Sparpläne = ${fmtNum(totalMonthlyInvest)} €/Monat · 6 % Wachstum p.a.`}>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 mb-3">
             {futureProjection.map(f => (
               <div key={f.year} className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-3 text-center">
