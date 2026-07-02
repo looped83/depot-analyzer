@@ -67,10 +67,6 @@ Tabs are grouped into 5 thematic nav groups:
 
 All calculations are estimates based purely on the uploaded data and general assumptions — **not financial advice**, and costs/taxes beyond the flat-rate model above are not accounted for.
 
-## Export
-
-- **CSV**: all positions with every computed metric (weights, scores, P&L, dividend figures, …)
-
 ## Tech stack
 
 - React 19 + TypeScript + Vite
