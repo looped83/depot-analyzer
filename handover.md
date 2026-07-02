@@ -1,15 +1,55 @@
 # Handover – depot-analyzer
 
-**Datum:** 2026-07-01
-**Branch:** `claude/tablet-landscape-breakpoint-mqnf8j` (PR #49, offen gegen `main`)
+**Datum:** 2026-07-02
+**Branch:** `claude/tablet-landscape-breakpoint-mqnf8j` (alles bis inkl. PR #54 gemergt, aktuell kein offener PR)
 **Repo:** `looped83/depot-analyzer`
 **Build:** `npx tsc --noEmit` → 0 Fehler · `npx eslint .` → 0 Fehler · `npm run build` → erfolgreich
 
-**Wichtig zum PR-Workflow dieser Session:** Der Nutzer hat jede PR fast unmittelbar nach dem Push gemerged (PRs **#39–#48**, alle vom selben Branch-Namen, alle einzeln gemerged – Details siehe Update-Abschnitt unten). `main` ist dadurch aktuell auf dem Stand von PR #48. Für den allerletzten Fix (Nav-Unterstrich-Verlauf) wurde der Branch deshalb frisch von `main` neu aufgesetzt (`git checkout -B <branch> origin/main`) und als **neue** PR #49 geöffnet, statt die schon gemergte #48 weiterzuverwenden – siehe Pitfall-Hinweis unten.
+**Wichtig zum PR-Workflow dieser Session:** Der Nutzer merged jede PR praktisch sofort nach dem Push (mittlerweile PRs **#39–#54**, alle vom selben Branch-Namen `claude/tablet-landscape-breakpoint-mqnf8j`, alle einzeln erstellt und gemerged). Das bedeutet: **vor jedem neuen Commit auf diesem Branch erst prüfen, ob der lokale Stand bereits gemerged ist** (`git fetch origin main && git merge-base --is-ancestor HEAD origin/main`) – wenn ja, Branch frisch von `main` neu aufsetzen (`git checkout -B claude/tablet-landscape-breakpoint-mqnf8j origin/main`, uncommittete Änderungen per `git stash`/`git stash pop` rüberretten) statt auf dem alten, bereits bedeutungslosen Branch-Stand weiterzuarbeiten. Sonst entstehen Merge-Konflikte oder der Push landet auf einem längst gemergten Ast. Dieses Muster ist inzwischen mehrfach aufgetreten (PR #49, #50, #51, #52, #53, #54) und sollte für jede künftige Session auf diesem Branch als Standard-Vorgehen gelten.
 
 ---
 
-## Update (2026-07-01, neuester Stand): Tablet/Landscape-Breakpoint, Favicon-Logo, Seiten-Titel, schlanker Header, Suchfeld-Konsistenz, echter Datenbug, Vite-Logo-Fix, Nav-Unterstrich
+## Update (2026-07-02, neuester Stand): Qualitäts-Tipps, Tausendertrennzeichen, einheitliche Investment-Annahme, Kalenderjahre im Chart, Code-Qualitäts-Pass, CSV-Export entfernt
+
+Fünf weitere PRs (#50–#54) nach dem vorherigen Update. Jede Änderung wieder gegen die echte, vom Nutzer hochgeladene Depot-XLSX (48 Positionen) verifiziert, nicht nur gegen synthetische Testdaten.
+
+### 11. Depot-Check „Qualitätsdimensionen im Detail": Tipps nur bei echten 100 %
+Bisher hatte jede der 8 Health-Dimensionen (`insights.ts`) einen eigenen Ad-hoc-Schwellenwert (60 oder 80), ab dem statt eines echten Verbesserungstipps nur eine generische „passt schon"-Meldung gezeigt wurde – eine Dimension mit z. B. 80/100 bekam dadurch keinen actionable Hinweis. Fix: **alle 8 Dimensionen** zeigen den (bereits vorhandenen) actionable Tipp jetzt bis zu echten **100 %**, die „passt"-Meldung erscheint nur noch bei einer echten 100. `isGood`-Flag entsprechend angepasst; in der UI (`DepotCheckTab.tsx`) bekommen Nicht-100-%-Dimensionen jetzt ein explizites „Tipp:"-Präfix + blaue Hervorhebung statt der bisherigen neutralen Chip-Farbe.
+
+### 12. Tausendertrennzeichen in Empfehlungen & Findings
+`generateRecommendations()` und `generateFindings()` (`insights.ts`/`findings.ts`) interpolierten mehrere Euro-Beträge direkt via `.toFixed(0)` oder gar ganz ohne Formatierung (z. B. `${p.sparbetrag} €/Zyklus`) – bei größeren Depots (bestätigt mit der echten Datei: 13.116 € Jahresdividende, 35.272 € gebundenes Kapital bei Verkaufskandidaten) erschienen Beträge wie „13116 €" ohne Tausenderpunkt. Alle betroffenen Stellen auf `fmtNum()` umgestellt.
+
+### 13. Monatliches Investment: einheitlich 4.200 € seitenweit
+Nutzer-Vorgabe: Überall, wo die App eine Zukunftsprojektion mit einer monatlichen Investitionsannahme rechnet, soll durchgängig **4.200 € = 3× 1.000 € Einmalkäufe + 1.200 € Sparpläne** angenommen werden. War vorher inkonsistent: `ProjectionTab`/`GoalTab` defaulteten bereits auf 4.200 €, aber `SavingsTab`s Zukunftsprojektion nutzte die echte (oft viel kleinere) Sparbetrag-Summe aus den Nutzerdaten plus einen separaten fixen 3.000-€-Aufschlag, und `MotivationTab`s Schneeball-Effekt/5-Jahres-Ausblick nutzte die echte Summe direkt – dieselbe „was wäre wenn ich weiter investiere"-Frage gab je nach Tab unterschiedliche Antworten.
+- Neue Konstante `ASSUMED_MONTHLY_INVESTMENT = 4200` in `calculations.ts`, jetzt einzige Quelle für alle vier Tabs.
+- Labels in `SavingsTab`/`MotivationTab` angepasst, damit sie die Annahme explizit nennen (z. B. „3.000 € Einmalkäufe + 1.200 € Sparpläne = 4.200 €/Monat") statt fälschlich „aktuelle Sparrate" zu suggerieren.
+
+### 14. Sparplan-Zukunftsprojektion: Kalenderjahre statt „0J/1J/…"
+Das Area-Chart in `SavingsTab.tsx` zeigte auf der X-Achse und im Tooltip relative Jahres-Offsets („0J, 1J, 2J…") statt echter Kalenderjahre – inkonsistent zum bereits existierenden Schneeball-Effekt-Chart in `MotivationTab`, das schon Kalenderjahre (2026–2046) zeigte. Fix: `tickFormatter`/`labelFormatter` berechnen jetzt `CURRENT_YEAR + Math.floor(monat / 12)`. Nebenbei ein totes `label`-Feld auf den Chart-Datenpunkten entfernt, das dieselbe (unbenutzte) Relativ-Jahr-Logik dupliziert hatte.
+
+### 15. Code-Qualitäts-Pass (Bugfixing / Clean Code / Green Code) – zweiter Durchgang
+Systematischer Review-Pass über `lib/` und die Tab-Komponenten, ähnlich dem ersten Pass (siehe „Was seit dem letzten Handover gemacht wurde" weiter unten), diesmal auf dem aktuellen Code-Stand.
+
+**Bugfixing:**
+- **`SortableTable.tsx`:** Die interne (unkontrollierte) Suche setzte die Seiten-Pagination beim Tippen zurück, der kontrollierte Filter-Pfad (`filter`/`onFilterChange`, mittlerweile von allen 9 Tabellen-Suchfeldern im Header genutzt) tat das **nicht** – wer auf Seite 2+ einer Tabelle suchte, sah „Keine Einträge gefunden", obwohl Treffer existierten, weil weiter eine jetzt leere Seite gesliced wurde. Fix: Seitenindex wird auf die tatsächlich verfügbare Seitenzahl geklemmt (`Math.min(page, pages - 1)`).
+- **CSV-Export (vor Entfernung, siehe Punkt 16):** eingebettete Anführungszeichen in Werten wurden nicht escaped (`"` in einem Positionsnamen hätte die Zeile stillschweigend zerschossen) – RFC-4180-Quoting nachgerüstet, war zum Zeitpunkt der Entfernung bereits gemerged.
+- **`GoalTab.tsx`:** „Schneller-zum-Ziel"-Hinweistext zeigte rohe Zahlen ohne Tausenderpunkt („4300 € statt 4200 €") → `fmtNum`.
+- **`CalendarTab.tsx`:** „Bester Monat" zeigte das Kurzlabel („Mär"), „Schwächster Monat" den vollen Namen („März") – Inkonsistenz behoben, beide zeigen jetzt den vollen Monatsnamen.
+
+**Clean Code:**
+- `Dashboard.tsx`: 16-fache `activeTab`-Bedingungskette im Render durch eine `TAB_COMPONENTS`-Lookup-Map ersetzt.
+- `findings.ts`: dupliziertes Freibetrag-/Steuer-Rechenwerk (eigene `FREIBETRAG`/`0.26375`-Konstanten) durch Wiederverwendung von `computeFreibetrag()` aus `insights.ts` ersetzt.
+
+**Green Code:**
+- `Dashboard.tsx`: Flyout-State in eine eigene `TabNav`-Komponente ausgelagert – Öffnen/Schließen des Nav-Dropdowns rendert jetzt nur noch die Nav neu, nicht mehr das gesamte Dashboard inkl. aller Charts/Tabellen des aktiven Tabs (jeder Tab berechnet seine abgeleiteten Daten bei jedem Render neu, ohne Memoization über den Tab-Wechsel hinweg).
+- `calculations.ts`: `computeDividendScore` berechnete `Math.min`/`Math.max` über alle Yields/CAGRs **pro Position** neu (O(n²) fürs ganze Depot) – Ranges werden jetzt einmal pro `calculateDerived()`-Aufruf vorberechnet und durchgereicht (neuer Typ `ScoreRanges`). Gegen die echte Depot-Datei verifiziert: alle Dividend-Scores identisch zu vorher (BATS 17, QCOM 17, OHI 16 etc.). Zusätzlich `new Date()` aus der Projektions-Schleife herausgezogen (einmal pro Aufruf statt einmal pro Jahr).
+
+### 16. CSV-Export komplett entfernt
+Auf expliziten Nutzerwunsch: `exportCSV()`-Funktion, der CSV-Button im Header sowie die dadurch verwaiste `Btn`-Hilfskomponente und der `Download`-Icon-Import aus `Dashboard.tsx` entfernt. Der „Neue Datei laden"-Button bleibt. README-Abschnitt „Export" ebenfalls entfernt, da er nur noch den jetzt nicht mehr existierenden CSV-Export beschrieb.
+
+---
+
+## Update (2026-07-01, davor): Tablet/Landscape-Breakpoint, Favicon-Logo, Seiten-Titel, schlanker Header, Suchfeld-Konsistenz, echter Datenbug, Vite-Logo-Fix, Nav-Unterstrich
 
 Ein Session mit vielen kleinen bis mittelgroßen Einzelaufträgen, alle ursprünglich auf einem Branch (`claude/tablet-landscape-breakpoint-mqnf8j`). Jede Änderung wurde per Playwright gegen eine synthetische Testdatei **und** gegen eine echte, vom Nutzer hochgeladene Depot-XLSX verifiziert (Screenshots vor/nach, Console-Error-Check über alle 16 Tabs). Alle hier beschriebenen Punkte bis auf den letzten („Nav-Unterstrich-Fix") sind über die PRs #39–#48 bereits in `main` gemergt.
 
@@ -226,9 +266,10 @@ Effekt: Initial-Bundle (Upload-Screen) ist von ursprünglich ~344 KB gzip auf ~6
 
 ---
 
-## Fachliche Domänen-Konventionen (unverändert)
+## Fachliche Domänen-Konventionen
 
-- **Freibetrag:** 2.000 € (verheiratet / gemeinsam veranlagt) – gilt in `findings.ts`, `insights.ts`, `GoalTab.tsx`
+- **Monatliche Investment-Annahme:** `ASSUMED_MONTHLY_INVESTMENT = 4200` (`calculations.ts`) = 3× 1.000 € Einmalkäufe + 1.200 € Sparpläne, einzige Quelle für alle Zukunftsprojektionen (`ProjectionTab`, `GoalTab`, `SavingsTab`, `MotivationTab`)
+- **Freibetrag:** 2.000 € (verheiratet / gemeinsam veranlagt) – gilt in `findings.ts` (via `computeFreibetrag()`), `insights.ts`, `GoalTab.tsx`
 - **Steuer:** Kapitalertragsteuer + SolZ = **26,375 %** flat
 - **Dividend Score:** 40 % normierter Yield + 40 % normierter CAGR + 10 % Frequenz-Score + 10 % Priorität/Status
 - **Chowder Score:** `yield + cagr5j` (einfach, ungewichtet)
@@ -250,24 +291,26 @@ Effekt: Initial-Bundle (Upload-Screen) ist von ursprünglich ~344 KB gzip auf ~6
 5. ~~`DepotCheckTab.tsx`: UI-Politur nicht explizit geprüft.~~ → **Erledigt:** dedizierter Deep-Dive auf Desktop/Tablet/Mobile. Ein Bug gefunden und gefixt (Radar-Chart-Labels abgeschnitten auf Tablet+Mobile, siehe Update-Abschnitt oben). Rest der Tab-Inhalte (Gauge, Stresstest, Freibetrag-Tracker, Empfehlungslisten) sah auf allen drei Breakpoints sauber aus.
 6. ~~Tablet-Breakpoint (768px) und Landscape-Mobile: nicht systematisch getestet.~~ → **Erledigt** (siehe Update-Abschnitt oben): gezielter Audit + Browser-Verifikation bei 375/768/812×375/1440px, 4 bestätigte Bugs gefixt (Nav-Scroll-Affordance, Flyout-Clamping, FindingsTab- und QualityTab-Grid). **Nachtrag:** Die Nav-Scroll-Affordance (Rand-Fade per `mask-image`) wurde in Abschnitt 10 des obersten Updates wieder entfernt, da sie den aktiven Unterstrich des ersten Tabs verlaufsartig aussehen ließ – der zugrundeliegende Overflow bei 768px besteht also wieder ohne visuellen Hinweis, war aber explizit gewünscht.
 7. **Neuer Performance-Tab noch nicht auf Mobile-Layout-Bugs geprüft:** Die Tabelle hat 6 Zahlen-Spalten (Kaufkurs, Kurs aktuell, Einstand, Wert, G/V €, G/V %) – bei 375px potenziell zu breit/gequetscht. Wurde beim Tablet/Landscape-Audit nicht explizit mit abgedeckt (Fokus lag auf den dort gemeldeten Verdachtsfällen).
-8. **CSV-Export-Konsumenten prüfen:** Falls der Nutzer die exportierte CSV in Excel/Sheets weiterverarbeitet, wurden die 4 neuen Spalten (Kaufkurs, Einstand, G/V €, G/V %) bisher nur automatisiert per Playwright-Download verifiziert, nicht manuell in einer Tabellenkalkulation geöffnet.
-9. ~~PR #39 noch offen~~ → **Erledigt:** PRs #39–#48 (alle vom selben Branch, siehe Hinweis ganz oben im Dokument) sind gemerged, `main` ist aktuell. **Neu offen: PR #49** (Nav-Unterstrich-Fix, Abschnitt 10 oben) – klein, aber noch zu mergen. Für PRs läuft aktuell keine CI (nur `deploy.yml` auf Push nach `main`), also kein CI-Status abzuwarten, nur Review/Merge durch den Nutzer.
+8. ~~CSV-Export-Konsumenten prüfen~~ → **Gegenstandslos:** CSV-Export wurde auf Nutzerwunsch komplett entfernt (Abschnitt 16 oben).
+9. ~~PR #39 noch offen~~ → **Erledigt:** PRs #39–#54 (alle vom selben Branch, siehe Hinweis ganz oben im Dokument) sind gemerged, `main` ist aktuell. **Aktuell kein offener PR.** Für PRs läuft weiterhin keine CI (nur `deploy.yml` auf Push nach `main`), also kein CI-Status abzuwarten, nur Review/Merge durch den Nutzer – bislang passiert das jedes Mal innerhalb weniger Minuten nach Push.
 10. **Relative Normierung des Dividend Score:** `computeDividendScore` normiert Yield/CAGR relativ zum Min/Max des eigenen Depots (`normYield`/`normCagr`). Bei einer echten Nutzerdatei getestet: Der gewichtete D-Score landet dadurch strukturell oft im 25–35er-Bereich, selbst wenn andere Qualitätsdimensionen bei 100 % liegen – kein Bug, aber ein Design-Aspekt, den man im Hinterkopf behalten sollte, falls Nutzer erneut „schlechte Qualität trotz guter Daten" melden. Eine absolute (statt rein relative) Skalierung wäre eine mögliche künftige Verbesserung, aber ein Scope-/Produktentscheid, kein Bugfix.
-11. **`public/icons.svg` (Bluesky-Icon-Sprite) ist ungenutzt**, wurde beim Vite-Logo-Cleanup (Abschnitt 9) bewusst nicht angefasst, da nicht Teil der gemeldeten Beschwerde. Falls „totes Zeug aufräumen" nochmal Thema wird: guter Kandidat.
+11. **`public/icons.svg` (Bluesky-Icon-Sprite) ist ungenutzt**, wurde beim Vite-Logo-Cleanup bewusst nicht angefasst, da nicht Teil der gemeldeten Beschwerde. Falls „totes Zeug aufräumen" nochmal Thema wird: guter Kandidat.
+12. **Tests weiterhin keine Unit-Tests** trotz mittlerweile mehrerer nicht-trivialer Bugfixes in `calculations.ts`/`insights.ts`/`findings.ts` (Status-Modifier, Pagination-Clamping, Score-Ranges-Refactor) – jeder wurde stattdessen manuell per Playwright + echter Nutzerdatei verifiziert. Ein Unit-Test-Setup würde diese Verifikation künftig deutlich beschleunigen (siehe auch Punkt 1).
 
 ---
 
 ## Commit-Historie dieser Session (neueste zuerst)
 
-Noch offen als PR #49 (Branch frisch von `main` neu aufgesetzt, siehe Hinweis oben):
+Aktuell kein offener PR – alles bis hierhin gemerged (PRs #39–#54). Neueste zuerst:
 
 ```
+b21679c feat: remove CSV export entirely
+bbbddf9 fix: quality pass — pagination bug, CSV escaping, render efficiency, dedup
+026469e fix: show calendar years instead of relative "0J/1J/..." on Sparplan chart
+b3a22ae feat: standardize monthly investment assumption at 4.200 € site-wide
+7fa60e4 fix: actionable tips for any non-100% quality dimension, thousands separators in recommendations/findings
+5913a4b docs: update handover.md with README rewrite, Vite-logo fix, nav-underline fix, and PR-restart workflow note
 e0dd75f fix: remove nav underline scroll-fade causing inconsistent gradient on first tab
-```
-
-Bereits gemerged (PRs #39–#48):
-
-```
 8100982 fix: replace Vite scaffold logo with an actual app icon
 8976bc1 docs: rewrite README in English, reflect current app state
 b9be384 docs: update handover.md with tablet/landscape, favicon, header redesign, and status-modifier bugfix work
