@@ -23,7 +23,7 @@ import { MotivationTab } from './tabs/MotivationTab';
 import {
   LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
   Calendar, Trophy, Lightbulb, LineChart,
-  Download, Upload, PieChart, ShieldCheck,
+  Upload, PieChart, ShieldCheck,
   Target, Sliders, Star, HeartPulse, Sparkles, ChevronDown, Activity,
 } from 'lucide-react';
 
@@ -100,15 +100,6 @@ interface Props {
   positions: DepotPosition[];
   onReset: () => void;
 }
-
-const Btn = ({ onClick, children }: { onClick: () => void; children: React.ReactNode }) => (
-  <button
-    onClick={onClick}
-    className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
-  >
-    {children}
-  </button>
-);
 
 // Owns the flyout state so opening/closing a group dropdown re-renders only the
 // nav — not the whole dashboard with the active tab's charts and tables.
@@ -187,25 +178,6 @@ export function Dashboard({ positions, onReset }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const ActiveTab = TAB_COMPONENTS[activeTab];
 
-  const exportCSV = () => {
-    const headers = ['Symbol','Name','Status','Prio','Broker','Wert (€)','Kaufkurs (€)','Einstand (€)','Gewinn/Verlust (€)','Gewinn/Verlust %','Gewicht %','Yield %','CAGR 5J %','Jährl. Div. (€)','Monatl. Div. (€)','Div-Beitrag %','Chowder','Div-Score','Ausschüttungsfrequenz','Ausschüttungsmonate','Typ','Kategorie','ISIN','WKN'];
-    const rows = positions.map((p) => [
-      p.symbol, p.name, p.status, p.prio ?? '', p.broker,
-      p.wert.toFixed(2), p.kaufkurs.toFixed(2), p.einstandswert.toFixed(2), p.gewinnVerlust.toFixed(2), p.gewinnVerlustPct.toFixed(2),
-      p.portfolioWeight.toFixed(2), p.yield.toFixed(4), p.cagr5j.toFixed(2),
-      p.annualDividend.toFixed(2), p.monthlyDividend.toFixed(2), p.dividendContribution.toFixed(2),
-      p.chowderScore.toFixed(1), p.dividendScore, p.ausschuettungsfrequenz, p.ausschuettungsmonate,
-      p.typ, p.kategorie, p.isin, p.wkn,
-    ]);
-    // RFC-4180 quoting: double quotes inside a value must be doubled, otherwise
-    // a quote in e.g. a position name silently corrupts the row.
-    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    Object.assign(document.createElement('a'), { href: url, download: `depot-analyse-${new Date().toISOString().slice(0, 10)}.csv` }).click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Header */}
@@ -224,7 +196,6 @@ export function Dashboard({ positions, onReset }: Props) {
 
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            <Btn onClick={exportCSV}><Download size={12} />CSV</Btn>
             <button
               onClick={onReset}
               title="Neue Datei laden"
