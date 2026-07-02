@@ -4,7 +4,7 @@ import {
   AreaChart, Area,
 } from 'recharts';
 import type { DepotPosition, ProjectionParams } from '../../lib/types';
-import { computeProjection, computeTotals } from '../../lib/calculations';
+import { computeProjection, computeTotals, ASSUMED_MONTHLY_INVESTMENT } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
 import { Card, PageHeading } from '../Card';
 import { fmt, fmtNum, fmtPct } from '../../lib/format';
@@ -24,7 +24,7 @@ export function ProjectionTab({ positions }: Props) {
 
   const [params, setParams] = useState<ProjectionParams>({
     dividendGrowthRate: 5,
-    monthlySavings: 4200,
+    monthlySavings: ASSUMED_MONTHLY_INVESTMENT,
     reinvest: true,
     capitalGrowthRate: 6,
   });

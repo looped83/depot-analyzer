@@ -1,5 +1,9 @@
 import type { DepotPosition, MonthlyIncome, ProjectionParams } from './types';
 
+// Site-wide default assumption for forward-looking projections: 3× 1.000 €
+// one-time purchases + 1.200 € via savings plans = 4.200 €/month.
+export const ASSUMED_MONTHLY_INVESTMENT = 4200;
+
 // Month name mapping for German month names
 const MONTH_MAP: Record<string, number[]> = {
   jan: [1], feb: [2], mär: [3], mar: [3], apr: [4], mai: [5],

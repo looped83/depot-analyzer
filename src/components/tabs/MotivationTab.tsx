@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
 import { computeMotivationMetrics, computeAchievements, computeSnowballEffect } from '../../lib/insights';
-import { computeTotals, computeProjection } from '../../lib/calculations';
+import { computeTotals, computeProjection, ASSUMED_MONTHLY_INVESTMENT } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
 import { Card, PageHeading } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
@@ -38,9 +38,9 @@ export function MotivationTab({ positions }: Props) {
   const nextUp = achievements.filter(a => !a.reached).sort((a, b) => b.progress - a.progress);
 
   const proj5 = useMemo(() => computeProjection(positions, {
-    dividendGrowthRate: 5, monthlySavings: totals.totalSparbetrag,
+    dividendGrowthRate: 5, monthlySavings: ASSUMED_MONTHLY_INVESTMENT,
     reinvest: true, capitalGrowthRate: 6,
-  }, 5), [positions, totals.totalSparbetrag]);
+  }, 5), [positions]);
   const future5Div = proj5[5]?.annualDividend ?? 0;
   const future5Monthly = future5Div / 12;
 
@@ -211,7 +211,7 @@ export function MotivationTab({ positions }: Props) {
       </Card>
 
       {/* Zukunftsausblick */}
-      <Card title="Blick in die Zukunft" sub="Bei 5 % Dividendenwachstum + 6 % Kurszuwachs + aktuelle Sparrate">
+      <Card title="Blick in die Zukunft" sub={`Bei 5 % Dividendenwachstum + 6 % Kurszuwachs + ${fmtNum(ASSUMED_MONTHLY_INVESTMENT)} €/Monat Investment`}>
         <div className="grid grid-cols-2 gap-3 mt-3">
           <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4">
             <div className="text-xs font-semibold uppercase tracking-wider text-blue-500 mb-2">Heute</div>

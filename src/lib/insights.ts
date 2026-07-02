@@ -1,5 +1,5 @@
 import type { DepotPosition } from './types';
-import { computeTotals, computeMonthlyCalendar, computeProjection, topDividendContributors } from './calculations';
+import { computeTotals, computeMonthlyCalendar, computeProjection, topDividendContributors, ASSUMED_MONTHLY_INVESTMENT } from './calculations';
 import { fmtNum } from './format';
 
 export interface HealthDimension {
@@ -450,10 +450,9 @@ export function computeSnowballEffect(positions: DepotPosition[], years = 20): {
   dividendWith: number;
   dividendWithout: number;
 }[] {
-  const totals = computeTotals(positions);
   const params = {
     dividendGrowthRate: 5,
-    monthlySavings: totals.totalSparbetrag,
+    monthlySavings: ASSUMED_MONTHLY_INVESTMENT,
     capitalGrowthRate: 6,
   };
 

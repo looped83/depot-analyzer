@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import type { DepotPosition } from '../../lib/types';
-import { computeProjection, computeTotals } from '../../lib/calculations';
+import { computeProjection, computeTotals, ASSUMED_MONTHLY_INVESTMENT } from '../../lib/calculations';
 import { KPICard } from '../KPICard';
 import { Card, PageHeading } from '../Card';
 import { fmt, fmtNum } from '../../lib/format';
@@ -33,7 +33,7 @@ export function GoalTab({ positions }: Props) {
   const [goalMonthly, setGoalMonthly]   = useState(2000);
   const [divGrowth, setDivGrowth]       = useState(5);
   const [capGrowth, setCapGrowth]       = useState(6);
-  const [savings, setSavings]           = useState(4200);
+  const [savings, setSavings]           = useState(ASSUMED_MONTHLY_INVESTMENT);
   const [reinvest, setReinvest]         = useState(true);
 
   const params = useMemo(
