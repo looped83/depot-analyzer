@@ -1,5 +1,6 @@
 import type { DepotPosition } from './types';
 import { computeTotals, computeMonthlyCalendar, topDividendContributors } from './calculations';
+import { fmtNum } from './format';
 
 export interface Finding {
   id: string;
@@ -48,7 +49,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
     id: 'top-income',
     category: 'success',
     title: 'Stärkste Einkommensbringer',
-    detail: `${top3Div.map((p) => `${p.name} (${p.annualDividend.toFixed(0)} €/Jahr, ${p.yield.toFixed(2)}% Yield)`).join(' | ')}. Diese drei Positionen generieren zusammen ${top3Div.reduce((s, p) => s + p.annualDividend, 0).toFixed(0)} € jährliche Dividende.`,
+    detail: `${top3Div.map((p) => `${p.name} (${fmtNum(p.annualDividend)} €/Jahr, ${p.yield.toFixed(2)}% Yield)`).join(' | ')}. Diese drei Positionen generieren zusammen ${fmtNum(top3Div.reduce((s, p) => s + p.annualDividend, 0))} € jährliche Dividende.`,
     symbols: top3Div.map((p) => p.symbol),
   });
 
@@ -136,7 +137,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'weak-months',
       category: 'info',
       title: `${weakMonths.length} Monat(e) mit unterdurchschnittlichem Cashflow`,
-      detail: `${weakMonths.map((m) => m.label).join(', ')} haben weniger als 50% des monatlichen Durchschnitts (Ø ${avgMonthlyIncome.toFixed(0)} €). Erwäge monatliche Zahler hinzuzufügen, um den Cashflow zu glätten.`,
+      detail: `${weakMonths.map((m) => m.label).join(', ')} haben weniger als 50% des monatlichen Durchschnitts (Ø ${fmtNum(avgMonthlyIncome)} €). Erwäge monatliche Zahler hinzuzufügen, um den Cashflow zu glätten.`,
     });
   }
 
@@ -178,7 +179,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'overweight-saved',
       category: 'info',
       title: 'Übergewichtete Positionen werden weiter bespart',
-      detail: `${overweightSaved.map((p) => `${p.symbol} (${p.portfolioWeight.toFixed(1)}%, ${p.sparbetrag}€/Zyklus)`).join(' | ')}. Diese Positionen haben bereits ein hohes Gewicht – prüfe, ob die Sparpläne weiterhin sinnvoll sind.`,
+      detail: `${overweightSaved.map((p) => `${p.symbol} (${p.portfolioWeight.toFixed(1)}%, ${fmtNum(p.sparbetrag)}€/Zyklus)`).join(' | ')}. Diese Positionen haben bereits ein hohes Gewicht – prüfe, ob die Sparpläne weiterhin sinnvoll sind.`,
       symbols: overweightSaved.map((p) => p.symbol),
     });
   }
@@ -239,14 +240,14 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'freibetrag-exceeded',
       category: 'info',
       title: 'Sparerpauschbetrag überschritten',
-      detail: `Deine jährliche Bruttodividende (${totals.totalAnnualDiv.toFixed(0)} €) übersteigt den Freibetrag von 2.000 €. Ca. ${taxAmount.toFixed(0)} € Steuern fallen an (KapESt + SolZ 26,375 %).`,
+      detail: `Deine jährliche Bruttodividende (${fmtNum(totals.totalAnnualDiv)} €) übersteigt den Freibetrag von 2.000 €. Ca. ${fmtNum(taxAmount)} € Steuern fallen an (KapESt + SolZ 26,375 %).`,
     });
   } else if (totals.totalAnnualDiv > FREIBETRAG * 0.8) {
     findings.push({
       id: 'freibetrag-near',
       category: 'success',
       title: 'Sparerpauschbetrag fast ausgeschöpft',
-      detail: `Deine jährliche Dividende (${totals.totalAnnualDiv.toFixed(0)} €) nähert sich dem Freibetrag von 2.000 €. Noch ${(FREIBETRAG - totals.totalAnnualDiv).toFixed(0)} € sind steuerfrei.`,
+      detail: `Deine jährliche Dividende (${fmtNum(totals.totalAnnualDiv)} €) nähert sich dem Freibetrag von 2.000 €. Noch ${fmtNum(FREIBETRAG - totals.totalAnnualDiv)} € sind steuerfrei.`,
     });
   }
 
