@@ -18,6 +18,7 @@ Other scripts:
 ```bash
 npm run build    # type-check + production build
 npm run lint     # ESLint
+npm test         # unit tests (Vitest) for the calculation/insights/findings logic
 npm run preview  # preview the production build locally
 ```
 
