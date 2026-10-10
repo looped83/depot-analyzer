@@ -1,296 +1,150 @@
-import React, { useState, useMemo } from 'react';
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine,
-} from 'recharts';
-import type { DepotPosition } from '../../lib/types';
-import { computeProjection, computeTotals, ASSUMED_MONTHLY_INVESTMENT } from '../../lib/calculations';
-import { KPICard } from '../KPICard';
-import { Card, PageHeading } from '../Card';
-import { fmt, fmtNum } from '../../lib/format';
+import { useMemo, useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { Check } from 'lucide-react';
+import { useDepot } from '../../lib/depotContext';
+import { computeProjection } from '../../lib/calculations';
+import { fmt, fmtK, fmtPct } from '../../lib/format';
 import { AXIS, GRID } from '../../lib/chartTheme';
-import { ChartTooltip } from '../ChartTooltip';
+import { TONE } from '../../lib/score';
+import { KPICard, KPIGrid } from '../ui/KPICard';
+import { Card } from '../ui/Card';
+import { SliderField } from '../ui/Controls';
+import { ProgressBar } from '../ui/Bars';
+import { Callout } from '../ui/Callout';
+import { ChartTooltip } from '../ui/ChartTooltip';
+import { AssumptionFields } from '../AssumptionFields';
+import { SortableTable } from '../tables/SortableTable';
 
-interface Props { positions: DepotPosition[] }
-
+const HORIZON = 30;
 const MILESTONES = [
-  { label: 'Streaming-Abo',   monthly: 15  },
-  { label: 'Handy-Rechnung',  monthly: 50  },
-  { label: 'Strom & Internet',monthly: 120 },
-  { label: 'Lebensmittel',    monthly: 300 },
-  { label: 'Auto (Rate/Vers.)',monthly: 500 },
-  { label: 'Miete (anteilig)',monthly: 800 },
-  { label: 'Urlaub (Ø/Mon.)', monthly: 250 },
-  { label: 'Teilzeit möglich',monthly: 1200 },
-  { label: 'Halbfinanzfrei',  monthly: 1500 },
-  { label: 'Vollfinanzfrei',  monthly: 3000 },
+  { label: 'Streaming-Abo', monthly: 15 },
+  { label: 'Handy-Rechnung', monthly: 50 },
+  { label: 'Strom & Internet', monthly: 120 },
+  { label: 'Urlaub (Ø / Monat)', monthly: 250 },
+  { label: 'Lebensmittel', monthly: 300 },
+  { label: 'Auto (Rate / Vers.)', monthly: 500 },
+  { label: 'Miete (anteilig)', monthly: 800 },
+  { label: 'Teilzeit möglich', monthly: 1200 },
+  { label: 'Halb finanzfrei', monthly: 1500 },
+  { label: 'Voll finanzfrei', monthly: 3000 },
 ];
+const SERIES = [
+  { key: 'optimistisch', label: 'Optimistisch (8 / 10 %)', color: TONE.success.hex },
+  { key: 'realistisch', label: 'Deine Annahmen', color: TONE.info.hex },
+  { key: 'konservativ', label: 'Konservativ (3 / 3 %)', color: TONE.warning.hex },
+] as const;
 
-export function GoalTab({ positions }: Props) {
-  const totals = computeTotals(positions);
-  const currentMonthly = totals.totalMonthlyDiv;
+export function GoalTab() {
+  const { m, assumptions } = useDepot();
+  const { positions, totals } = m;
+  const current = totals.totalMonthlyDiv;
+  const [goal, setGoal] = useState(2000);
 
-  const [goalMonthly, setGoalMonthly]   = useState(2000);
-  const [divGrowth, setDivGrowth]       = useState(5);
-  const [capGrowth, setCapGrowth]       = useState(6);
-  const [savings, setSavings]           = useState(ASSUMED_MONTHLY_INVESTMENT);
-  const [reinvest, setReinvest]         = useState(true);
-
-  const params = useMemo(
-    () => ({ dividendGrowthRate: divGrowth, monthlySavings: savings, reinvest, capitalGrowthRate: capGrowth }),
-    [divGrowth, savings, reinvest, capGrowth],
-  );
-
-  const proj30 = useMemo(() => computeProjection(positions, params, 30), [positions, params]);
-
-  const scenariosChartData = useMemo(() => {
-    const conservative = computeProjection(positions, { ...params, dividendGrowthRate: 3, capitalGrowthRate: 3 }, 20);
-    const realistic    = computeProjection(positions, params, 20);
-    const optimistic   = computeProjection(positions, { ...params, dividendGrowthRate: 8, capitalGrowthRate: 10 }, 20);
-    return conservative.map((c, i) => ({
-      year: c.year,
-      konservativ:  Math.round(c.annualDividend / 12),
-      realistisch:  Math.round((realistic[i]?.annualDividend ?? 0) / 12),
-      optimistisch: Math.round((optimistic[i]?.annualDividend ?? 0) / 12),
+  const proj = useMemo(() => computeProjection(positions, assumptions, HORIZON), [positions, assumptions]);
+  const chart = useMemo(() => {
+    const cons = computeProjection(positions, { ...assumptions, dividendGrowthRate: 3, capitalGrowthRate: 3 }, 20);
+    const opt = computeProjection(positions, { ...assumptions, dividendGrowthRate: 8, capitalGrowthRate: 10 }, 20);
+    return proj.slice(0, 21).map((d, i) => ({
+      year: d.year,
+      realistisch: Math.round(d.annualDividend / 12),
+      konservativ: Math.round(cons[i].annualDividend / 12),
+      optimistisch: Math.round(opt[i].annualDividend / 12),
     }));
-  }, [positions, params]);
+  }, [positions, assumptions, proj]);
 
-  const goalAnnual = goalMonthly * 12;
-  const hitYear = proj30.find((d) => d.annualDividend >= goalAnnual);
-  const yearsToGoal = hitYear ? hitYear.year - new Date().getFullYear() : null;
+  const yearOf = (monthly: number, list = proj) => list.find((d) => d.annualDividend / 12 >= monthly)?.year ?? null;
+  const hitYear = yearOf(goal);
+  const startYear = proj[0].year;
+  const yearsToGoal = hitYear !== null ? hitYear - startYear : null;
+  const progress = Math.min(100, (current / goal) * 100);
 
-  const fasterHintText = useMemo(() => {
+  const faster = useMemo(() => {
     if (yearsToGoal === null || yearsToGoal <= 3) return null;
-    const faster = computeProjection(positions, { ...params, monthlySavings: savings + 100 }, 30);
-    const fasterHit = faster.find(d => d.annualDividend >= goalAnnual);
-    const fasterYears = fasterHit ? fasterHit.year - new Date().getFullYear() : null;
-    return fasterYears && fasterYears < yearsToGoal
-      ? `Mit 100 € mehr Sparrate pro Monat (${fmtNum(savings + 100)} € statt ${fmtNum(savings)} €) erreichst du dein Ziel bereits in ${fasterYears} Jahren – ${yearsToGoal - fasterYears} Jahre früher.`
-      : `Erhöhe deine Sparrate oder den Anteil an Dividendenwachstumswerten, um schneller zum Ziel zu kommen.`;
-  }, [positions, params, savings, yearsToGoal, goalAnnual]);
-
-  const progress = Math.min(100, (currentMonthly / goalMonthly) * 100);
-  const remaining = Math.max(0, goalMonthly - currentMonthly);
-
-  // Chart data capped to 5 years beyond goal or 30 max
-  const chartEnd = Math.min(30, (yearsToGoal ?? 30) + 5);
-  const chartData = proj30.slice(0, chartEnd + 1);
-
-  // Milestone years
-  const milestones = MILESTONES.map((m) => {
-    const hit = proj30.find((d) => d.annualDividend / 12 >= m.monthly);
-    return { ...m, hitYear: hit?.year ?? null, reached: currentMonthly >= m.monthly };
-  });
+    const alt = computeProjection(positions, { ...assumptions, monthlySavings: assumptions.monthlySavings + 100 }, HORIZON);
+    const y = alt.find((d) => d.annualDividend / 12 >= goal)?.year;
+    return y ? hitYear! - y : 0;
+  }, [positions, assumptions, goal, yearsToGoal, hitYear]);
 
   return (
-    <div className="space-y-5">
-      <PageHeading title="Zielplanung" />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Aktuell / Monat"   value={fmt(currentMonthly)}   sub="Monatliche Dividende" info="Deine aktuelle monatliche Brutto-Dividende aus allen aktiven Positionen." />
-        <KPICard title="Ziel / Monat"      value={fmt(goalMonthly)}      sub="Einstellbar" info="Dein gewünschtes monatliches Dividendenziel – über den Regler anpassbar." />
-        <KPICard title="Fortschritt"        value={`${fmtNum(progress, 1)} %`} sub="Zum Monatsziel" info="Wie viel Prozent deines Monatsziels du bereits erreicht hast." />
-        <KPICard title="Noch fehlend"      value={fmt(remaining)}        sub="Pro Monat" info="Differenz zwischen deinem Ziel und der aktuellen monatlichen Dividende." />
-      </div>
+    <>
+      <KPIGrid>
+        <KPICard title="Aktuell" value={fmt(current)} sub="Dividende pro Monat" />
+        <KPICard title="Ziel" value={fmt(goal)} sub="pro Monat" />
+        <KPICard title="Fortschritt" value={fmtPct(progress, 1)} sub={`noch ${fmt(Math.max(0, goal - current))} / Monat`}>
+          <ProgressBar value={progress} gradient />
+        </KPICard>
+        <KPICard title="Erreicht ca." value={hitYear ?? `> ${HORIZON} J.`} sub={yearsToGoal !== null ? `in ${yearsToGoal} Jahren` : 'Sparrate oder Wachstum erhöhen'} tone={hitYear ? 'success' : 'warning'} />
+      </KPIGrid>
 
-      {/* Goal input + progress */}
-      <Card title="Ziel & Annahmen">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mt-2">
-          {[
-            { label: 'Monatsziel', val: goalMonthly, set: setGoalMonthly, min: 100, max: 10000, step: 100, unit: '€' as const },
-            { label: 'Monatliche Sparrate', val: savings, set: setSavings, min: 0, max: 5000, step: 50, unit: '€' as const },
-            { label: 'Dividendenwachstum / Jahr', val: divGrowth, set: setDivGrowth, min: 0, max: 15, step: 0.5, unit: '%' as const },
-            { label: 'Kurszuwachs / Jahr', val: capGrowth, set: setCapGrowth, min: 0, max: 20, step: 0.5, unit: '%' as const },
-          ].map(({ label, val, set, min, max, step, unit }) => (
-            <div key={label}>
-              <label className="text-xs font-medium text-slate-500 dark:text-zinc-400 block mb-2">{label}</label>
-              <div className="flex items-center gap-3">
-                <input type="range" min={min} max={max} step={step} value={val}
-                  onChange={(e) => set(Number(e.target.value))}
-                  className="flex-1 min-w-0 accent-blue-500" />
-                <span className="text-sm font-mono tabular-nums w-20 text-right text-slate-700 dark:text-zinc-300">
-                  {fmtNum(val, unit === '€' ? 0 : 1)} {unit}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Progress bar */}
-        <div className="mt-5">
-          <div className="flex justify-between text-xs text-slate-500 dark:text-zinc-400 mb-1.5">
-            <span>{fmt(currentMonthly)} / Monat aktuell</span>
-            <span>Ziel: {fmt(goalMonthly)} / Monat</span>
-          </div>
-          <div className="w-full h-3 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-emerald-500 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-          <div className="mt-2 text-center">
-            {yearsToGoal !== null ? (
-              <p className="text-sm font-semibold text-slate-800 dark:text-zinc-200">
-                Ziel erreichbar in ca. <span className="text-blue-600 dark:text-blue-400">{yearsToGoal} Jahren</span>
-                {' '}(ca. {hitYear?.year})
-              </p>
-            ) : (
-              <p className="text-sm text-slate-400 dark:text-zinc-500">
-                Ziel nicht innerhalb von 30 Jahren erreichbar – Sparrate oder Wachstum erhöhen.
-              </p>
-            )}
-          </div>
+      <Card title="Ziel & Annahmen" sub="Annahmen gelten auch im Ausblick">
+        <div className="space-y-4">
+          <SliderField label="Monatsziel (Dividende)" value={goal} onChange={setGoal} min={100} max={10000} step={100} unit="€" />
+          <div className="border-t border-zinc-800 pt-4"><AssumptionFields /></div>
         </div>
       </Card>
 
-      {/* Projection chart */}
-      <Card title="Monatliche Dividende – Projektionsverlauf">
-        <div className="mt-3">
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={chartData.map((d) => ({ ...d, monthlyDiv: Math.round(d.annualDividend / 12) }))}
-              margin={{ top: 4, right: 20, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="gradGoal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...GRID} />
-              <XAxis dataKey="year" {...AXIS} />
-              <YAxis {...AXIS} tickFormatter={(v) => `${fmtNum(v / 1000)}k`} />
-              <ReferenceLine y={goalMonthly} stroke="#10b981" strokeDasharray="5 4" strokeWidth={2}
-                label={{ value: `Ziel ${fmt(goalMonthly)}`, position: 'right', fontSize: 10, fill: '#10b981' }} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(Number(v))} labelFormatter={(l) => `Jahr: ${l}`} />} />
-              <Area type="monotone" dataKey="monthlyDiv" stroke="#3b82f6" fill="url(#gradGoal)" strokeWidth={2} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
-
-      {/* Reinvest toggle */}
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-slate-500 dark:text-zinc-400">Dividenden reinvestieren:</span>
-        <button
-          onClick={() => setReinvest(!reinvest)}
-          className={`px-4 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-            reinvest ? 'bg-blue-600 text-white' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300'
-          }`}
-        >
-          {reinvest ? '✓ Ja' : '✗ Nein'}
-        </button>
-      </div>
-
-      {/* Milestones */}
-      <Card title="Meilensteine – Wann ist was gedeckt?">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mt-2">
-          {milestones.map((m) => {
-            const pct = Math.min(100, (currentMonthly / m.monthly) * 100);
-            return (
-              <div key={m.label} className={`rounded-xl border p-3 text-center ${
-                m.reached
-                  ? 'border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/20'
-                  : 'border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900'
-              }`}>
-                <div className={`text-xs font-semibold mb-1 ${m.reached ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-zinc-400'}`}>
-                  {m.label}
-                </div>
-                <div className="text-base font-bold text-slate-800 dark:text-zinc-200">{fmt(m.monthly)}</div>
-                {!m.reached && (
-                  <div className="w-full h-1 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden mt-1.5">
-                    <div className="h-full rounded-full bg-blue-500" style={{ width: `${pct}%` }} />
-                  </div>
-                )}
-                <div className="text-xs mt-1">
-                  {m.reached
-                    ? <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Erreicht</span>
-                    : m.hitYear
-                      ? <span className="text-slate-400 dark:text-zinc-500">ca. {m.hitYear} · {fmtNum(pct)} %</span>
-                      : <span className="text-slate-300 dark:text-zinc-600">offen · {fmtNum(pct)} %</span>
-                  }
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* Szenario-Vergleich */}
-      <Card title="Szenario-Vergleich – 3 Wege zum Ziel" sub="Konservativ / Realistisch / Optimistisch im Vergleich">
-        <div className="mt-3">
-          <ResponsiveContainer width="100%" height={280}>
-            <AreaChart margin={{ top: 4, right: 20, bottom: 0, left: 0 }} data={scenariosChartData}>
-              <defs>
-                <linearGradient id="gradOpt" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...GRID} />
-              <XAxis dataKey="year" {...AXIS} />
-              <YAxis {...AXIS} tickFormatter={v => `${fmtNum(v / 1000)}k`} />
-              <ReferenceLine y={goalMonthly} stroke="#10b981" strokeDasharray="5 4" strokeWidth={2}
-                label={{ value: `Ziel ${fmt(goalMonthly)}`, position: 'right', fontSize: 10, fill: '#10b981' }} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(Number(v))} labelFormatter={(l) => `Jahr: ${l}`} />} />
-              <Area type="monotone" dataKey="optimistisch" stroke="#10b981" fill="url(#gradOpt)" strokeWidth={1.5} />
-              <Area type="monotone" dataKey="realistisch" stroke="#3b82f6" fill="none" strokeWidth={2} />
-              <Area type="monotone" dataKey="konservativ" stroke="#f59e0b" fill="none" strokeWidth={1.5} strokeDasharray="4 3" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="flex gap-4 justify-center mt-2 text-xs text-slate-500 dark:text-zinc-400">
-          <span><span className="inline-block w-3 h-0.5 bg-amber-500 mr-1 align-middle" />Konservativ (3 %/3 %)</span>
-          <span><span className="inline-block w-3 h-0.5 bg-blue-500 mr-1 align-middle" />Realistisch</span>
-          <span><span className="inline-block w-3 h-0.5 bg-emerald-500 mr-1 align-middle" />Optimistisch (8 %/10 %)</span>
-        </div>
-      </Card>
-
-      {/* Handlungsempfehlung */}
-      {yearsToGoal !== null && yearsToGoal > 3 && (
-        <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4">
-          <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-1">Tipp: Schneller zum Ziel</p>
-          <p className="text-xs text-blue-600/80 dark:text-blue-300/70 leading-relaxed">
-            {fasterHintText}
-          </p>
-        </div>
+      {faster !== null && faster > 0 && (
+        <Callout tone="info" title="Schneller zum Ziel">
+          Mit 100 € mehr pro Monat ({fmt(assumptions.monthlySavings + 100)} statt {fmt(assumptions.monthlySavings)}) erreichst du dein Ziel {faster} {faster === 1 ? 'Jahr' : 'Jahre'} früher.
+        </Callout>
       )}
 
-      {/* Year-by-year table */}
-      <Card title="Jahresübersicht (10 Jahre)">
-        <div className="overflow-x-auto mt-3">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-slate-100 dark:border-zinc-800">
-                {['Jahr', 'Depotwert', 'Jährl. Dividende', 'Monatl. Dividende', 'Fortschritt'].map((h) => (
-                  <th key={h} className="text-left py-2 px-3 text-slate-400 dark:text-zinc-500 font-medium uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {proj30.slice(0, 11).map((d) => {
-                const monthly = d.annualDividend / 12;
-                const pct = Math.min(100, (monthly / goalMonthly) * 100);
-                return (
-                  <tr key={d.year} className={`border-b border-slate-50 dark:border-zinc-800/60 ${d.annualDividend >= goalAnnual ? 'bg-emerald-50/40 dark:bg-emerald-950/10' : ''}`}>
-                    <td className="py-2 px-3 font-semibold text-slate-700 dark:text-zinc-300">{d.year}</td>
-                    <td className="py-2 px-3 font-mono tabular-nums">{fmt(d.portfolioValue)}</td>
-                    <td className="py-2 px-3 font-mono tabular-nums text-emerald-600 dark:text-emerald-400">{fmt(d.annualDividend)}</td>
-                    <td className="py-2 px-3 font-mono tabular-nums">{fmt(monthly)}</td>
-                    <td className="py-2 px-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-16 h-1 bg-slate-100 dark:bg-zinc-700 rounded-full overflow-hidden">
-                          <div className="h-full rounded-full bg-blue-500" style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className={pct >= 100 ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : ''}>
-                          {fmtNum(pct)} %
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      <Card title="Weg zum Ziel" sub="Monatliche Dividende in drei Szenarien · Linie = dein Ziel">
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart data={chart} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+            <CartesianGrid {...GRID} vertical={false} />
+            <XAxis dataKey="year" {...AXIS} minTickGap={20} />
+            <YAxis {...AXIS} tickFormatter={fmtK} width={48} />
+            <ReferenceLine y={goal} stroke={TONE.success.hex} strokeDasharray="5 4" />
+            <Tooltip content={(p) => <ChartTooltip {...p} formatValue={(v) => fmt(v)} names={Object.fromEntries(SERIES.map((s) => [s.key, s.label]))} />} />
+            {SERIES.map((s) => (
+              <Line key={s.key} type="monotone" dataKey={s.key} stroke={s.color} strokeWidth={s.key === 'realistisch' ? 2.5 : 1.5}
+                strokeDasharray={s.key === 'realistisch' ? undefined : '4 3'} dot={false} isAnimationActive={false} />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+        <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-zinc-400">
+          {SERIES.map((s) => (
+            <span key={s.key} className="flex items-center gap-1.5"><span className="h-0.5 w-3" style={{ background: s.color }} />{s.label}</span>
+          ))}
         </div>
       </Card>
-    </div>
+
+      <Card title="Meilensteine" sub="Was deine Dividende wann deckt (deine Annahmen)">
+        <ul className="grid gap-x-6 gap-y-3 md:grid-cols-2">
+          {MILESTONES.map((ms) => {
+            const reached = current >= ms.monthly;
+            const year = yearOf(ms.monthly);
+            return (
+              <li key={ms.label}>
+                <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+                  <span className="font-medium text-zinc-200">{ms.label} <span className="font-normal text-zinc-500">{fmt(ms.monthly)}</span></span>
+                  <span className={`shrink-0 ${reached ? TONE.success.text : 'text-zinc-400'}`}>
+                    {reached ? <span className="flex items-center gap-1"><Check size={12} />Erreicht</span> : year ? `ca. ${year}` : `> ${HORIZON} J.`}
+                  </span>
+                </div>
+                <ProgressBar value={(current / ms.monthly) * 100} tone={reached ? 'success' : 'info'} />
+              </li>
+            );
+          })}
+        </ul>
+      </Card>
+
+      <Card title="Jahresübersicht" sub="Deine Annahmen, 10 Jahre" flush>
+        <SortableTable
+          sortable={false}
+          data={proj.slice(1, 11)}
+          rowKey={(d) => String(d.year)}
+          columns={[
+            { key: 'year', label: 'Jahr', render: (d) => <span className="font-medium text-zinc-100">{d.year}</span> },
+            { key: 'monthly', label: 'Div. / Monat', align: 'right', render: (d) => <span className={d.annualDividend / 12 >= goal ? TONE.success.text : ''}>{fmt(d.annualDividend / 12)}</span> },
+            { key: 'goal', label: 'Ziel', align: 'right', render: (d) => fmtPct(Math.min(100, (d.annualDividend / 12 / goal) * 100), 0) },
+            { key: 'portfolioValue', label: 'Depotwert', align: 'right', hide: 'sm', render: (d) => fmt(d.portfolioValue) },
+            { key: 'annualDividend', label: 'Div. / Jahr', align: 'right', hide: 'md', render: (d) => fmt(d.annualDividend) },
+          ]}
+        />
+      </Card>
+
+    </>
   );
 }

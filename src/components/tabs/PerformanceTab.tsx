@@ -1,147 +1,79 @@
-import React, { useState } from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts';
+import { useDepot } from '../../lib/depotContext';
+import { fmt, fmtPct, fmtSigned } from '../../lib/format';
 import type { DepotPosition } from '../../lib/types';
-import { KPICard } from '../KPICard';
-import { Card, PageHeading } from '../Card';
-import { ChartTooltip } from '../ChartTooltip';
-import { SortableTable } from '../tables/SortableTable';
-import { fmt, fmtPct } from '../../lib/format';
-import { AXIS, GRID, BAR_CURSOR } from '../../lib/chartTheme';
+import { TONE, type Tone } from '../../lib/score';
+import { KPICard, KPIGrid } from '../ui/KPICard';
+import { Card } from '../ui/Card';
+import { Callout } from '../ui/Callout';
+import { BarList } from '../ui/Bars';
+import { PositionTable } from '../tables/PositionTable';
 
-interface Props { positions: DepotPosition[] }
+const TOP_N = 10;
 
-export function PerformanceTab({ positions }: Props) {
-  const [search, setSearch] = useState('');
-  const withCostBasis = positions.filter((p) => p.einstandswert > 0);
-  const missingCostBasis = positions.filter((p) => p.wert > 0 && p.einstandswert <= 0).length;
+const plTone = (v: number): Tone => (v >= 0 ? 'success' : 'danger');
 
-  if (withCostBasis.length === 0) {
+const toBars = (list: DepotPosition[]) =>
+  list.map((p) => ({
+    key: p.symbol, label: p.symbol, sub: fmtPct(p.gewinnVerlustPct, 1), symbol: p.symbol,
+    value: p.gewinnVerlust, display: fmtSigned(p.gewinnVerlust), tone: plTone(p.gewinnVerlust),
+  }));
+
+export function PerformanceTab() {
+  const { m } = useDepot();
+  const withCost = m.positions.filter((p) => p.einstandswert > 0);
+  const missing = m.active.length - m.active.filter((p) => p.einstandswert > 0).length;
+
+  if (withCost.length === 0) {
     return (
-      <div className="space-y-5">
-        <PageHeading title="Performance" />
-        <div className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-8 text-center">
-          <p className="text-sm font-semibold text-slate-700 dark:text-zinc-200 mb-1">Keine Kaufkurs-Daten vorhanden</p>
-          <p className="text-xs text-slate-400 dark:text-zinc-500 max-w-md mx-auto">
-            Ergänze die Spalten „Kaufkurs" (Kaufpreis pro Anteil) und „Stückzahl" in deiner Depot-Datei,
-            um hier Gewinn und Verlust je Position auszuwerten.
-          </p>
-        </div>
-      </div>
+      <Callout tone="info" title="Keine Kaufkurs-Daten vorhanden">
+        Ergänze die Spalten „Kaufkurs“ und „Stückzahl“ in deiner Depot-Datei, um Gewinn und Verlust je Position auszuwerten.
+      </Callout>
     );
   }
 
-  const totalEinstand = withCostBasis.reduce((s, p) => s + p.einstandswert, 0);
-  const totalWert = withCostBasis.reduce((s, p) => s + p.wert, 0);
-  const totalGewinnVerlust = totalWert - totalEinstand;
-  const totalGewinnVerlustPct = totalEinstand > 0 ? (totalGewinnVerlust / totalEinstand) * 100 : 0;
-
-  const winners = withCostBasis.filter((p) => p.gewinnVerlust > 0);
-  const losers = withCostBasis.filter((p) => p.gewinnVerlust < 0);
-
-  const sortedByPct = [...withCostBasis].sort((a, b) => b.gewinnVerlustPct - a.gewinnVerlustPct);
-  const TOP_N = 10;
-  const topWinners = [...winners].sort((a, b) => b.gewinnVerlust - a.gewinnVerlust).slice(0, TOP_N);
-  const topLosers = [...losers].sort((a, b) => a.gewinnVerlust - b.gewinnVerlust).slice(0, TOP_N);
+  const einstand = withCost.reduce((s, p) => s + p.einstandswert, 0);
+  const wert = withCost.reduce((s, p) => s + p.wert, 0);
+  const pl = wert - einstand;
+  const winners = withCost.filter((p) => p.gewinnVerlust > 0).sort((a, b) => b.gewinnVerlust - a.gewinnVerlust);
+  const losers = withCost.filter((p) => p.gewinnVerlust < 0).sort((a, b) => a.gewinnVerlust - b.gewinnVerlust);
+  const topSub = (n: number) => (n > TOP_N ? `Top ${TOP_N} von ${n}` : `${n} Positionen`);
 
   return (
-    <div className="space-y-5">
-      <PageHeading title="Performance" />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Einstandswert" value={fmt(totalEinstand)} sub={`${withCostBasis.length} Positionen mit Kaufkurs`} info="Summe aus Kaufkurs × Stückzahl über alle Positionen mit hinterlegtem Kaufkurs." />
-        <KPICard title="Aktueller Wert" value={fmt(totalWert)} sub="Zum Kurs von heute" />
-        <KPICard title="Gewinn / Verlust" value={fmt(totalGewinnVerlust)} sub={fmtPct(totalGewinnVerlustPct)} info="Aktueller Wert minus Einstandswert, über alle Positionen mit Kaufkurs." />
-        <KPICard title="Gewinner / Verlierer" value={`${winners.length} / ${losers.length}`} sub="Positionen im Plus / Minus" />
-      </div>
+    <>
+      <KPIGrid>
+        <KPICard title="Einstandswert" value={fmt(einstand)} sub={`${withCost.length} Positionen mit Kaufkurs`} info="Kaufkurs × Stückzahl über alle Positionen mit hinterlegtem Kaufkurs." />
+        <KPICard title="Aktueller Wert" value={fmt(wert)} sub="Derselben Positionen" />
+        <KPICard title="Gewinn / Verlust" value={fmtSigned(pl)} sub={fmtPct(einstand > 0 ? (pl / einstand) * 100 : 0, 1)} tone={plTone(pl)} />
+        <KPICard title="Im Plus / Minus" value={`${winners.length} / ${losers.length}`} sub="Positionen" />
+      </KPIGrid>
 
-      {missingCostBasis > 0 && (
-        <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-950/20 p-4">
-          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">Unvollständige Kaufkurs-Daten</p>
-          <p className="text-xs text-amber-600/70 dark:text-amber-300/60">
-            {missingCostBasis} {missingCostBasis === 1 ? 'Position hat' : 'Positionen haben'} keinen hinterlegten
-            Kaufkurs oder keine Stückzahl und {missingCostBasis === 1 ? 'wird' : 'werden'} in dieser Auswertung nicht berücksichtigt.
-          </p>
-        </div>
+      {missing > 0 && (
+        <Callout tone="warning" title={`${missing} ${missing === 1 ? 'Position' : 'Positionen'} ohne Kaufkurs oder Stückzahl`}>
+          Sie fehlen in dieser Auswertung.
+        </Callout>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card title="Top Gewinner" sub={`Größter Gewinn zuerst${winners.length > TOP_N ? ` · Top ${TOP_N} von ${winners.length}` : ''}`}>
-          {topWinners.length > 0 ? (
-            <ResponsiveContainer width="100%" height={Math.max(140, topWinners.length * 26)}>
-              <BarChart data={topWinners} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
-                <CartesianGrid {...GRID} horizontal={false} />
-                <XAxis type="number" {...AXIS} tickFormatter={(v) => fmt(v as number)} />
-                <YAxis type="category" dataKey="symbol" {...AXIS} width={52} />
-                <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(v as number)} />} />
-                <Bar dataKey="gewinnVerlust" fill="#10b981" fillOpacity={0.85} radius={[0, 4, 4, 0]} maxBarSize={18} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-xs text-slate-400 dark:text-zinc-500 text-center py-8">Keine Positionen im Plus.</p>
-          )}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card title="Größte Gewinne" sub={topSub(winners.length)}>
+          <BarList items={toBars(winners.slice(0, TOP_N))} />
         </Card>
-
-        <Card title="Top Verlierer" sub={`Größter Verlust zuerst${losers.length > TOP_N ? ` · Top ${TOP_N} von ${losers.length}` : ''}`}>
-          {topLosers.length > 0 ? (
-            <ResponsiveContainer width="100%" height={Math.max(140, topLosers.length * 26)}>
-              <BarChart data={topLosers} layout="vertical" margin={{ left: 0, right: 24, top: 4, bottom: 4 }}>
-                <CartesianGrid {...GRID} horizontal={false} />
-                <XAxis type="number" {...AXIS} tickFormatter={(v) => fmt(v as number)} />
-                <YAxis type="category" dataKey="symbol" {...AXIS} width={52} />
-                <Tooltip cursor={BAR_CURSOR} content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(v as number)} />} />
-                <Bar dataKey="gewinnVerlust" fill="#ef4444" fillOpacity={0.85} radius={[0, 4, 4, 0]} maxBarSize={18} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-xs text-slate-400 dark:text-zinc-500 text-center py-8">Keine Positionen im Minus.</p>
-          )}
+        <Card title="Größte Verluste" sub={topSub(losers.length)}>
+          <BarList items={toBars(losers.slice(0, TOP_N))} />
         </Card>
       </div>
 
-      <Card
+      <PositionTable
         title="Performance je Position"
-        pad={false}
-        headerRight={
-          <input
-            className="text-xs bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 outline-none focus:ring-1 focus:ring-blue-500/40 placeholder-zinc-600 text-zinc-200 w-36"
-            placeholder="Suchen …"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        }
-      >
-        <div className="px-5 pt-3 pb-5">
-          <SortableTable
-            data={sortedByPct}
-            rowKey={(r) => r.symbol}
-            filterKeys={['symbol', 'name']}
-            filter={search}
-            onFilterChange={setSearch}
-            columns={[
-              { key: 'symbol', label: 'Symbol', width: '80px',
-                render: (v) => <span className="font-mono font-semibold text-xs text-slate-800 dark:text-zinc-200">{String(v)}</span> },
-              { key: 'name', label: 'Name' },
-              { key: 'kaufkurs', label: 'Kaufkurs', align: 'right', render: (v) => fmt(v as number, 2) },
-              { key: 'aktuellerKurs', label: 'Kurs aktuell', align: 'right', render: (v) => fmt(v as number, 2) },
-              { key: 'einstandswert', label: 'Einstand', align: 'right', render: (v) => fmt(v as number) },
-              { key: 'wert', label: 'Wert', align: 'right', render: (v) => fmt(v as number) },
-              { key: 'gewinnVerlust', label: 'G/V (€)', align: 'right',
-                render: (v) => (
-                  <span className={`font-mono tabular-nums font-semibold ${(v as number) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                    {fmt(v as number)}
-                  </span>
-                )},
-              { key: 'gewinnVerlustPct', label: 'G/V (%)', align: 'right',
-                render: (v) => (
-                  <span className={`font-mono tabular-nums font-semibold ${(v as number) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                    {fmtPct(v as number)}
-                  </span>
-                )},
-            ]}
-          />
-        </div>
-      </Card>
-    </div>
+        data={[...withCost].sort((a, b) => b.gewinnVerlustPct - a.gewinnVerlustPct)}
+        columns={[
+          { key: 'gewinnVerlustPct', label: 'G/V %', align: 'right', render: (p) => <span className={TONE[plTone(p.gewinnVerlust)].text}>{fmtPct(p.gewinnVerlustPct, 1)}</span> },
+          { key: 'gewinnVerlust', label: 'G/V €', align: 'right', hide: 'sm', render: (p) => <span className={TONE[plTone(p.gewinnVerlust)].text}>{fmtSigned(p.gewinnVerlust)}</span> },
+          { key: 'wert', label: 'Wert', align: 'right', render: (p) => fmt(p.wert) },
+          { key: 'einstandswert', label: 'Einstand', align: 'right', hide: 'md', render: (p) => fmt(p.einstandswert) },
+          { key: 'kaufkurs', label: 'Kaufkurs', align: 'right', hide: 'lg', render: (p) => fmt(p.kaufkurs, 2) },
+          { key: 'aktuellerKurs', label: 'Kurs', align: 'right', hide: 'lg', render: (p) => fmt(p.aktuellerKurs, 2) },
+        ]}
+      />
+    </>
   );
 }

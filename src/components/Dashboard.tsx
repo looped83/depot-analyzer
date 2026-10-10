@@ -1,9 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type MouseEvent as ReactMouseEvent } from 'react';
+import { ChevronDown, Upload } from 'lucide-react';
 import type { DepotPosition, TabId } from '../lib/types';
-// All tabs load together as part of the Dashboard chunk (see App.tsx, which lazy-loads
-// Dashboard itself). Splitting further, per-tab, caused a noticeable load flicker on every
-// first tab visit since each tab pulled in the large shared recharts/d3 vendor code on
-// demand; bundling them together means one wait right after upload, then instant switching.
+import { DepotMetrics } from '../lib/metrics';
+import { DepotContext, DEFAULT_ASSUMPTIONS, type DepotContextValue } from '../lib/depotContext';
+import { NAV_GROUPS, groupOf, isTabId, tabLabel, type NavGroup } from '../lib/nav';
+import { Segmented } from './ui/Controls';
+import { PositionSheet, type PositionSheetHandle } from './PositionSheet';
+// All tabs ship in the Dashboard chunk (App lazy-loads the Dashboard itself). Splitting
+// per tab caused a load flicker on every first visit, since each pulled the shared
+// recharts vendor code on demand; one wait after upload, then instant switching.
 import { OverviewTab } from './tabs/OverviewTab';
 import { PerformanceTab } from './tabs/PerformanceTab';
 import { DividendTab } from './tabs/DividendTab';
@@ -20,201 +25,218 @@ import { RebalancingTab } from './tabs/RebalancingTab';
 import { QualityTab } from './tabs/QualityTab';
 import { DepotCheckTab } from './tabs/DepotCheckTab';
 import { MotivationTab } from './tabs/MotivationTab';
-import {
-  LayoutDashboard, TrendingUp, BarChart2, PiggyBank,
-  Calendar, Trophy, Lightbulb, LineChart,
-  Upload, PieChart, ShieldCheck,
-  Target, Sliders, Star, HeartPulse, Sparkles, ChevronDown, Activity,
-} from 'lucide-react';
 
-interface Tab { id: TabId; label: string; icon: React.ReactNode }
-interface TabGroup { id: string; label: string; icon: React.ReactNode; tabs: Tab[] }
-
-// Tabs are grouped thematically into 5 top-level groups so the nav bar shows
-// 5 items instead of 15; clicking a group opens a flyout with that group's tabs.
-const TAB_GROUPS: TabGroup[] = [
-  {
-    id: 'depot', label: 'Depot', icon: <LayoutDashboard size={13} />,
-    tabs: [
-      { id: 'overview',    label: 'Übersicht',   icon: <LayoutDashboard size={13} /> },
-      { id: 'performance', label: 'Performance', icon: <Activity size={13} /> },
-      { id: 'rankings',    label: 'Rankings',    icon: <Trophy size={13} /> },
-    ],
-  },
-  {
-    id: 'dividends', label: 'Dividenden', icon: <TrendingUp size={13} />,
-    tabs: [
-      { id: 'dividends',  label: 'Analyse',    icon: <TrendingUp size={13} /> },
-      { id: 'calendar',   label: 'Kalender',   icon: <Calendar size={13} /> },
-      { id: 'motivation', label: 'Motivation', icon: <Sparkles size={13} /> },
-    ],
-  },
-  {
-    id: 'growth', label: 'Wachstum & Planung', icon: <LineChart size={13} />,
-    tabs: [
-      { id: 'cagr',       label: 'Wachstum',    icon: <BarChart2 size={13} /> },
-      { id: 'savings',    label: 'Sparpläne',   icon: <PiggyBank size={13} /> },
-      { id: 'projection', label: 'Ausblick',    icon: <LineChart size={13} /> },
-      { id: 'goal',       label: 'Zielplanung', icon: <Target size={13} /> },
-    ],
-  },
-  {
-    id: 'analysis', label: 'Analyse & Risiko', icon: <ShieldCheck size={13} />,
-    tabs: [
-      { id: 'diversification', label: 'Diversifikation', icon: <PieChart size={13} /> },
-      { id: 'safety',          label: 'Sicherheit',      icon: <ShieldCheck size={13} /> },
-      { id: 'quality',         label: 'Qualität',        icon: <Star size={13} /> },
-      { id: 'depot-check',     label: 'Depot-Check',     icon: <HeartPulse size={13} /> },
-    ],
-  },
-  {
-    id: 'actions', label: 'Empfehlungen', icon: <Lightbulb size={13} />,
-    tabs: [
-      { id: 'findings',     label: 'Findings',    icon: <Lightbulb size={13} /> },
-      { id: 'rebalancing',  label: 'Rebalancing', icon: <Sliders size={13} /> },
-    ],
-  },
-];
-
-// TabId → component, replaces a 16-way conditional in the render body.
-const TAB_COMPONENTS: Record<TabId, React.ComponentType<{ positions: DepotPosition[] }>> = {
+const TAB_COMPONENTS: Record<TabId, ComponentType> = {
   overview: OverviewTab,
   performance: PerformanceTab,
+  rankings: RankingTab,
   dividends: DividendTab,
+  calendar: CalendarTab,
+  motivation: MotivationTab,
   cagr: CAGRTab,
   savings: SavingsTab,
-  calendar: CalendarTab,
-  rankings: RankingTab,
-  findings: FindingsTab,
-  'depot-check': DepotCheckTab,
-  motivation: MotivationTab,
   projection: ProjectionTab,
+  goal: GoalTab,
   diversification: DiversificationTab,
   safety: SafetyTab,
-  goal: GoalTab,
-  rebalancing: RebalancingTab,
   quality: QualityTab,
+  'depot-check': DepotCheckTab,
+  findings: FindingsTab,
+  rebalancing: RebalancingTab,
 };
+
+/** The active tab lives in the URL hash (#/calendar), so reload and the back button work. */
+const readHash = (): TabId => {
+  const id = location.hash.replace(/^#\/?/, '');
+  return isTabId(id) ? id : 'overview';
+};
+
+interface Route { tab: TabId; anchor?: string }
+
+/** Desktop: group buttons in the header, each opening a flyout with its tabs. */
+function DesktopNav({ active, onSelect }: { active: TabId; onSelect: (id: TabId) => void }) {
+  // Fixed positioning (captured at click time) lets the flyout escape the row's
+  // overflow-x clipping – overflow-x: auto implicitly forces overflow-y: auto too.
+  const [flyout, setFlyout] = useState<{ group: NavGroup; top: number; left: number } | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const activeGroup = groupOf(active);
+
+  useEffect(() => {
+    if (!flyout) return;
+    const onDown = (e: MouseEvent) => !navRef.current?.contains(e.target as Node) && setFlyout(null);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFlyout(null);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [flyout]);
+
+  const toggle = (e: ReactMouseEvent<HTMLButtonElement>, group: NavGroup) => {
+    if (flyout?.group.id === group.id) return setFlyout(null);
+    const r = e.currentTarget.getBoundingClientRect();
+    setFlyout({ group, top: r.bottom + 4, left: Math.max(8, Math.min(r.left, window.innerWidth - 208)) });
+  };
+
+  return (
+    <nav ref={navRef} aria-label="Bereiche" className="hidden min-w-0 flex-1 md:flex">
+      <div className="no-scrollbar flex items-stretch overflow-x-auto">
+        {NAV_GROUPS.map((g) => (
+          <button
+            key={g.id}
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded={flyout?.group.id === g.id}
+            onClick={(e) => toggle(e, g)}
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3.5 text-xs font-medium transition-colors lg:px-4 ${
+              activeGroup.id === g.id ? 'border-blue-500 text-blue-400' : 'border-transparent text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <g.icon size={14} />
+            {g.label}
+            <ChevronDown size={12} className={`transition-transform ${flyout?.group.id === g.id ? 'rotate-180' : ''}`} />
+          </button>
+        ))}
+      </div>
+      {flyout && (
+        <div role="menu" style={{ top: flyout.top, left: flyout.left }} className="fixed z-50 min-w-[200px] rounded-xl border border-zinc-800 bg-zinc-900 py-1 shadow-xl">
+          {flyout.group.tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="menuitem"
+              onClick={() => { onSelect(t.id); setFlyout(null); }}
+              className={`flex w-full items-center gap-2 px-3.5 py-2 text-xs font-medium ${
+                active === t.id ? 'bg-zinc-800/70 text-blue-400' : 'text-zinc-300 hover:bg-zinc-800/70 hover:text-white'
+              }`}
+            >
+              <t.icon size={14} />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </nav>
+  );
+}
+
+/** Mobile: the five groups in a thumb-reachable bottom bar. */
+function BottomNav({ active, onSelectGroup }: { active: TabId; onSelectGroup: (g: NavGroup) => void }) {
+  const activeGroup = groupOf(active);
+  return (
+    <nav aria-label="Bereiche" className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-900/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+      <div className="grid grid-cols-5">
+        {NAV_GROUPS.map((g) => {
+          const on = g.id === activeGroup.id;
+          return (
+            <button
+              key={g.id}
+              type="button"
+              aria-current={on ? 'page' : undefined}
+              onClick={() => onSelectGroup(g)}
+              className={`flex flex-col items-center gap-1 pb-2 pt-2.5 text-[10px] font-medium ${on ? 'text-blue-400' : 'text-zinc-500'}`}
+            >
+              <g.icon size={19} strokeWidth={on ? 2.25 : 1.75} />
+              {g.short}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
 
 interface Props {
   positions: DepotPosition[];
   onReset: () => void;
 }
 
-// Owns the flyout state so opening/closing a group dropdown re-renders only the
-// nav — not the whole dashboard with the active tab's charts and tables.
-function TabNav({ activeTab, onSelect }: { activeTab: TabId; onSelect: (id: TabId) => void }) {
-  // Position is captured at click time (fixed positioning) so the flyout escapes the
-  // group row's overflow-x-auto clipping — overflow-x: auto implicitly forces
-  // overflow-y: auto too, which would otherwise clip an absolutely positioned dropdown.
-  const [flyout, setFlyout] = useState<{ groupId: string; top: number; left: number } | null>(null);
-  const activeGroup = TAB_GROUPS.find((g) => g.tabs.some((t) => t.id === activeTab)) ?? TAB_GROUPS[0];
-  const flyoutGroup = flyout ? TAB_GROUPS.find((g) => g.id === flyout.groupId) : null;
+export function Dashboard({ positions, onReset }: Props) {
+  const m = useMemo(() => new DepotMetrics(positions), [positions]);
+  const [route, setRoute] = useState<Route>(() => ({ tab: readHash() }));
+  const [assumptions, setAssumptions] = useState(DEFAULT_ASSUMPTIONS);
+  const sheet = useRef<PositionSheetHandle>(null);
+  // Last visited tab per group, so the bottom bar returns to where you were.
+  const lastInGroup = useRef(new Map<string, TabId>());
 
-  const navRef = useRef<HTMLDivElement>(null);
+  const navigate = useCallback((tab: TabId, anchor?: string) => {
+    if (location.hash !== `#/${tab}`) history.pushState(null, '', `#/${tab}`);
+    setRoute({ tab, anchor });
+  }, []);
+
+  const openPosition = useCallback((symbol: string) => sheet.current?.open(symbol), []);
+
   useEffect(() => {
-    if (!flyout) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) setFlyout(null);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [flyout]);
+    const onPop = () => setRoute({ tab: readHash() });
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
-  const toggleGroup = (e: React.MouseEvent<HTMLButtonElement>, groupId: string) => {
-    if (flyout?.groupId === groupId) { setFlyout(null); return; }
-    const rect = e.currentTarget.getBoundingClientRect();
-    // Clamp to the viewport so the flyout (min-w-[190px]) can't be pushed off-screen
-    // when its trigger sits near the right edge of a narrow (tablet/landscape) viewport.
-    const left = Math.min(rect.left, window.innerWidth - 190 - 8);
-    setFlyout({ groupId, top: rect.bottom + 4, left: Math.max(8, left) });
+  // New tab starts at the top, or at the card a teaser pointed to.
+  useEffect(() => {
+    lastInGroup.current.set(groupOf(route.tab).id, route.tab);
+    const target = route.anchor && document.getElementById(route.anchor);
+    if (target) target.scrollIntoView({ block: 'start' });
+    else window.scrollTo(0, 0);
+  }, [route]);
+
+  const ctx = useMemo<DepotContextValue>(
+    () => ({ m, navigate, openPosition, assumptions, setAssumptions }),
+    [m, navigate, openPosition, assumptions],
+  );
+
+  const group = groupOf(route.tab);
+  const ActiveTab = TAB_COMPONENTS[route.tab];
+
+  const reset = () => {
+    history.replaceState(null, '', location.pathname + location.search);
+    onReset();
   };
 
   return (
-    <div ref={navRef} className="relative flex-1 min-w-0">
-      <div className="h-full flex items-stretch overflow-x-auto no-scrollbar">
-        {TAB_GROUPS.map((group) => (
-          <button
-            key={group.id}
-            onClick={(e) => toggleGroup(e, group.id)}
-            className={`flex items-center gap-1.5 px-4 text-xs font-medium whitespace-nowrap border-b-2 shrink-0 transition-all ${
-              activeGroup.id === group.id
-                ? 'border-blue-500 text-blue-400'
-                : 'border-transparent text-zinc-500 hover:text-zinc-300'
-            }`}
-          >
-            {group.icon}
-            {group.label}
-            <ChevronDown size={12} className={`transition-transform ${flyout?.groupId === group.id ? 'rotate-180' : ''}`} />
-          </button>
-        ))}
-      </div>
-      {flyout && flyoutGroup && (
-        <div
-          style={{ position: 'fixed', top: flyout.top, left: flyout.left }}
-          className="z-50 min-w-[190px] rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl py-1"
-        >
-          {flyoutGroup.tabs.map((tab) => (
+    <DepotContext.Provider value={ctx}>
+      <div className="min-h-screen pb-24 md:pb-0">
+        <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-900/90 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+          <div className="mx-auto flex h-12 max-w-screen-xl items-stretch gap-4 px-4 sm:px-6 md:h-14">
+            <div className="flex shrink-0 items-center gap-2">
+              <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="h-6 w-6" />
+              <span className="text-sm font-semibold text-white md:hidden lg:inline">Depot Analyzer</span>
+            </div>
+            <DesktopNav active={route.tab} onSelect={navigate} />
             <button
-              key={tab.id}
-              onClick={() => { onSelect(tab.id); setFlyout(null); }}
-              className={`flex w-full items-center gap-2 px-3.5 py-2 text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? 'text-blue-400 bg-zinc-800/60'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
-              }`}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function Dashboard({ positions, onReset }: Props) {
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const ActiveTab = TAB_COMPONENTS[activeTab];
-
-  return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800">
-        <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-stretch gap-4">
-          {/* Logo */}
-          <div className="flex items-center gap-2 shrink-0">
-            <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="Depot Analyzer Logo" className="w-6 h-auto" />
-            <span className="text-sm font-semibold text-white hidden sm:block">
-              Depot Analyzer
-            </span>
-          </div>
-
-          {/* Tab groups */}
-          <TabNav activeTab={activeTab} onSelect={setActiveTab} />
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={onReset}
-              title="Neue Datei laden"
-              className="p-1.5 rounded-lg text-zinc-500 hover:bg-zinc-800 transition-colors"
+              type="button"
+              onClick={reset}
+              className="ml-auto flex shrink-0 items-center gap-1.5 self-center rounded-lg px-2 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
             >
               <Upload size={14} />
+              <span>Neue Datei</span>
             </button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Page content */}
-      <main className="max-w-screen-xl mx-auto px-6 py-8">
-        <ActiveTab positions={positions} />
-      </main>
+        <main className="mx-auto max-w-screen-xl space-y-4 px-4 py-5 sm:space-y-5 sm:px-6 sm:py-8">
+          <div className="space-y-3">
+            <h1 className="text-xl font-semibold text-white">{tabLabel(route.tab)}</h1>
+            <div className="md:hidden">
+              <Segmented
+                label={`${group.label} – Ansichten`}
+                options={group.tabs.map((t) => ({ value: t.id, label: t.label }))}
+                value={route.tab}
+                onChange={(id) => navigate(id)}
+              />
+            </div>
+          </div>
+          <ActiveTab />
+        </main>
 
-      <footer className="max-w-screen-xl mx-auto px-6 py-6 text-xs text-zinc-600 text-center">
-        Depot Analyzer · Rein informative Darstellung, keine Finanzberatung.
-      </footer>
-    </div>
+        <footer className="mx-auto max-w-screen-xl px-4 py-6 text-center text-xs text-zinc-600 sm:px-6">
+          Depot Analyzer · Alle Werte sind Schätzungen auf Basis deiner Datei – keine Finanzberatung.
+        </footer>
+      </div>
+
+      <BottomNav active={route.tab} onSelectGroup={(g) => navigate(lastInGroup.current.get(g.id) ?? g.tabs[0].id)} />
+      <PositionSheet ref={sheet} m={m} />
+    </DepotContext.Provider>
   );
 }

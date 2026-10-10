@@ -1,13 +1,42 @@
 # Handover – depot-analyzer
 
-**Datum:** 2026-07-02
-**Branch:** `claude/tablet-landscape-breakpoint-mqnf8j` (alles bis inkl. PR #54 gemergt, aktuell kein offener PR)
+**Datum:** 2026-10-10
+**Branch:** `claude/ux-audit-overhaul` (von `main` nach PR #56)
 **Repo:** `looped83/depot-analyzer`
-**Build:** `npx tsc --noEmit` → 0 Fehler · `npx eslint .` → 0 Fehler · `npm run build` → erfolgreich
+**Checks:** `npx tsc -b` 0 Fehler · `npx eslint .` 0 Fehler · `npx vitest run` 56 Tests grün · `npm run build` ok
 
-**Wichtig zum PR-Workflow dieser Session:** Der Nutzer merged jede PR praktisch sofort nach dem Push (mittlerweile PRs **#39–#54**, alle vom selben Branch-Namen `claude/tablet-landscape-breakpoint-mqnf8j`, alle einzeln erstellt und gemerged). Das bedeutet: **vor jedem neuen Commit auf diesem Branch erst prüfen, ob der lokale Stand bereits gemerged ist** (`git fetch origin main && git merge-base --is-ancestor HEAD origin/main`) – wenn ja, Branch frisch von `main` neu aufsetzen (`git checkout -B claude/tablet-landscape-breakpoint-mqnf8j origin/main`, uncommittete Änderungen per `git stash`/`git stash pop` rüberretten) statt auf dem alten, bereits bedeutungslosen Branch-Stand weiterzuarbeiten. Sonst entstehen Merge-Konflikte oder der Push landet auf einem längst gemergten Ast. Dieses Muster ist inzwischen mehrfach aufgetreten (PR #49, #50, #51, #52, #53, #54) und sollte für jede künftige Session auf diesem Branch als Standard-Vorgehen gelten.
+**PR-Workflow:** Der Nutzer merged PRs meist direkt nach dem Push. Vor jedem neuen Commit prüfen, ob der Stand schon in `main` ist (`git fetch origin main && git merge-base --is-ancestor HEAD origin/main`); wenn ja, Branch frisch von `main` aufsetzen.
+
+**Testsetup:** Playwright ist global installiert (`/opt/node22/lib/node_modules/playwright`); ESM-Skripte direkt aus diesem Verzeichnis starten. Testdatei per Node-Skript mit synthetischen Positionen erzeugen (kein Sample im Repo).
 
 ---
+
+## Update (2026-10-10): Kompletter UX-Audit umgesetzt (Konsistenz, Mobile, Green Code)
+
+Nutzer wollte einen vollständigen Audit (Interaktion, Nutzung, Darstellung), erst Vorschlag, dann Umsetzung aller Punkte. Entscheidungen des Nutzers: Bottom-Bar auf Mobile, Spaltenpriorität in Tabellen, Light-Mode entfernen, doppelte Inhalte als „Teaser + Sprung“, `xlsx` durch `read-excel-file` ersetzen, Phase 5 (Positions-Detail, URL-Hash, Parser) ja.
+
+**Bugs:** Scroll-Reset beim Tab-Wechsel · InfoTip auf Touch (Hover nur für Maus, fixed + Viewport-Clamp) · Fehlermeldung bei falschem Dateityp · Health-Score-Label/Farbe war in Übersicht und Depot-Check unterschiedlich · weißer Flash beim Laden · Overflow bei 3er-Kacheln.
+
+**Design-System (`src/components/ui/`):** `Card` (+ `id` als Sprungziel, `flush` für Tabellen), `KPICard` (+ `tone`, `to` = Teaser-Link), `KPIGrid` (immer 2/4 Spalten, jeder Tab hat genau 4 KPIs), `MiniStat`/`TileGrid` (Mobile als Zeile, ab `sm` als Kachel), `Callout`, `Chip`/`ChipList` (+N aufklappbar, öffnet Detail), `ProgressBar`, `CellBar`, `ScoreRow`, `BarList` (HTML statt Recharts für Ranglisten), `StatusBadge`/`PrioBadge`, `SearchInput`, `Segmented`, `SliderField` (Regler + Zahlenfeld), `TextButton`, `Donut` (reines SVG mit Werte-Legende), `ChartTooltip`/`TooltipBox`. CSS-Utilities `card`, `label`, `no-scrollbar` in `index.css`.
+
+**Eine Wahrheit pro Regel:** `lib/score.ts` (eine 0–100-Skala + Tone-Klassen), `lib/risk.ts` (Yield 6,5/9 %, CAGR 2 %, Gewicht 5 % – vorher teils 6 %/8 % je nach Stelle), `lib/quality.ts` (Datenvollständigkeit, jetzt auch im Health Score mit Rating), `lib/rebalancing.ts` (einzige Kauf-Logik: Aufbau-Positionen mit größtem Abstand zum Zielgewicht – vorher 5 verschiedene Algorithmen), Sparplan-Effizienz = Health-Dimension.
+
+**Performance/Green:** `lib/metrics.ts` (`DepotMetrics`, lazy + gecacht pro Upload statt Neuberechnung bei jedem Tab-Mount), Light-Mode-Klassen entfernt (CSS 70 → 39 kB), `read-excel-file` (Parser-Chunk 334 → 55 kB, keine bekannten CVEs mehr, dafür nur noch `.xlsx`), Dashboard-Chunk 197 → 126 kB, Chart-Animationen aus, globale `*`-Transition entfernt, Chart-Palette mit dem dataviz-Validator für Dunkel geprüft (`lib/chartTheme.ts`), Dual-Axis-Chart im Ausblick in zwei Charts geteilt.
+
+**Navigation:** Desktop Header + Flyout (Escape, ARIA), Mobile Bottom-Bar (merkt letzten Tab je Gruppe) + Segment-Leiste unter dem Titel. Aktiver Tab im Hash (`#/calendar`) → Reload, Deep-Links, Zurück-Button. Daten in `sessionStorage` (überleben Reload, weg beim Schließen des Tabs – bewusst kein `localStorage` wegen Finanzdaten; Umstellung wäre eine Zeile in `App.tsx`).
+
+**Inhalte gebündelt (Teaser + Sprung):** Steuer/Freibetrag → Analyse `#steuer`; Stresstest → Sicherheit `#stresstest`; Klumpenrisiko → Diversifikation `#gewichtung`; Kaufkandidaten → Rebalancing `#kaufen`; Szenarien → Ausblick; Health Score → Depot-Check. Entfernt als Dopplung: Top-10-Tabelle + 3 Donuts + Broker-Chart in Übersicht, Chowder-Champions/Top-Wachstum/Yield-Ranking in Analyse, Top-10-Chowder-Chart in Wachstum, Freiheits-Countdown im Ausblick (= Meilensteine Zielplanung), Gauge/Top-3/Stresstest/Freibetrag-Tracker im Depot-Check, Hidden Gems/Sparplan-/Über-/Untergewicht-Ranglisten in Rankings. Projektionsannahmen gelten app-weit (Ausblick, Ziel, Sparpläne, Motivation).
+
+**Sprache/Icons:** Rankings und „Findings“ → Deutsch („Hinweise“), Emojis durch Lucide-Icons ersetzt, Zahlen in Hinweis-Texten mit deutschem Format.
+
+**Positions-Detail:** `PositionSheet.tsx` (native `<dialog>`, eigener State → öffnen rendert den Tab nicht neu), erreichbar aus jeder Tabellenzeile, BarList, Chip und Scatter/Treemap-Punkt.
+
+**Verifikation:** Playwright gegen synthetische 48-Positionen-XLSX, alle 16 Tabs bei 375 und 1440 px: kein horizontaler Overflow, keine Console-Errors. Mobile-Seitenhöhen z. B. Übersicht 6.516 → 2.661 px, Analyse 8.306 → 3.612 px, Depot-Check 6.748 → 2.853 px. Interaktionen (Sheet, Escape, Bottom-Bar, Teaser-Sprung auf Karte, Back, Reload, Reset) per Skript geprüft.
+
+---
+
+## Frühere Updates
+
 
 ## Update (2026-07-02, neuester Stand): Qualitäts-Tipps, Tausendertrennzeichen, einheitliche Investment-Annahme, Kalenderjahre im Chart, Code-Qualitäts-Pass, CSV-Export entfernt
 

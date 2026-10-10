@@ -1,28 +1,18 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
-
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+    color-scheme: dark;
   }
 
   body {
     margin: 0;
-    font-family: "Inter", system-ui, -apple-system, sans-serif;
-    background: #fafafa;
-    color: #0f172a;
-  }
-
-  .dark body {
-    background: #09090b;
-    color: #f8fafc;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--color-zinc-950);
+    color: var(--color-zinc-100);
   }
 
   #root {
@@ -31,16 +21,22 @@
   }
 }
 
-/* Tabbar scrollbar hide */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Smooth transition for dark mode */
-*, *::before, *::after {
-  transition-property: background-color, border-color, color;
-  transition-duration: 150ms;
-  transition-timing-function: ease;
+/* Design-system primitives shared by every view */
+@utility card {
+  @apply rounded-2xl border border-zinc-800 bg-zinc-900;
 }
 
-/* But not for transforms/opacity (would affect charts) */
-svg *, rect, circle, path, line { transition: none; }
+@utility label {
+  @apply text-[11px] font-medium uppercase tracking-wider text-zinc-500;
+}
+
+/* Hide scrollbars on horizontally scrolling rows (nav, segmented controls) */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/* Native <dialog> used as bottom sheet / modal */
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}

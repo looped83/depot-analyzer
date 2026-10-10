@@ -1,144 +1,136 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export interface Column<T> {
-  key: keyof T | string;
+  key: string;
   label: string;
-  render?: (val: unknown, row: T) => React.ReactNode;
-  sortFn?: (a: T, b: T) => number;
+  render?: (row: T) => ReactNode;
+  /** Value used for sorting; defaults to row[key]. */
+  sortValue?: (row: T) => number | string;
   align?: 'left' | 'right' | 'center';
-  width?: string;
+  /** Hide the column below this breakpoint (column priority on small screens). */
+  hide?: 'sm' | 'md' | 'lg';
 }
 
 interface Props<T> {
   data: T[];
   columns: Column<T>[];
-  pageSize?: number;
-  filterKeys?: (keyof T)[];
   rowKey: (row: T) => string;
-  /** Controlled filter value. When provided with onFilterChange, the internal search input is hidden. */
+  pageSize?: number;
+  /** Search string; matched case-insensitively against `filterKeys`. */
   filter?: string;
-  onFilterChange?: (value: string) => void;
+  filterKeys?: (keyof T)[];
+  onRowClick?: (row: T) => void;
+  sortable?: boolean;
 }
 
-function get<T>(obj: T, key: string): unknown {
-  return (obj as Record<string, unknown>)[key];
+const HIDE = { sm: 'hidden sm:table-cell', md: 'hidden md:table-cell', lg: 'hidden lg:table-cell' } as const;
+const ALIGN = { left: 'text-left', right: 'text-right tabular-nums', center: 'text-center' } as const;
+
+const get = (row: unknown, key: string) => (row as Record<string, unknown>)[key];
+
+function compare(a: unknown, b: unknown): number {
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  return String(a ?? '').localeCompare(String(b ?? ''), 'de', { numeric: true });
 }
 
-export function SortableTable<T>({ data, columns, pageSize = 25, filterKeys, rowKey, filter: controlledFilter, onFilterChange }: Props<T>) {
-  const [sortKey, setSortKey] = useState<string | null>(null);
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [internalFilter, setInternalFilter] = useState('');
+/**
+ * Sortable, paginated table. Built to sit flush inside a Card: the first column is sticky
+ * while the rest scrolls horizontally, and low-priority columns can hide on small screens.
+ */
+export function SortableTable<T>({ data, columns, rowKey, pageSize = 25, filter = '', filterKeys, onRowClick, sortable = true }: Props<T>) {
+  const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(null);
   const [page, setPage] = useState(0);
 
-  const isControlled = onFilterChange != null;
-  const activeFilter = isControlled ? (controlledFilter ?? '') : internalFilter;
-
   const filtered = useMemo(() => {
-    if (!activeFilter.trim()) return data;
-    const q = activeFilter.toLowerCase();
-    return data.filter((row) => {
-      const keys = filterKeys ?? (Object.keys(row as object) as (keyof T)[]);
-      return keys.some((k) => String(get(row, k as string) ?? '').toLowerCase().includes(q));
-    });
-  }, [data, activeFilter, filterKeys]);
+    const q = filter.trim().toLowerCase();
+    if (!q || !filterKeys) return data;
+    return data.filter((row) => filterKeys.some((k) => String(get(row, k as string) ?? '').toLowerCase().includes(q)));
+  }, [data, filter, filterKeys]);
 
   const sorted = useMemo(() => {
-    if (!sortKey) return filtered;
-    const col = columns.find((c) => c.key === sortKey);
-    return [...filtered].sort((a, b) => {
-      const cmp = col?.sortFn
-        ? col.sortFn(a, b)
-        : String(get(a, sortKey) ?? '').localeCompare(String(get(b, sortKey) ?? ''), undefined, { numeric: true });
-      return sortDir === 'asc' ? cmp : -cmp;
-    });
-  }, [filtered, sortKey, sortDir, columns]);
+    if (!sort) return filtered;
+    const col = columns.find((c) => c.key === sort.key);
+    const value = col?.sortValue ?? ((row: T) => get(row, sort.key) as number | string);
+    return [...filtered].sort((a, b) => compare(value(a), value(b)) * sort.dir);
+  }, [filtered, sort, columns]);
 
-  const pages = Math.ceil(sorted.length / pageSize);
-  // Clamp instead of trusting `page`: a controlled filter (header search box) can
-  // shrink the result set without going through the internal setPage(0) reset,
-  // which would otherwise leave the table stuck on a now-empty page.
-  const safePage = Math.min(page, Math.max(0, pages - 1));
-  const slice = sorted.slice(safePage * pageSize, (safePage + 1) * pageSize);
+  const pages = Math.max(1, Math.ceil(sorted.length / pageSize));
+  // Clamp: a shrinking search result must not leave the table on an empty page.
+  const current = Math.min(page, pages - 1);
+  const slice = sorted.slice(current * pageSize, (current + 1) * pageSize);
 
-  const handleSort = (key: string) => {
-    if (sortKey === key) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else { setSortKey(key); setSortDir('asc'); }
+  const toggleSort = (col: Column<T>) => {
+    // Numbers sort high → low first; text A → Z.
+    const first = col.align === 'right' ? -1 : 1;
+    setSort((s) => (s?.key === col.key ? { key: col.key, dir: (s.dir * -1) as 1 | -1 } : { key: col.key, dir: first }));
     setPage(0);
   };
 
+  const cellClass = (col: Column<T>, i: number) =>
+    `${ALIGN[col.align ?? 'left']} ${col.hide ? HIDE[col.hide] : ''} ${i === 0 ? 'sticky left-0 z-[1] bg-inherit' : ''}`;
+
   return (
-    <div className="flex flex-col gap-3">
-      {filterKeys && !isControlled && (
-        <input
-          className="w-full max-w-xs text-sm bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 placeholder-slate-300 dark:placeholder-zinc-600 text-slate-800 dark:text-zinc-200"
-          placeholder="Suchen …"
-          value={internalFilter}
-          onChange={(e) => { setInternalFilter(e.target.value); setPage(0); }}
-        />
-      )}
-      <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <table className="w-full text-sm border-collapse">
+    <div>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-slate-100 dark:border-zinc-800">
-              {columns.map((col) => (
+            <tr className="border-y border-zinc-800 bg-zinc-900">
+              {columns.map((col, i) => (
                 <th
-                  key={String(col.key)}
-                  className={`px-4 py-3 text-xs font-medium text-slate-400 dark:text-zinc-500 cursor-pointer select-none whitespace-nowrap uppercase tracking-wider ${col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'}`}
-                  style={{ width: col.width }}
-                  onClick={() => handleSort(String(col.key))}
+                  key={col.key}
+                  scope="col"
+                  aria-sort={sort?.key === col.key ? (sort.dir === 1 ? 'ascending' : 'descending') : undefined}
+                  className={`whitespace-nowrap px-3 py-2.5 text-[11px] font-medium uppercase tracking-wider text-zinc-500 first:pl-4 last:pr-4 sm:first:pl-5 sm:last:pr-5 ${cellClass(col, i)}`}
                 >
-                  <span className="inline-flex items-center gap-1">
-                    {col.label}
-                    {sortKey === col.key
-                      ? sortDir === 'asc' ? <ChevronUp size={11} /> : <ChevronDown size={11} />
-                      : <ChevronsUpDown size={11} className="opacity-25" />}
-                  </span>
+                  {sortable ? (
+                    <button type="button" onClick={() => toggleSort(col)} className="inline-flex items-center gap-1 uppercase hover:text-zinc-300">
+                      {col.label}
+                      {sort?.key === col.key
+                        ? sort.dir === 1 ? <ChevronUp size={11} /> : <ChevronDown size={11} />
+                        : <ChevronsUpDown size={11} className="opacity-30" />}
+                    </button>
+                  ) : col.label}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
             {slice.map((row) => (
-              <tr key={rowKey(row)} className="border-b border-slate-50 dark:border-zinc-800/60 last:border-0 hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition-colors">
-                {columns.map((col) => (
-                  <td
-                    key={String(col.key)}
-                    className={`px-4 py-3 text-slate-700 dark:text-zinc-300 ${col.align === 'right' ? 'text-right tabular-nums' : col.align === 'center' ? 'text-center' : ''}`}
-                  >
-                    {col.render
-                      ? col.render(get(row, String(col.key)), row)
-                      : String(get(row, String(col.key)) ?? '—')}
+              <tr
+                key={rowKey(row)}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onKeyDown={onRowClick ? (e) => e.key === 'Enter' && onRowClick(row) : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                className={`border-b border-zinc-800/60 bg-zinc-900 last:border-0 ${onRowClick ? 'cursor-pointer outline-none hover:bg-[#1f1f23] focus-visible:bg-[#1f1f23]' : ''}`}
+              >
+                {columns.map((col, i) => (
+                  <td key={col.key} className={`px-3 py-2.5 text-zinc-300 first:pl-4 last:pr-4 sm:first:pl-5 sm:last:pr-5 ${cellClass(col, i)}`}>
+                    {col.render ? col.render(row) : String(get(row, col.key) ?? '—')}
                   </td>
                 ))}
               </tr>
             ))}
             {slice.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-10 text-center text-slate-300 dark:text-zinc-600 text-sm">
-                  Keine Einträge gefunden
-                </td>
+                <td colSpan={columns.length} className="px-4 py-10 text-center text-sm text-zinc-500">Keine Einträge gefunden</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
       {pages > 1 && (
-        <div className="flex items-center gap-1.5 justify-end">
-          <span className="text-xs text-slate-400 dark:text-zinc-500 mr-2">{sorted.length} Einträge</span>
-          {Array.from({ length: pages }).map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setPage(i)}
-              className={`w-7 h-7 rounded-lg text-xs font-medium transition-colors ${
-                safePage === i
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800'
-              }`}
-            >
-              {i + 1}
+        <div className="flex items-center justify-between gap-3 border-t border-zinc-800 px-4 py-2.5 text-xs text-zinc-500 sm:px-5">
+          <span>{sorted.length} Einträge</span>
+          <div className="flex items-center gap-1">
+            <button type="button" aria-label="Vorherige Seite" disabled={current === 0} onClick={() => setPage(current - 1)} className="rounded-lg p-1.5 hover:bg-zinc-800 disabled:opacity-30">
+              <ChevronLeft size={14} />
             </button>
-          ))}
+            <span className="tabular-nums">Seite {current + 1} / {pages}</span>
+            <button type="button" aria-label="Nächste Seite" disabled={current >= pages - 1} onClick={() => setPage(current + 1)} className="rounded-lg p-1.5 hover:bg-zinc-800 disabled:opacity-30">
+              <ChevronRight size={14} />
+            </button>
+          </div>
         </div>
       )}
     </div>
