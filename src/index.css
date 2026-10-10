@@ -3,26 +3,17 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
-
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+    color-scheme: dark;
   }
 
   body {
     margin: 0;
-    font-family: "Inter", system-ui, -apple-system, sans-serif;
-    background: #fafafa;
-    color: #0f172a;
-  }
-
-  .dark body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     background: #09090b;
-    color: #f8fafc;
+    color: #f4f4f5;
   }
 
   #root {
@@ -31,16 +22,6 @@
   }
 }
 
-/* Tabbar scrollbar hide */
+/* Hide scrollbars on horizontally scrolling rows (nav, chips) */
 .no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* Smooth transition for dark mode */
-*, *::before, *::after {
-  transition-property: background-color, border-color, color;
-  transition-duration: 150ms;
-  transition-timing-function: ease;
-}
-
-/* But not for transforms/opacity (would affect charts) */
-svg *, rect, circle, path, line { transition: none; }
+.no-scrollbar { scrollbar-width: none; }

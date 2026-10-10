@@ -100,7 +100,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
   const dimensions: HealthDimension[] = [
     {
       key: 'diversification', label: 'Diversifikation', score: divScore,
-      detail: `HHI: ${hhi.toFixed(0)} · ${active.length} aktive Positionen`,
+      detail: `HHI: ${fmtNum(hhi)} · ${active.length} aktive Positionen`,
       isGood: divScore >= 100,
       tips: divScore < 100
         ? ['Untergewichtete Positionen aufstocken', 'Neue Branchen/Regionen beimischen']
@@ -116,7 +116,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     },
     {
       key: 'growthPotential', label: 'Wachstumspotenzial', score: growthScore,
-      detail: `Gewichteter CAGR: ${weightedCagr.toFixed(1)} %`,
+      detail: `Gewichteter CAGR: ${fmtNum(weightedCagr, 1)} %`,
       isGood: growthScore >= 100,
       tips: growthScore < 100
         ? ['Positionen mit CAGR > 7 % aufstocken', 'Dividenden-Aristokraten in Betracht ziehen']
@@ -148,7 +148,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     },
     {
       key: 'cashflowSmoothness', label: 'Cashflow-Gleichmäßigkeit', score: cashflowScore,
-      detail: `Variationskoeff.: ${(cv * 100).toFixed(0)} % · Ø ${avgMonthly.toFixed(0)} €/Monat`,
+      detail: `Variationskoeff.: ${fmtNum(cv * 100)} % · Ø ${fmtNum(avgMonthly)} €/Monat`,
       isGood: cashflowScore >= 100,
       tips: cashflowScore < 100
         ? ['Monatliche Zahler aufstocken', 'Quartalsweise Zahler mit verschiedenen Monaten kombinieren']
@@ -156,7 +156,7 @@ export function computeHealthScore(positions: DepotPosition[]): {
     },
     {
       key: 'chowderQuality', label: 'Chowder-Qualität', score: chowderScore,
-      detail: `Gewichteter Chowder: ${weightedChowder.toFixed(1)}`,
+      detail: `Gewichteter Chowder: ${fmtNum(weightedChowder, 1)}`,
       isGood: chowderScore >= 100,
       tips: chowderScore < 100
         ? ['Positionen mit Chowder > 12 bevorzugen', 'Schwache Chowder-Werte durch bessere ersetzen']
@@ -191,7 +191,7 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
     recommendations.push({
       id: `overweight-${p.symbol}`, priority: 'medium',
       title: `Sparplan ${p.symbol} pausieren`,
-      description: `${p.name} hat ${p.portfolioWeight.toFixed(1)} % Gewicht und wird weiter mit ${fmtNum(p.sparbetrag)} €/Zyklus bespart. Kapital in untergewichtete Prio-A-Positionen umlenken.`,
+      description: `${p.name} hat ${fmtNum(p.portfolioWeight, 1)} % Gewicht und wird weiter mit ${fmtNum(p.sparbetrag)} €/Zyklus bespart. Kapital in untergewichtete Prio-A-Positionen umlenken.`,
       impact: 'Bessere Diversifikation, Risikoreduktion',
       effort: 'einfach', symbols: [p.symbol],
     });
@@ -281,7 +281,7 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
     recommendations.push({
       id: 'income-concentration', priority: 'medium',
       title: 'Einkommensabhängigkeit reduzieren',
-      description: `Top 3 Positionen (${top3DivContrib.map(p => p.symbol).join(', ')}) liefern ${top3Pct.toFixed(0)} % der gesamten Dividende. Mehr Diversifikation bei den Dividendenzahlern senkt das Ausfallrisiko.`,
+      description: `Top 3 Positionen (${top3DivContrib.map(p => p.symbol).join(', ')}) liefern ${fmtNum(top3Pct)} % der gesamten Dividende. Mehr Diversifikation bei den Dividendenzahlern senkt das Ausfallrisiko.`,
       impact: 'Stabileres Einkommen bei Dividendenkürzungen',
       effort: 'mittel', symbols: top3DivContrib.map(p => p.symbol),
     });
@@ -334,7 +334,7 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
       icon: '🎯',
       reached: totals.totalMonthlyDiv >= 100,
       progress: Math.min(100, (totals.totalMonthlyDiv / 100) * 100),
-      current: `${totals.totalMonthlyDiv.toFixed(0)} €`, target: '100 €',
+      current: `${fmtNum(totals.totalMonthlyDiv)} €`, target: '100 €',
     },
     {
       id: 'first-250-monthly', label: '250 € / Monat',
@@ -342,7 +342,7 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
       icon: '💪',
       reached: totals.totalMonthlyDiv >= 250,
       progress: Math.min(100, (totals.totalMonthlyDiv / 250) * 100),
-      current: `${totals.totalMonthlyDiv.toFixed(0)} €`, target: '250 €',
+      current: `${fmtNum(totals.totalMonthlyDiv)} €`, target: '250 €',
     },
     {
       id: 'first-500-monthly', label: '500 € / Monat',
@@ -350,7 +350,7 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
       icon: '🚀',
       reached: totals.totalMonthlyDiv >= 500,
       progress: Math.min(100, (totals.totalMonthlyDiv / 500) * 100),
-      current: `${totals.totalMonthlyDiv.toFixed(0)} €`, target: '500 €',
+      current: `${fmtNum(totals.totalMonthlyDiv)} €`, target: '500 €',
     },
     {
       id: 'first-1000-monthly', label: '1.000 € / Monat',
@@ -358,7 +358,7 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
       icon: '🏆',
       reached: totals.totalMonthlyDiv >= 1000,
       progress: Math.min(100, (totals.totalMonthlyDiv / 1000) * 100),
-      current: `${totals.totalMonthlyDiv.toFixed(0)} €`, target: '1.000 €',
+      current: `${fmtNum(totals.totalMonthlyDiv)} €`, target: '1.000 €',
     },
     {
       id: 'twelve-months', label: '12 Monate Cashflow',
@@ -390,7 +390,7 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
       icon: '💰',
       reached: totals.totalWert >= 10000,
       progress: Math.min(100, (totals.totalWert / 10000) * 100),
-      current: `${(totals.totalWert / 1000).toFixed(1)}k`, target: '10k',
+      current: `${fmtNum(totals.totalWert / 1000, 1)}k`, target: '10k',
     },
     {
       id: 'depot-50k', label: '50k € Depot',
@@ -398,7 +398,7 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
       icon: '💎',
       reached: totals.totalWert >= 50000,
       progress: Math.min(100, (totals.totalWert / 50000) * 100),
-      current: `${(totals.totalWert / 1000).toFixed(1)}k`, target: '50k',
+      current: `${fmtNum(totals.totalWert / 1000, 1)}k`, target: '50k',
     },
     {
       id: 'depot-100k', label: '100k € Depot',
@@ -406,7 +406,7 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
       icon: '👑',
       reached: totals.totalWert >= 100000,
       progress: Math.min(100, (totals.totalWert / 100000) * 100),
-      current: `${(totals.totalWert / 1000).toFixed(1)}k`, target: '100k',
+      current: `${fmtNum(totals.totalWert / 1000, 1)}k`, target: '100k',
     },
     {
       id: 'monthly-payers-5', label: '5 Monatszahler',
@@ -422,7 +422,7 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
       icon: '🏛️',
       reached: totals.totalAnnualDiv >= 2000,
       progress: Math.min(100, (totals.totalAnnualDiv / 2000) * 100),
-      current: `${totals.totalAnnualDiv.toFixed(0)} €`, target: '2.000 €/Jahr',
+      current: `${fmtNum(totals.totalAnnualDiv)} €`, target: '2.000 €/Jahr',
     },
     {
       id: 'prio-a-five', label: '5 Prio-A',

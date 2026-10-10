@@ -24,14 +24,14 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
   // Konzentrationsrisiko Top 5
   const top5Weight = byWert.slice(0, 5).reduce((s, p) => s + p.portfolioWeight, 0);
   const top10Weight = byWert.slice(0, 10).reduce((s, p) => s + p.portfolioWeight, 0);
-  const top5Names = byWert.slice(0, 5).map((p) => `${p.symbol} (${p.portfolioWeight.toFixed(1)}%)`);
+  const top5Names = byWert.slice(0, 5).map((p) => `${p.symbol} (${fmtNum(p.portfolioWeight, 1)} %)`);
 
   if (top5Weight > 50) {
     findings.push({
       id: 'concentration-top5',
       category: 'warning',
       title: 'Hohe Konzentration: Top 5 Positionen',
-      detail: `Deine Top 5 Positionen machen ${top5Weight.toFixed(1)}% des Gesamtdepots aus. Das ist ein erhöhtes Klumpenrisiko. Erwäge, besonders große Positionen nicht weiter zu besparen und untergewichtete Qualitätspositionen aufzubauen.`,
+      detail: `Deine Top 5 Positionen machen ${fmtNum(top5Weight, 1)} % des Gesamtdepots aus. Das ist ein erhöhtes Klumpenrisiko. Erwäge, besonders große Positionen nicht weiter zu besparen und untergewichtete Qualitätspositionen aufzubauen.`,
       symbols: byWert.slice(0, 5).map((p) => p.symbol),
     });
   } else {
@@ -39,7 +39,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'concentration-top5',
       category: 'info',
       title: 'Konzentration: Top 5 Positionen',
-      detail: `Deine Top 5 Positionen (${top5Names.join(', ')}) machen ${top5Weight.toFixed(1)}% des Depots aus. Top 10 zusammen: ${top10Weight.toFixed(1)}%.`,
+      detail: `Deine Top 5 Positionen (${top5Names.join(', ')}) machen ${fmtNum(top5Weight, 1)} % des Depots aus. Top 10 zusammen: ${fmtNum(top10Weight, 1)} %.`,
       symbols: byWert.slice(0, 5).map((p) => p.symbol),
     });
   }
@@ -50,7 +50,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
     id: 'top-income',
     category: 'success',
     title: 'Stärkste Einkommensbringer',
-    detail: `${top3Div.map((p) => `${p.name} (${fmtNum(p.annualDividend)} €/Jahr, ${p.yield.toFixed(2)}% Yield)`).join(' | ')}. Diese drei Positionen generieren zusammen ${fmtNum(top3Div.reduce((s, p) => s + p.annualDividend, 0))} € jährliche Dividende.`,
+    detail: `${top3Div.map((p) => `${p.name} (${fmtNum(p.annualDividend)} €/Jahr, ${fmtNum(p.yield, 2)} % Yield)`).join(' | ')}. Diese drei Positionen generieren zusammen ${fmtNum(top3Div.reduce((s, p) => s + p.annualDividend, 0))} € jährliche Dividende.`,
     symbols: top3Div.map((p) => p.symbol),
   });
 
@@ -61,7 +61,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'top-growth',
       category: 'success',
       title: 'Stärkste Wachstumswerte (CAGR 5J)',
-      detail: `${top3Cagr.map((p) => `${p.name} (CAGR: ${p.cagr5j.toFixed(1)}%)`).join(' | ')}.`,
+      detail: `${top3Cagr.map((p) => `${p.name} (CAGR: ${fmtNum(p.cagr5j, 1)} %)`).join(' | ')}.`,
       symbols: top3Cagr.map((p) => p.symbol),
     });
   }
@@ -78,14 +78,14 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
     });
   }
 
-  // Yield > 6%
+  // Yield > 6 %
   const highYield = active.filter((p) => p.yield > 6);
   if (highYield.length > 0) {
     findings.push({
       id: 'high-yield',
       category: 'warning',
-      title: `${highYield.length} Position(en) mit Yield > 6%`,
-      detail: `Hohe Yields können auf Substanzverzehr oder erhöhtes Risiko hinweisen: ${highYield.map((p) => `${p.symbol} (${p.yield.toFixed(1)}%)`).join(', ')}. Prüfe die Dividendenkontinuität.`,
+      title: `${highYield.length} Position(en) mit Yield > 6 %`,
+      detail: `Hohe Yields können auf Substanzverzehr oder erhöhtes Risiko hinweisen: ${highYield.map((p) => `${p.symbol} (${fmtNum(p.yield, 1)} %)`).join(', ')}. Prüfe die Dividendenkontinuität.`,
       symbols: highYield.map((p) => p.symbol),
     });
   }
@@ -96,8 +96,8 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
     findings.push({
       id: 'low-cagr',
       category: 'warning',
-      title: `${lowCagr.length} Position(en) mit schwachem Dividendenwachstum (CAGR < 3%)`,
-      detail: `${lowCagr.map((p) => `${p.symbol} (${p.cagr5j.toFixed(1)}%)`).join(', ')}. Niedriges Dividendenwachstum kann die reale Kaufkraft des Einkommens langfristig erodieren.`,
+      title: `${lowCagr.length} Position(en) mit schwachem Dividendenwachstum (CAGR < 3 %)`,
+      detail: `${lowCagr.map((p) => `${p.symbol} (${fmtNum(p.cagr5j, 1)} %)`).join(', ')}. Niedriges Dividendenwachstum kann die reale Kaufkraft des Einkommens langfristig erodieren.`,
       symbols: lowCagr.map((p) => p.symbol),
     });
   }
@@ -125,7 +125,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'high-value-low-score',
       category: 'warning',
       title: 'Große Positionen mit niedrigem Dividend Score',
-      detail: `${highValueLowScore.map((p) => `${p.name} (Gewicht: ${p.portfolioWeight.toFixed(1)}%, Score: ${p.dividendScore})`).join(' | ')}. Diese Positionen binden viel Kapital, liefern aber unterdurchschnittliche Scores.`,
+      detail: `${highValueLowScore.map((p) => `${p.name} (Gewicht: ${fmtNum(p.portfolioWeight, 1)} %, Score: ${p.dividendScore})`).join(' | ')}. Diese Positionen binden viel Kapital, liefern aber unterdurchschnittliche Scores.`,
       symbols: highValueLowScore.map((p) => p.symbol),
     });
   }
@@ -138,7 +138,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'weak-months',
       category: 'info',
       title: `${weakMonths.length} Monat(e) mit unterdurchschnittlichem Cashflow`,
-      detail: `${weakMonths.map((m) => m.label).join(', ')} haben weniger als 50% des monatlichen Durchschnitts (Ø ${fmtNum(avgMonthlyIncome)} €). Erwäge monatliche Zahler hinzuzufügen, um den Cashflow zu glätten.`,
+      detail: `${weakMonths.map((m) => m.label).join(', ')} haben weniger als 50 % des monatlichen Durchschnitts (Ø ${fmtNum(avgMonthlyIncome)} €). Erwäge monatliche Zahler hinzuzufügen, um den Cashflow zu glätten.`,
     });
   }
 
@@ -153,7 +153,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'broker-concentration',
       category: 'info',
       title: `Brokerkonzentration: ${dominantBroker[0][0]}`,
-      detail: `${((dominantBroker[0][1] / totals.totalWert) * 100).toFixed(1)}% deines Depots liegen bei ${dominantBroker[0][0]}. Eine Verteilung auf mehrere Broker kann die Plattformabhängigkeit reduzieren.`,
+      detail: `${fmtNum((dominantBroker[0][1] / totals.totalWert) * 100, 1)} % deines Depots liegen bei ${dominantBroker[0][0]}. Eine Verteilung auf mehrere Broker kann die Plattformabhängigkeit reduzieren.`,
     });
   }
 
@@ -180,7 +180,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'overweight-saved',
       category: 'info',
       title: 'Übergewichtete Positionen werden weiter bespart',
-      detail: `${overweightSaved.map((p) => `${p.symbol} (${p.portfolioWeight.toFixed(1)}%, ${fmtNum(p.sparbetrag)}€/Zyklus)`).join(' | ')}. Diese Positionen haben bereits ein hohes Gewicht – prüfe, ob die Sparpläne weiterhin sinnvoll sind.`,
+      detail: `${overweightSaved.map((p) => `${p.symbol} (${fmtNum(p.portfolioWeight, 1)} %, ${fmtNum(p.sparbetrag)} €/Zyklus)`).join(' | ')}. Diese Positionen haben bereits ein hohes Gewicht – prüfe, ob die Sparpläne weiterhin sinnvoll sind.`,
       symbols: overweightSaved.map((p) => p.symbol),
     });
   }
@@ -196,18 +196,18 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'category-concentration',
       category: 'info',
       title: `Kategoriekonzentration: ${dominant[0]}`,
-      detail: `${((dominant[1] / totals.totalWert) * 100).toFixed(1)}% des Depots entfallen auf die Kategorie "${dominant[0]}". Eine breitere Streuung könnte die Balance zwischen Einkommen und Wachstum verbessern.`,
+      detail: `${fmtNum((dominant[1] / totals.totalWert) * 100, 1)} % des Depots entfallen auf die Kategorie "${dominant[0]}". Eine breitere Streuung könnte die Balance zwischen Einkommen und Wachstum verbessern.`,
     });
   }
 
-  // Einkommensabhängigkeit: Top 3 Positionen liefern >50% der Dividende
+  // Einkommensabhängigkeit: Top 3 Positionen liefern > 50 % der Dividende
   const { top: top3DivContrib, pct: top3DivPct } = topDividendContributors(active, 3);
   if (top3DivPct > 50) {
     findings.push({
       id: 'income-dependency',
       category: 'warning',
-      title: 'Einkommensabhängigkeit: Top 3 liefern >50 % der Dividende',
-      detail: `${top3DivContrib.map(p => `${p.symbol} (${p.dividendContribution.toFixed(1)}%)`).join(', ')} liefern zusammen ${top3DivPct.toFixed(1)}% der gesamten Dividende. Eine Kürzung bei einer dieser Positionen hätte starken Einfluss auf dein Einkommen.`,
+      title: 'Einkommensabhängigkeit: Top 3 liefern > 50 % der Dividende',
+      detail: `${top3DivContrib.map(p => `${p.symbol} (${fmtNum(p.dividendContribution, 1)} %)`).join(', ')} liefern zusammen ${fmtNum(top3DivPct, 1)} % der gesamten Dividende. Eine Kürzung bei einer dieser Positionen hätte starken Einfluss auf dein Einkommen.`,
       symbols: top3DivContrib.map(p => p.symbol),
     });
   }
@@ -221,14 +221,14 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'cashflow-stable',
       category: 'success',
       title: 'Gleichmäßiger Cashflow',
-      detail: `Dein monatlicher Dividenden-Cashflow ist gut verteilt (Variationskoeffizient: ${(cv * 100).toFixed(0)}%). Du erhältst in jedem Monat ähnlich hohe Einkünfte.`,
+      detail: `Dein monatlicher Dividenden-Cashflow ist gut verteilt (Variationskoeffizient: ${fmtNum(cv * 100)} %). Du erhältst in jedem Monat ähnlich hohe Einkünfte.`,
     });
   } else if (cv > 0.6) {
     findings.push({
       id: 'cashflow-unstable',
       category: 'warning',
       title: 'Ungleichmäßiger Cashflow',
-      detail: `Dein monatlicher Dividenden-Cashflow schwankt stark (Variationskoeffizient: ${(cv * 100).toFixed(0)}%). Monatliche Zahler oder Quartalsweise Zahler mit verschiedenen Ausschüttungsmonaten können das glätten.`,
+      detail: `Dein monatlicher Dividenden-Cashflow schwankt stark (Variationskoeffizient: ${fmtNum(cv * 100)} %). Monatliche Zahler oder Quartalsweise Zahler mit verschiedenen Ausschüttungsmonaten können das glätten.`,
     });
   }
 
@@ -257,7 +257,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'chowder-champions',
       category: 'success',
       title: `${chowderChamps.length} Position(en) mit exzellentem Chowder Score (≥ 15)`,
-      detail: `${chowderChamps.slice(0, 5).map(p => `${p.symbol} (${p.chowderScore.toFixed(1)})`).join(', ')}. Der Chowder Score (Yield + CAGR) zeigt eine ideale Kombination aus Einkommen und Wachstum.`,
+      detail: `${chowderChamps.slice(0, 5).map(p => `${p.symbol} (${fmtNum(p.chowderScore, 1)})`).join(', ')}. Der Chowder Score (Yield + CAGR) zeigt eine ideale Kombination aus Einkommen und Wachstum.`,
       symbols: chowderChamps.slice(0, 5).map(p => p.symbol),
     });
   }
@@ -268,7 +268,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'chowder-weak',
       category: 'warning',
       title: `${chowderWeak.length} Position(en) mit schwachem Chowder Score (< 6)`,
-      detail: `${chowderWeak.slice(0, 5).map(p => `${p.symbol} (${p.chowderScore.toFixed(1)})`).join(', ')}. Niedriger Chowder bedeutet weder hohe Ausschüttung noch starkes Wachstum.`,
+      detail: `${chowderWeak.slice(0, 5).map(p => `${p.symbol} (${fmtNum(p.chowderScore, 1)})`).join(', ')}. Niedriger Chowder bedeutet weder hohe Ausschüttung noch starkes Wachstum.`,
       symbols: chowderWeak.slice(0, 5).map(p => p.symbol),
     });
   }
@@ -283,7 +283,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
       id: 'typ-mix',
       category: 'success',
       title: 'Guter Mix: Einzelaktien & ETFs',
-      detail: `Dein Depot enthält ${aktiePct.toFixed(0)}% Einzelaktien und ${etfPct.toFixed(0)}% ETFs. Die Kombination bietet gezielte Auswahl und breite Streuung.`,
+      detail: `Dein Depot enthält ${fmtNum(aktiePct)} % Einzelaktien und ${fmtNum(etfPct)} % ETFs. Die Kombination bietet gezielte Auswahl und breite Streuung.`,
     });
   }
 

@@ -9,20 +9,14 @@ import { KPICard } from '../KPICard';
 import { Card, PageHeading } from '../Card';
 import { ChartTooltip } from '../ChartTooltip';
 import { fmt, fmtNum } from '../../lib/format';
+import { scoreTone, scoreLabel, TONE } from '../../lib/score';
 import { ArrowRight, Zap, AlertTriangle, CheckCircle, Info, TrendingDown } from 'lucide-react';
 
 interface Props { positions: DepotPosition[] }
 
-const gradeLabel = (score: number) =>
-  score >= 85 ? 'Exzellent' : score >= 70 ? 'Gut' : score >= 55 ? 'Solide'
-    : score >= 40 ? 'Ausbaufähig' : 'Kritisch';
-
-const gradeColor = (score: number) =>
-  score >= 85 ? 'text-emerald-600 dark:text-emerald-400' : score >= 70 ? 'text-blue-600 dark:text-blue-400'
-    : score >= 55 ? 'text-amber-500' : score >= 40 ? 'text-orange-500' : 'text-red-500';
-
-const barColor = (score: number) =>
-  score >= 75 ? 'bg-emerald-500' : score >= 50 ? 'bg-blue-500' : score >= 25 ? 'bg-amber-400' : 'bg-red-400';
+const gradeLabel = scoreLabel;
+const gradeColor = (score: number) => TONE[scoreTone(score)].text;
+const barColor = (score: number) => TONE[scoreTone(score)].bar;
 
 // Shortened labels for the radar chart axis – full names remain in the detail list below it.
 const radarShortLabel: Record<string, string> = {
@@ -72,7 +66,7 @@ export function DepotCheckTab({ positions }: Props) {
                 <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor"
                   className="text-slate-100 dark:text-zinc-800" strokeWidth="8" />
                 <circle cx="50" cy="50" r="42" fill="none"
-                  stroke={health.overall >= 75 ? '#10b981' : health.overall >= 50 ? '#3b82f6' : health.overall >= 25 ? '#f59e0b' : '#ef4444'}
+                  stroke={TONE[scoreTone(health.overall)].hex}
                   strokeWidth="8" strokeLinecap="round"
                   strokeDasharray={`${health.overall * 2.64} 264`} />
               </svg>
@@ -208,7 +202,7 @@ export function DepotCheckTab({ positions }: Props) {
               freibetrag.remaining <= 0 ? 'bg-gradient-to-r from-emerald-500 to-amber-400' : 'bg-emerald-500'
             }`} style={{ width: `${Math.min(100, (freibetrag.used / freibetrag.freibetrag) * 100)}%` }} />
           </div>
-          <div className="grid grid-cols-3 gap-3 mt-3 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 text-center">
             <div className="text-xs">
               <div className="text-slate-400 dark:text-zinc-500">Brutto-Dividende</div>
               <div className="font-semibold text-slate-700 dark:text-zinc-300 mt-0.5">{fmt(freibetrag.annualDiv)}</div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import { UploadZone } from './components/UploadZone';
 import { calculateDerived } from './lib/calculations';
 import type { DepotPosition } from './lib/types';
@@ -9,10 +9,6 @@ export default function App() {
   const [positions, setPositions] = useState<DepotPosition[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
 
   const handleFile = async (file: File) => {
     setLoading(true);

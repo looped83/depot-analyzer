@@ -193,7 +193,7 @@ export function MotivationTab({ positions }: Props) {
           </ResponsiveContainer>
         </div>
         {snowball.length > 10 && (
-          <div className="grid grid-cols-3 gap-3 mt-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
             {[5, 10, 20].map(y => {
               const row = snowball.find(r => r.year === snowball[0].year + y);
               if (!row) return null;

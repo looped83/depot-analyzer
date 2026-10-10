@@ -8,6 +8,7 @@ import { computeHealthScore, computeFreibetrag } from '../../lib/insights';
 import { SortableTable } from '../tables/SortableTable';
 import { fmt, fmtPct, fmtNum } from '../../lib/format';
 import { PALETTE, BAR_CURSOR } from '../../lib/chartTheme';
+import { scoreTone, scoreLabel, TONE } from '../../lib/score';
 interface Props { positions: DepotPosition[] }
 
 function aggregateBy(positions: DepotPosition[], key: keyof DepotPosition) {
@@ -46,8 +47,8 @@ export function OverviewTab({ positions }: Props) {
   const netDiv = freibetrag.annualDiv - freibetrag.taxAmount;
   const monthsWithIncome = calendar.filter(m => m.expectedIncome > 0).length;
 
-  const healthColor = health.overall >= 70 ? 'text-emerald-600 dark:text-emerald-400'
-    : health.overall >= 50 ? 'text-amber-500' : 'text-red-500';
+  const healthTone = TONE[scoreTone(health.overall)];
+  const healthColor = healthTone.text;
 
   return (
     <div className="space-y-5">
@@ -70,7 +71,7 @@ export function OverviewTab({ positions }: Props) {
               <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="3"
                 strokeDasharray={`${health.overall * 0.975} 100`}
                 strokeLinecap="round"
-                className={health.overall >= 70 ? 'stroke-emerald-500' : health.overall >= 50 ? 'stroke-amber-500' : 'stroke-red-500'} />
+                className={healthTone.stroke} />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center">
               <span className={`text-sm font-bold ${healthColor}`}>{fmtNum(health.overall)}</span>
@@ -79,10 +80,10 @@ export function OverviewTab({ positions }: Props) {
           <div>
             <div className="text-xs font-medium text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Portfolio Health</div>
             <div className={`text-lg font-bold ${healthColor}`}>
-              {health.overall >= 80 ? 'Ausgezeichnet' : health.overall >= 65 ? 'Gut' : health.overall >= 50 ? 'Befriedigend' : 'Verbesserungsbedarf'}
+              {scoreLabel(health.overall)}
             </div>
             <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">
-              {health.dimensions.filter(d => d.score >= 70).length} / {health.dimensions.length} Dimensionen im grünen Bereich
+              {health.dimensions.filter(d => scoreTone(d.score) === 'success').length} / {health.dimensions.length} Dimensionen im grünen Bereich
             </div>
           </div>
         </div>

@@ -10,10 +10,13 @@ interface Props {
 export function UploadZone({ onFile, loading, error }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [typeError, setTypeError] = useState('');
 
   const handleFile = (f: File) => {
-    if (f.name.endsWith('.xlsx') || f.name.endsWith('.xls')) onFile(f);
+    if (/\.xlsx?$/i.test(f.name)) { setTypeError(''); onFile(f); }
+    else setTypeError(`„${f.name}" ist keine Excel-Datei. Bitte eine .xlsx-Datei wählen.`);
   };
+  const shownError = typeError || error;
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 flex flex-col items-center justify-center px-6">
@@ -79,9 +82,9 @@ export function UploadZone({ onFile, loading, error }: Props) {
       )}
 
       {/* Error */}
-      {error && (
+      {shownError && (
         <div className="mt-4 w-full max-w-md text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900 rounded-2xl px-4 py-3">
-          {error}
+          {shownError}
         </div>
       )}
 

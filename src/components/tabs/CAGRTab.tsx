@@ -49,7 +49,7 @@ export function CAGRTab({ positions }: Props) {
   return (
     <div className="space-y-5">
       <PageHeading title="Wachstum" />
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <KPICard title="Ø CAGR 5J"      value={fmtPct(avgCagr)}    sub="Aktive Positionen" info="Compound Annual Growth Rate – durchschnittliches jährliches Dividendenwachstum über 5 Jahre." />
         <KPICard title="Ø Yield"         value={fmtPct(avgYield)}   sub="Aktive Positionen" info="Durchschnittliche Dividendenrendite aller aktiven Positionen." />
         <KPICard title="Ø Chowder Score" value={fmtNum(avgChowder, 1)} sub="Yield + CAGR" info="Chowder Score = Yield + CAGR 5J. Ab 12 gilt eine Position als attraktiv." />
@@ -76,7 +76,7 @@ export function CAGRTab({ positions }: Props) {
           </ResponsiveContainer>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
           {[
             { label: '⭐ Stars',           count: stars.length,              symbols: stars,              color: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-400' },
             { label: '📈 Wachstum',        count: lowYieldHighGrowth.length, symbols: lowYieldHighGrowth, color: 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/60 text-blue-700 dark:text-blue-400' },

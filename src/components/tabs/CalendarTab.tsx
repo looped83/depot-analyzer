@@ -49,7 +49,7 @@ export function CalendarTab({ positions }: Props) {
         <KPICard title="Ø Monatlicher Cashflow"  value={fmt(avgIncome)}            sub="Dividende / 12" />
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: 'Monatliche Zahler',    items: monthly,   color: 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/50' },
           { label: 'Quartalsweise Zahler', items: quarterly, color: 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50' },

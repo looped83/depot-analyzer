@@ -110,7 +110,7 @@ export function ProjectionTab({ positions }: Props) {
         </div>
       </Card>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {[
           { label: 'Nach 1 Jahr',   data: afterYear1 },
           { label: 'Nach 3 Jahren', data: afterYear3 },
@@ -164,7 +164,7 @@ export function ProjectionTab({ positions }: Props) {
       </Card>
 
       <Card title="Szenarien-Vergleich (5 Jahre)">
-        <div className="grid grid-cols-3 gap-3 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
           {scenarios.map((s) => (
             <div
               key={s.label}
@@ -188,7 +188,7 @@ export function ProjectionTab({ positions }: Props) {
 
       {/* Inflationsbereinigte Projektion */}
       <Card title="Inflationsbereinigte Projektion (5 Jahre)" sub="Reale Kaufkraft bei 2,5 % Inflation">
-        <div className="grid grid-cols-3 gap-3 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
           {[
             { label: 'Nach 1 Jahr', data: afterYear1, y: 1 },
             { label: 'Nach 3 Jahren', data: afterYear3, y: 3 },

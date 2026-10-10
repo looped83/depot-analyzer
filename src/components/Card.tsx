@@ -43,8 +43,11 @@ export function InfoTip({ text }: { text: string }) {
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        // Hover only for real mice: on touch, the emulated mouseenter would open the tip
+        // and the following click would immediately toggle it closed again.
+        onPointerEnter={(e) => e.pointerType === 'mouse' && setOpen(true)}
+        onPointerLeave={(e) => e.pointerType === 'mouse' && setOpen(false)}
+        onBlur={() => setOpen(false)}
         className="text-slate-300 dark:text-zinc-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
         aria-label="Info"
       >

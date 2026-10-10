@@ -164,7 +164,7 @@ export function SafetyTab({ positions }: Props) {
       )}
 
       {/* Risk group cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {([
           { label: 'Risiko-Positionen', items: reds,    bg: 'bg-red-50/60 dark:bg-red-950/30 border-red-100 dark:border-red-900/50',       text: 'text-red-700 dark:text-red-400' },
           { label: 'Zu beobachten',     items: yellows, bg: 'bg-amber-50/60 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/50', text: 'text-amber-700 dark:text-amber-400' },
@@ -182,7 +182,7 @@ export function SafetyTab({ positions }: Props) {
 
       {/* Stresstest */}
       <Card title="Portfolio-Stresstest" sub="Was passiert bei einer Dividendenkürzung der Top 5 Positionen?">
-        <div className="grid grid-cols-3 gap-3 mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
           {[
             { label: 'Aktuell', pct: 0 },
             { label: '-20 % Kürzung', pct: 20 },

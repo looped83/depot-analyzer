@@ -177,6 +177,8 @@ function TabNav({ activeTab, onSelect }: { activeTab: TabId; onSelect: (id: TabI
 export function Dashboard({ positions, onReset }: Props) {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const ActiveTab = TAB_COMPONENTS[activeTab];
+  // A new tab always starts at the top instead of inheriting the previous tab's scroll offset.
+  const selectTab = (id: TabId) => { setActiveTab(id); window.scrollTo(0, 0); };
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -192,7 +194,7 @@ export function Dashboard({ positions, onReset }: Props) {
           </div>
 
           {/* Tab groups */}
-          <TabNav activeTab={activeTab} onSelect={setActiveTab} />
+          <TabNav activeTab={activeTab} onSelect={selectTab} />
 
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
