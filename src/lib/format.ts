@@ -24,3 +24,9 @@ export const fmtNum = (v: number | null | undefined, decimals = 0): string => {
   }).format(v);
 };
 
+
+/** Axis ticks for euro amounts: 12.500 → "12,5k", 1.250.000 → "1.250k". */
+export const fmtK = (v: number): string => `${fmtNum(v / 1000, Math.abs(v) < 10000 && v !== 0 ? 1 : 0)}k`;
+
+/** Signed amount for deltas: +1.234 € / −567 €. */
+export const fmtSigned = (v: number, decimals = 0): string => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt(Math.abs(v), decimals)}`;

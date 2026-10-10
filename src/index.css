@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   html {
@@ -12,8 +11,8 @@
   body {
     margin: 0;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    background: #09090b;
-    color: #f4f4f5;
+    background: var(--color-zinc-950);
+    color: var(--color-zinc-100);
   }
 
   #root {
@@ -22,6 +21,22 @@
   }
 }
 
-/* Hide scrollbars on horizontally scrolling rows (nav, chips) */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { scrollbar-width: none; }
+/* Design-system primitives shared by every view */
+@utility card {
+  @apply rounded-2xl border border-zinc-800 bg-zinc-900;
+}
+
+@utility label {
+  @apply text-[11px] font-medium uppercase tracking-wider text-zinc-500;
+}
+
+/* Hide scrollbars on horizontally scrolling rows (nav, segmented controls) */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/* Native <dialog> used as bottom sheet / modal */
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}

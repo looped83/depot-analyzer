@@ -1,42 +1,43 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 
+/** Shared tooltip frame for every chart. */
+export function TooltipBox({ title, children }: { title?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-2.5 text-xs shadow-xl">
+      {title != null && <p className="mb-1 font-semibold text-zinc-100">{title}</p>}
+      <div className="space-y-0.5 text-zinc-300">{children}</div>
+    </div>
+  );
+}
+
+// Recharts passes loosely typed payload entries.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyPayload = readonly Record<string, any>[];
+type Entry = Record<string, any>;
 
 interface Props {
   active?: boolean;
-  payload?: AnyPayload;
+  payload?: readonly Entry[];
   label?: string | number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  labelFormatter?: (...args: any[]) => React.ReactNode;
-  formatter?: (v: number | string, name: string) => string;
+  formatLabel?: (label: string | number) => ReactNode;
+  formatValue?: (v: number) => string;
+  /** Display names per dataKey (series legend names). */
+  names?: Record<string, string>;
 }
 
-export function ChartTooltip({ active, payload, label, labelFormatter, formatter }: Props) {
+/** Default series tooltip: label + one colored row per series. */
+export function ChartTooltip({ active, payload, label, formatLabel, formatValue, names }: Props) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 rounded-xl px-3 py-2.5 text-xs shadow-xl shadow-slate-200/60 dark:shadow-none">
-      {label !== undefined && (
-        <p className="font-medium text-slate-500 dark:text-zinc-400 mb-1.5">
-          {labelFormatter ? labelFormatter(label) : label}
-        </p>
-      )}
-      {payload.map((item, i) => {
-        const raw: number | string = item.value ?? 0;
-        const name: string = String(item.name ?? '');
-        const displayed = formatter ? formatter(raw, name) : String(raw);
-        return (
-          <div key={i} className="flex items-center gap-2">
-            {item.color && (
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
-            )}
-            <span className="text-slate-800 dark:text-zinc-200 font-medium">{displayed}</span>
-            {name && name !== String(item.dataKey ?? '') && (
-              <span className="text-slate-400 dark:text-zinc-500">{name}</span>
-            )}
-          </div>
-        );
-      })}
-    </div>
+    <TooltipBox title={label !== undefined ? (formatLabel ? formatLabel(label) : label) : undefined}>
+      {payload.map((item) => (
+        <div key={String(item.dataKey)} className="flex items-center gap-2">
+          <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: item.color ?? item.payload?.fill }} />
+          {names?.[item.dataKey] && <span className="text-zinc-400">{names[item.dataKey]}</span>}
+          <span className="ml-auto font-medium tabular-nums text-zinc-100">
+            {formatValue ? formatValue(Number(item.value)) : String(item.value)}
+          </span>
+        </div>
+      ))}
+    </TooltipBox>
   );
 }

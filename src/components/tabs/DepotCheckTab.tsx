@@ -1,267 +1,103 @@
-import React, { useMemo } from 'react';
-import {
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ResponsiveContainer, Tooltip,
-} from 'recharts';
-import type { DepotPosition } from '../../lib/types';
-import { computeHealthScore, generateRecommendations, computeFreibetrag, computeStressTest } from '../../lib/insights';
-import { KPICard } from '../KPICard';
-import { Card, PageHeading } from '../Card';
-import { ChartTooltip } from '../ChartTooltip';
+import { useState } from 'react';
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
+import { useDepot } from '../../lib/depotContext';
+import type { ActionRecommendation } from '../../lib/insights';
 import { fmt, fmtNum } from '../../lib/format';
-import { scoreTone, scoreLabel, TONE } from '../../lib/score';
-import { ArrowRight, Zap, AlertTriangle, CheckCircle, Info, TrendingDown } from 'lucide-react';
+import { AXIS, POLAR_GRID } from '../../lib/chartTheme';
+import { TONE, scoreLabel, scoreTone, type Tone } from '../../lib/score';
+import { KPICard, KPIGrid } from '../ui/KPICard';
+import { Card } from '../ui/Card';
+import { Callout } from '../ui/Callout';
+import { ScoreRow, ProgressBar } from '../ui/Bars';
+import { ChipList } from '../ui/Chip';
+import { TextButton } from '../ui/Controls';
 
-interface Props { positions: DepotPosition[] }
-
-const gradeLabel = scoreLabel;
-const gradeColor = (score: number) => TONE[scoreTone(score)].text;
-const barColor = (score: number) => TONE[scoreTone(score)].bar;
-
-// Shortened labels for the radar chart axis – full names remain in the detail list below it.
-const radarShortLabel: Record<string, string> = {
-  diversification: 'Diversifikation',
-  incomeStability: 'Einkommen',
-  growthPotential: 'Wachstum',
-  dataQuality: 'Datenqualität',
-  riskDistribution: 'Risiko',
-  savingsEfficiency: 'Sparplan',
-  cashflowSmoothness: 'Cashflow',
-  chowderQuality: 'Chowder',
+// Short labels for the radar axis; the detail list keeps the full names.
+const RADAR_LABEL: Record<string, string> = {
+  diversification: 'Streuung', incomeStability: 'Einkommen', growthPotential: 'Wachstum', dataQuality: 'Daten',
+  riskDistribution: 'Risiko', savingsEfficiency: 'Sparplan', cashflowSmoothness: 'Cashflow', chowderQuality: 'Chowder',
 };
 
-const prioConfig = {
-  high: { icon: <Zap size={14} />, bg: 'bg-red-50 dark:bg-red-950/30 border-red-100 dark:border-red-900/50', text: 'text-red-700 dark:text-red-400', label: 'Hoch' },
-  medium: { icon: <AlertTriangle size={14} />, bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/50', text: 'text-amber-700 dark:text-amber-400', label: 'Mittel' },
-  low: { icon: <Info size={14} />, bg: 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/50', text: 'text-blue-700 dark:text-blue-400', label: 'Niedrig' },
+const PRIORITY: Record<ActionRecommendation['priority'], { tone: Tone; label: string }> = {
+  high: { tone: 'danger', label: 'Hoch' },
+  medium: { tone: 'warning', label: 'Mittel' },
+  low: { tone: 'info', label: 'Niedrig' },
 };
 
-export function DepotCheckTab({ positions }: Props) {
-  const health = useMemo(() => computeHealthScore(positions), [positions]);
-  const recommendations = useMemo(() => generateRecommendations(positions), [positions]);
-  const freibetrag = useMemo(() => computeFreibetrag(positions), [positions]);
-  const stress20 = useMemo(() => computeStressTest(positions, 20), [positions]);
-  const stress50 = useMemo(() => computeStressTest(positions, 50), [positions]);
+const SHOWN = 5;
 
-  const top3 = recommendations.slice(0, 3);
-  const radarData = health.dimensions.map(d => ({ dimension: radarShortLabel[d.key] ?? d.label, score: Math.round(d.score), fullMark: 100 }));
+export function DepotCheckTab() {
+  const { m } = useDepot();
+  const { health, recommendations: recs, freibetrag } = m;
+  const [showAll, setShowAll] = useState(false);
+  const stress = m.stress(50);
+  const high = recs.filter((r) => r.priority === 'high').length;
 
   return (
-    <div className="space-y-5">
-      <PageHeading title="Depot-Check" />
-      {/* Overall Score + KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Depot Health Score" value={`${fmtNum(health.overall)} / 100`} sub={gradeLabel(health.overall)} info="Gewichteter Score aus 8 Dimensionen: Diversifikation, Qualität, Wachstum, Sicherheit, Cashflow, Effizienz u.a." />
-        <KPICard title="Empfehlungen" value={String(recommendations.length)} sub={`${recommendations.filter(r => r.priority === 'high').length} mit hoher Priorität`} info="Automatisch generierte Handlungsempfehlungen basierend auf deiner Depotanalyse." />
-        <KPICard title="Freibetrag genutzt" value={`${fmtNum(Math.min(100, freibetrag.used / freibetrag.freibetrag * 100))} %`} sub={freibetrag.remaining > 0 ? `${fmt(freibetrag.remaining)} frei` : 'Vollständig ausgeschöpft'} info="Sparerpauschbetrag: 2.000 € für verheiratete Paare (gemeinsame Veranlagung). Dividenden bis dahin sind steuerfrei." />
-        <KPICard title="Steuerbelastung" value={fmt(freibetrag.taxAmount)} sub={`${fmt(freibetrag.taxable)} steuerpflichtig`} info="Geschätzte Steuer auf Dividenden oberhalb des Freibetrags (KapESt + SolZ = 26,375 %)." />
-      </div>
+    <>
+      <KPIGrid>
+        <KPICard title="Health Score" value={`${fmtNum(health.overall)} / 100`} sub={scoreLabel(health.overall)} tone={scoreTone(health.overall)}
+          info="Durchschnitt aus 8 Dimensionen auf derselben Skala wie alle Scores: ab 75 sehr gut, ab 50 solide, ab 25 ausbaufähig.">
+          <ProgressBar value={health.overall} tone={scoreTone(health.overall)} />
+        </KPICard>
+        <KPICard title="Empfehlungen" value={recs.length} sub={`${high} mit hoher Priorität`} tone={high > 0 ? 'danger' : undefined} />
+        <KPICard title="Stresstest" value={`−${fmt(stress.lostIncome)}`} sub="pro Jahr, wenn die Top 5 um 50 % kürzen" to={{ tab: 'safety', anchor: 'stresstest' }} />
+        <KPICard title="Steuer" value={fmt(freibetrag.taxAmount)} sub={freibetrag.remaining > 0 ? `${fmt(freibetrag.remaining)} Freibetrag frei` : 'pro Jahr auf Dividenden'} to={{ tab: 'dividends', anchor: 'steuer' }} />
+      </KPIGrid>
 
-      {/* Health Score Gauge + Radar */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card title="Depot Health Score">
-          <div className="flex flex-col items-center py-4">
-            <div className="relative w-40 h-40">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor"
-                  className="text-slate-100 dark:text-zinc-800" strokeWidth="8" />
-                <circle cx="50" cy="50" r="42" fill="none"
-                  stroke={TONE[scoreTone(health.overall)].hex}
-                  strokeWidth="8" strokeLinecap="round"
-                  strokeDasharray={`${health.overall * 2.64} 264`} />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className={`text-3xl font-bold ${gradeColor(health.overall)}`}>{fmtNum(health.overall)}</span>
-                <span className="text-xs text-slate-400 dark:text-zinc-500">{gradeLabel(health.overall)}</span>
-              </div>
-            </div>
-            <p className="text-xs text-slate-400 dark:text-zinc-500 mt-3 text-center max-w-xs">
-              Gewichteter Durchschnitt aus 8 Qualitätsdimensionen deines Depots
-            </p>
-          </div>
-        </Card>
-
-        <Card title="Dimensionen-Radar">
-          <ResponsiveContainer width="100%" height={260}>
-            <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="62%">
-              <PolarGrid stroke="#e2e8f0" strokeOpacity={0.4} />
-              <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 10, fill: '#94a3b8' }} />
-              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-              <Radar dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.15} strokeWidth={2} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => `${v} / 100`} />} />
+      <div className="grid gap-4 lg:grid-cols-5">
+        <Card title="Profil" className="lg:col-span-2">
+          <ResponsiveContainer width="100%" height={250}>
+            <RadarChart data={health.dimensions.map((d) => ({ dim: RADAR_LABEL[d.key] ?? d.label, score: Math.round(d.score) }))} outerRadius="68%">
+              <PolarGrid stroke={POLAR_GRID} />
+              <PolarAngleAxis dataKey="dim" tick={{ ...AXIS.tick, fontSize: 10 }} />
+              <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+              <Radar dataKey="score" stroke={TONE.info.hex} fill={TONE.info.hex} fillOpacity={0.2} strokeWidth={2} isAnimationActive={false} />
             </RadarChart>
           </ResponsiveContainer>
         </Card>
-      </div>
-
-      {/* Top 3 Sofort-Maßnahmen */}
-      {top3.length > 0 && (
-        <Card title="Top 3 – Sofort umsetzbare Maßnahmen" sub="Höchste Priorität zuerst">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-            {top3.map((r, i) => {
-              const cfg = prioConfig[r.priority];
-              return (
-                <div key={r.id} className={`rounded-xl border p-4 ${cfg.bg}`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`flex items-center justify-center w-6 h-6 rounded-full bg-white/60 dark:bg-zinc-900/60 text-sm font-bold ${cfg.text}`}>{i + 1}</span>
-                    <span className={`text-xs font-bold uppercase tracking-wider ${cfg.text}`}>{r.title}</span>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed mb-2">{r.description}</p>
-                  <div className="flex items-center gap-1.5 text-xs">
-                    <ArrowRight size={12} className={cfg.text} />
-                    <span className={`font-semibold ${cfg.text}`}>{r.impact}</span>
-                  </div>
-                  {r.symbols && r.symbols.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {r.symbols.map(s => (
-                        <span key={s} className="text-xs bg-white/60 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-700 px-1.5 py-0.5 rounded-md font-mono">{s}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        <Card title="Dimensionen" className="lg:col-span-3">
+          <div className="space-y-4">
+            {health.dimensions.map((d) => (
+              <ScoreRow key={d.key} label={d.label} detail={d.detail} score={d.score}>
+                <ul className="space-y-0.5 text-xs">
+                  {d.tips.map((tip) => (
+                    <li key={tip} className={`flex gap-1.5 ${d.isGood ? 'text-zinc-400' : 'text-zinc-300'}`}>
+                      {d.isGood
+                        ? <CheckCircle2 size={12} className={`mt-0.5 shrink-0 ${TONE.success.text}`} />
+                        : <ArrowRight size={12} className={`mt-0.5 shrink-0 ${TONE.info.text}`} />}
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </ScoreRow>
+            ))}
           </div>
         </Card>
-      )}
+      </div>
 
-      {/* Dimensions Detail */}
-      <Card title="Qualitätsdimensionen im Detail">
-        <div className="space-y-4 mt-2">
-          {health.dimensions.map(d => (
-            <div key={d.key}>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="font-semibold text-slate-700 dark:text-zinc-300">{d.label}</span>
-                <span className="text-slate-400 dark:text-zinc-500">{d.detail}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-500 ${barColor(d.score)}`}
-                    style={{ width: `${Math.min(100, d.score)}%` }} />
-                </div>
-                <span className={`text-sm font-bold tabular-nums w-10 text-right ${gradeColor(d.score)}`}>{fmtNum(d.score)}</span>
-              </div>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {d.tips.map((tip, i) => (
-                  <span key={i} className={`text-xs px-2 py-0.5 rounded-lg border ${
-                    d.isGood
-                      ? 'bg-slate-50 dark:bg-zinc-800/60 border-slate-100 dark:border-zinc-700 text-slate-500 dark:text-zinc-400'
-                      : 'bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/50 text-blue-700 dark:text-blue-300'
-                  }`}>
-                    {d.isGood
-                      ? <CheckCircle size={10} className="inline mr-1 text-emerald-500" />
-                      : <ArrowRight size={10} className="inline mr-1 text-blue-400" />}
-                    {d.isGood ? tip : <><span className="font-semibold">Tipp:</span> {tip}</>}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Stresstest */}
-      <Card title="Stresstest – Was passiert bei Dividendenkürzungen?" sub="Simulation: Top 5 Positionen kürzen ihre Dividende">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-          <div className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-center">
-            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2">Aktuell</div>
-            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{fmt(stress20.currentAnnualDiv)}</div>
-            <div className="text-xs text-slate-400 dark:text-zinc-500 mt-1">Jährliche Dividende</div>
-          </div>
-          <div className="rounded-xl border border-amber-100 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 p-4 text-center">
-            <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-2">
-              <TrendingDown size={12} /> 20 % Kürzung
-            </div>
-            <div className="text-xl font-bold text-amber-600 dark:text-amber-400">{fmt(stress20.stressedAnnualDiv)}</div>
-            <div className="text-xs text-amber-500/70 mt-1">-{fmt(stress20.lostIncome)} Einkommensverlust</div>
-          </div>
-          <div className="rounded-xl border border-red-100 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 p-4 text-center">
-            <div className="flex items-center justify-center gap-1 text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400 mb-2">
-              <TrendingDown size={12} /> 50 % Kürzung
-            </div>
-            <div className="text-xl font-bold text-red-600 dark:text-red-400">{fmt(stress50.stressedAnnualDiv)}</div>
-            <div className="text-xs text-red-500/70 mt-1">-{fmt(stress50.lostIncome)} Einkommensverlust</div>
-          </div>
-        </div>
-        <div className="mt-3 text-xs text-slate-400 dark:text-zinc-500">
-          Betroffene Top 5: {stress20.affectedSymbols.map(s => (
-            <span key={s} className="font-mono bg-slate-50 dark:bg-zinc-800 px-1.5 py-0.5 rounded mx-0.5">{s}</span>
-          ))}
-        </div>
-      </Card>
-
-      {/* Freibetrag Tracker */}
-      <Card title="Sparerpauschbetrag-Tracker" sub="2.000 € Freibetrag für Kapitaleinkünfte (Gemeinsam veranlagt)">
-        <div className="mt-3">
-          <div className="flex justify-between text-xs mb-1.5">
-            <span className="text-slate-500 dark:text-zinc-400">{fmt(freibetrag.used)} genutzt</span>
-            <span className="text-slate-500 dark:text-zinc-400">{fmt(freibetrag.freibetrag)} Freibetrag</span>
-          </div>
-          <div className="w-full h-4 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-500 ${
-              freibetrag.remaining <= 0 ? 'bg-gradient-to-r from-emerald-500 to-amber-400' : 'bg-emerald-500'
-            }`} style={{ width: `${Math.min(100, (freibetrag.used / freibetrag.freibetrag) * 100)}%` }} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 text-center">
-            <div className="text-xs">
-              <div className="text-slate-400 dark:text-zinc-500">Brutto-Dividende</div>
-              <div className="font-semibold text-slate-700 dark:text-zinc-300 mt-0.5">{fmt(freibetrag.annualDiv)}</div>
-            </div>
-            <div className="text-xs">
-              <div className="text-slate-400 dark:text-zinc-500">Steuerpflichtig</div>
-              <div className="font-semibold text-amber-600 dark:text-amber-400 mt-0.5">{fmt(freibetrag.taxable)}</div>
-            </div>
-            <div className="text-xs">
-              <div className="text-slate-400 dark:text-zinc-500">Steuer (ca. 26,375 %)</div>
-              <div className="font-semibold text-red-500 mt-0.5">{fmt(freibetrag.taxAmount)}</div>
-            </div>
-          </div>
-          {freibetrag.remaining > 0 && (
-            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-xl px-3 py-2">
-              Noch {fmt(freibetrag.remaining)} Freibetrag verfügbar – Dividenden in dieser Höhe sind steuerfrei.
-            </p>
-          )}
-        </div>
-      </Card>
-
-      {/* All Recommendations */}
-      <Card title={`Alle Handlungsempfehlungen (${recommendations.length})`}>
-        <div className="space-y-2 mt-2">
-          {recommendations.map(r => {
-            const cfg = prioConfig[r.priority];
+      <Card title="Handlungsempfehlungen" sub="Höchste Priorität zuerst">
+        <div className="space-y-2.5">
+          {(showAll ? recs : recs.slice(0, SHOWN)).map((r) => {
+            const prio = PRIORITY[r.priority];
             return (
-              <div key={r.id} className={`rounded-xl border p-4 ${cfg.bg}`}>
-                <div className="flex items-start gap-2">
-                  <span className={`mt-0.5 shrink-0 ${cfg.text}`}>{cfg.icon}</span>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className={`text-sm font-semibold ${cfg.text}`}>{r.title}</h4>
-                      <span className="text-xs bg-white/50 dark:bg-zinc-900/50 px-1.5 py-0.5 rounded text-slate-400 dark:text-zinc-500">{r.effort}</span>
-                    </div>
-                    <p className="text-xs text-slate-600 dark:text-zinc-300 leading-relaxed">{r.description}</p>
-                    <p className="text-xs font-semibold mt-1.5 flex items-center gap-1">
-                      <ArrowRight size={10} className={cfg.text} />
-                      <span className={cfg.text}>{r.impact}</span>
-                    </p>
-                    {r.symbols && r.symbols.length > 0 && (
-                      <div className="mt-1.5 flex flex-wrap gap-1">
-                        {r.symbols.map(s => (
-                          <span key={s} className="text-xs bg-white/60 dark:bg-zinc-800/60 border border-slate-100 dark:border-zinc-700 px-1.5 py-0.5 rounded-md font-mono text-slate-500 dark:text-zinc-400">{s}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <Callout key={r.id} tone={prio.tone} title={r.title}>
+                <p>{r.description}</p>
+                <p className="text-zinc-400">
+                  <span className={`font-medium ${TONE[prio.tone].text}`}>Priorität {prio.label}</span> · Aufwand {r.effort} · {r.impact}
+                </p>
+                {r.symbols && r.symbols.length > 0 && <ChipList items={r.symbols.map((s) => ({ symbol: s }))} />}
+              </Callout>
             );
           })}
         </div>
+        {recs.length > SHOWN && (
+          <div className="mt-3">
+            <TextButton onClick={() => setShowAll((s) => !s)}>{showAll ? 'Weniger anzeigen' : `Alle ${recs.length} anzeigen`}</TextButton>
+          </div>
+        )}
       </Card>
-
-      <p className="text-xs text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 rounded-xl px-4 py-3">
-        Der Depot Health Score und die Empfehlungen basieren auf den hochgeladenen Daten und allgemeinen Kennzahlen. Sie stellen keine Finanzberatung dar.
-        Steuerberechnungen sind Schätzwerte (KapESt + SolZ = 26,375 %) ohne Kirchensteuer.
-      </p>
-    </div>
+    </>
   );
 }

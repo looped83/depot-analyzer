@@ -1,240 +1,160 @@
-import React, { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import type { LucideIcon } from 'lucide-react';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import type { DepotPosition } from '../../lib/types';
-import { computeMotivationMetrics, computeAchievements, computeSnowballEffect } from '../../lib/insights';
-import { computeTotals, computeProjection, ASSUMED_MONTHLY_INVESTMENT } from '../../lib/calculations';
-import { KPICard } from '../KPICard';
-import { Card, PageHeading } from '../Card';
-import { ChartTooltip } from '../ChartTooltip';
-import { fmt, fmtNum } from '../../lib/format';
-import { AXIS, GRID } from '../../lib/chartTheme';
+  Film, Music, Smartphone, BatteryCharging, ShoppingCart, Palmtree, Clock, Euro, Target, Rocket, Trophy,
+  CalendarCheck, LayoutGrid, Wallet, Gem, Crown, Repeat, Landmark, Star, Building2, Check,
+} from 'lucide-react';
+import { useDepot } from '../../lib/depotContext';
+import { computeMotivationMetrics, computeAchievements, computeSnowballEffect, type MotivationMetrics } from '../../lib/insights';
+import { computeProjection } from '../../lib/calculations';
+import { fmt, fmtK, fmtNum, fmtPct } from '../../lib/format';
+import { AXIS, GRID, MUTED } from '../../lib/chartTheme';
+import { TONE } from '../../lib/score';
+import { KPICard, KPIGrid } from '../ui/KPICard';
+import { Card, Note } from '../ui/Card';
+import { ProgressBar } from '../ui/Bars';
+import { MiniStat, TileGrid } from '../ui/MiniStat';
+import { ChartTooltip } from '../ui/ChartTooltip';
+import { TextButton } from '../ui/Controls';
 
-interface Props { positions: DepotPosition[] }
+const LIVING_COSTS = 2000;
 
-const EQUIV_ITEMS = [
-  { key: 'netflixAbos', label: 'Netflix Standard', icon: '🎬', unit: '/Monat', price: '13,99 €' },
-  { key: 'spotifyAbos', label: 'Spotify Premium', icon: '🎵', unit: '/Monat', price: '11,99 €' },
-  { key: 'handyVertraege', label: 'Handyverträge', icon: '📱', unit: '/Monat', price: '30 €' },
-  { key: 'autoLaden', label: 'Auto laden', icon: '🔋', unit: '/Monat', price: '25 €' },
-] as const;
+const EQUIVALENTS: { key: keyof MotivationMetrics; label: string; icon: LucideIcon; note: string; currency?: boolean }[] = [
+  { key: 'netflixAbos', label: 'Netflix-Abos', icon: Film, note: '13,99 € / Monat' },
+  { key: 'spotifyAbos', label: 'Spotify-Abos', icon: Music, note: '11,99 € / Monat' },
+  { key: 'handyVertraege', label: 'Handyverträge', icon: Smartphone, note: '30 € / Monat' },
+  { key: 'autoLaden', label: 'E-Auto laden', icon: BatteryCharging, note: '25 € / Monat' },
+  { key: 'lebensmittelTage', label: 'Tage Lebensmittel', icon: ShoppingCart, note: 'pro Jahr · 15 € / Tag' },
+  { key: 'urlaubsTage', label: 'Urlaubstage', icon: Palmtree, note: 'pro Jahr · 100 € / Tag' },
+  { key: 'workHoursPerMonth', label: 'Arbeitsstunden', icon: Clock, note: 'pro Monat · Mindestlohn' },
+  { key: 'dailyPassiveIncome', label: 'Pro Tag passiv', icon: Euro, note: '365 Tage im Jahr', currency: true },
+];
 
-const LIFE_ITEMS = [
-  { key: 'lebensmittelTage', label: 'Tage Lebensmittel', icon: '🛒', sub: '(15 €/Tag)', perYear: true },
-  { key: 'urlaubsTage', label: 'Urlaubstage', icon: '🏖️', sub: '(100 €/Tag)', perYear: true },
-  { key: 'workHoursPerMonth', label: 'Arbeitsstunden gespart', icon: '⏰', sub: '(12,82 €/h Mindestlohn)', perYear: false },
-  { key: 'dailyPassiveIncome', label: 'Tägliches Passiveinkommen', icon: '💶', sub: '', perYear: false, isCurrency: true },
-] as const;
+const ACHIEVEMENT_ICON: Record<string, LucideIcon> = {
+  'first-100-monthly': Target, 'first-250-monthly': Rocket, 'first-500-monthly': Rocket, 'first-1000-monthly': Trophy,
+  'twelve-months': CalendarCheck, 'ten-positions': LayoutGrid, 'twenty-positions': LayoutGrid,
+  'depot-10k': Wallet, 'depot-50k': Gem, 'depot-100k': Crown, 'monthly-payers-5': Repeat,
+  freibetrag: Landmark, 'prio-a-five': Star, 'multi-broker': Building2,
+};
 
-export function MotivationTab({ positions }: Props) {
+const NEXT_SHOWN = 4;
+
+export function MotivationTab() {
+  const { m, assumptions } = useDepot();
+  const { positions, totals } = m;
+  const [showAll, setShowAll] = useState(false);
+
   const metrics = useMemo(() => computeMotivationMetrics(positions), [positions]);
   const achievements = useMemo(() => computeAchievements(positions), [positions]);
-  const snowball = useMemo(() => computeSnowballEffect(positions, 20), [positions]);
-  const totals = useMemo(() => computeTotals(positions), [positions]);
+  const snowball = useMemo(() => computeSnowballEffect(positions, 20, assumptions), [positions, assumptions]);
+  const in5 = useMemo(() => computeProjection(positions, assumptions, 5)[5], [positions, assumptions]);
 
-  const reached = achievements.filter(a => a.reached);
-  const nextUp = achievements.filter(a => !a.reached).sort((a, b) => b.progress - a.progress);
-
-  const proj5 = useMemo(() => computeProjection(positions, {
-    dividendGrowthRate: 5, monthlySavings: ASSUMED_MONTHLY_INVESTMENT,
-    reinvest: true, capitalGrowthRate: 6,
-  }, 5), [positions]);
-  const future5Div = proj5[5]?.annualDividend ?? 0;
-  const future5Monthly = future5Div / 12;
+  const reached = achievements.filter((a) => a.reached);
+  const next = achievements.filter((a) => !a.reached).sort((a, b) => b.progress - a.progress);
+  const future = (in5?.annualDividend ?? 0) / 12;
+  const freedom = metrics.freedomDegree;
 
   return (
-    <div className="space-y-5">
-      <PageHeading title="Motivation" />
-      {/* Hero KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard title="Passives Einkommen" value={fmt(totals.totalMonthlyDiv)} sub="Pro Monat, brutto" info="Deine monatliche Brutto-Dividende aus allen aktiven Positionen." />
-        <KPICard title="Tägliches Einkommen" value={fmt(metrics.dailyPassiveIncome)} sub="365 Tage im Jahr" info="Jahres-Dividende geteilt durch 365 – dein tägliches Passiveinkommen." />
-        <KPICard title="Freiheitsgrad" value={`${fmtNum(metrics.freedomDegree, 1)} %`} sub="Fixkosten gedeckt (Basis: 2.000 €)" info="Anteil deiner monatlichen Fixkosten (2.000 €), der durch Dividenden gedeckt ist." />
-        <KPICard title="Arbeitsstunden gespart" value={`${fmtNum(metrics.workHoursPerMonth, 1)} h`} sub="Pro Monat (Mindestlohn)" info="So viele Stunden Arbeit (zum Mindestlohn) ersetzt dein Dividendeneinkommen pro Monat." />
-      </div>
+    <>
+      <KPIGrid>
+        <KPICard title="Passiv / Monat" value={fmt(totals.totalMonthlyDiv)} sub="Brutto" />
+        <KPICard title="Passiv / Tag" value={fmt(metrics.dailyPassiveIncome)} sub="365 Tage im Jahr" />
+        <KPICard title="Freiheitsgrad" value={fmtPct(freedom, 1)} sub={`von ${fmt(LIVING_COSTS)} Fixkosten`} tone={freedom >= 100 ? 'success' : undefined} info={`Anteil monatlicher Fixkosten (Annahme ${fmt(LIVING_COSTS)}), der durch Dividenden gedeckt ist.`} />
+        <KPICard title="In 5 Jahren" value={fmt(future)} sub="pro Monat (Modell)" tone="success" to={{ tab: 'projection' }} />
+      </KPIGrid>
 
-      {/* Freedom Degree */}
-      <Card title="Dein Freiheitsgrad">
-        <div className="mt-2">
-          <div className="flex justify-between text-xs mb-1.5">
-            <span className="text-slate-500 dark:text-zinc-400">{fmt(totals.totalMonthlyDiv)} / Monat passiv</span>
-            <span className="text-slate-500 dark:text-zinc-400">100 % = 2.000 € / Monat</span>
-          </div>
-          <div className="w-full h-5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden relative">
-            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 via-emerald-500 to-emerald-400 transition-all duration-700"
-              style={{ width: `${Math.min(100, metrics.freedomDegree)}%` }} />
-            {[25, 50, 75].map(mark => (
-              <div key={mark} className="absolute top-0 h-full w-px bg-white/40 dark:bg-zinc-600/40"
-                style={{ left: `${mark}%` }} />
-            ))}
-          </div>
-          <div className="flex justify-between text-xs mt-1 text-slate-300 dark:text-zinc-600">
-            <span>0 %</span><span>25 %</span><span>50 %</span><span>75 %</span><span>100 %</span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-3 text-center">
-            {metrics.freedomDegree < 5
-              ? 'Jede Reise beginnt mit dem ersten Schritt. Dein passives Einkommen wächst mit jedem investierten Euro.'
-              : metrics.freedomDegree < 20
-              ? `Deine Dividenden decken bereits ${fmtNum(metrics.freedomDegree, 1)} % deiner Fixkosten. Weiter so!`
-              : metrics.freedomDegree < 50
-              ? `Beeindruckend: Fast ${fmtNum(metrics.freedomDegree)} % deiner Fixkosten sind bereits durch passives Einkommen gedeckt.`
-              : metrics.freedomDegree < 100
-              ? `Auf der Zielgeraden: ${fmtNum(metrics.freedomDegree)} % finanzielle Freiheit erreicht!`
-              : 'Gratulation! Du hast finanzielle Freiheit erreicht!'
-            }
-          </p>
+      <Card title="Dein Freiheitsgrad" sub={`${fmt(totals.totalMonthlyDiv)} von ${fmt(LIVING_COSTS)} monatlichen Fixkosten gedeckt`}>
+        <ProgressBar value={freedom} gradient size="md" marks={[25, 50, 75]} />
+        <div className="mt-1 flex justify-between text-[11px] text-zinc-600">
+          <span>0 %</span><span>25 %</span><span>50 %</span><span>75 %</span><span>100 %</span>
+        </div>
+        <p className="mt-3 text-sm text-zinc-300">
+          {freedom < 5 ? 'Jede Reise beginnt mit dem ersten Schritt – jeder investierte Euro zählt.'
+            : freedom < 50 ? `Deine Dividenden decken bereits ${fmtPct(freedom, 1)} deiner Fixkosten. Weiter so!`
+            : freedom < 100 ? `Auf der Zielgeraden: ${fmtPct(freedom, 0)} finanzielle Freiheit erreicht.`
+            : 'Gratulation – deine Fixkosten sind komplett durch Dividenden gedeckt!'}
+        </p>
+      </Card>
+
+      <Card title="Was deine Dividenden bezahlen">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+          {EQUIVALENTS.map(({ key, label, icon: Icon, note, currency }) => (
+            <div key={key} className="rounded-xl border border-zinc-800 p-3">
+              <Icon size={16} className="text-zinc-500" />
+              <div className="mt-2 text-lg font-semibold tabular-nums text-zinc-100">{currency ? fmt(metrics[key]) : `${fmtNum(metrics[key], 1)}×`}</div>
+              <div className="text-xs text-zinc-300">{label}</div>
+              <div className="text-[11px] text-zinc-500">{note}</div>
+            </div>
+          ))}
         </div>
       </Card>
 
-      {/* Was deine Dividenden bezahlen */}
-      <Card title="Was deine Dividenden bezahlen" sub="Monatliches passives Einkommen in Lebensbezügen">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-          {EQUIV_ITEMS.map(item => {
-            const val = metrics[item.key];
-            return (
-              <div key={item.key} className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-center">
-                <div className="text-2xl mb-1">{item.icon}</div>
-                <div className="text-2xl font-bold text-slate-800 dark:text-zinc-200">{fmtNum(val, 1)}x</div>
-                <div className="text-xs font-medium text-slate-600 dark:text-zinc-400 mt-0.5">{item.label}</div>
-                <div className="text-xs text-slate-300 dark:text-zinc-600 mt-0.5">{item.price} {item.unit}</div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-          {LIFE_ITEMS.map(item => {
-            const val = metrics[item.key];
-            return (
-              <div key={item.key} className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 text-center">
-                <div className="text-2xl mb-1">{item.icon}</div>
-                <div className="text-2xl font-bold text-slate-800 dark:text-zinc-200">
-                  {'isCurrency' in item && item.isCurrency ? fmt(val) : fmtNum(val, 1)}
-                </div>
-                <div className="text-xs font-medium text-slate-600 dark:text-zinc-400 mt-0.5">{item.label}</div>
-                <div className="text-xs text-slate-300 dark:text-zinc-600 mt-0.5">
-                  {item.perYear ? 'pro Jahr' : 'pro Monat'} {item.sub}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
-
-      {/* Achievements */}
-      <Card title={`Meilensteine & Erfolge (${reached.length} / ${achievements.length} erreicht)`}>
+      <Card title="Meilensteine" sub={`${reached.length} von ${achievements.length} erreicht`}>
         {reached.length > 0 && (
-          <div className="mb-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-2">Erreicht</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-              {reached.map(a => (
-                <div key={a.id} className="rounded-xl border border-emerald-100 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/20 p-3 text-center">
-                  <div className="text-xl mb-0.5">{a.icon}</div>
-                  <div className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{a.label}</div>
-                  <div className="text-xs text-emerald-600/60 dark:text-emerald-400/50 mt-0.5">{a.description}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {nextUp.length > 0 && (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500 mb-2">Nächste Ziele</p>
-            <div className="space-y-2">
-              {nextUp.map(a => (
-                <div key={a.id} className="rounded-xl border border-slate-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl shrink-0">{a.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300">{a.label}</span>
-                        <span className="text-xs text-slate-400 dark:text-zinc-500 font-mono">{a.current} / {a.target}</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                          style={{ width: `${a.progress}%` }} />
-                      </div>
-                      <p className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">{a.description}</p>
-                    </div>
-                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400 shrink-0">{fmtNum(a.progress)} %</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Schneeball-Effekt */}
-      <Card title="Der Schneeball-Effekt" sub="Depotwert-Entwicklung: Mit vs. ohne Dividenden-Reinvestition (20 Jahre)">
-        <div className="mt-3">
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={snowball} margin={{ top: 4, right: 20, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="gradWith" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gradWithout" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#94a3b8" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#94a3b8" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...GRID} />
-              <XAxis dataKey="year" {...AXIS} />
-              <YAxis {...AXIS} tickFormatter={v => `${fmtNum(v / 1000)}k`} />
-              <Tooltip content={(props) => <ChartTooltip {...props} formatter={(v) => fmt(Number(v))} labelFormatter={(l) => `Jahr: ${l}`} />} />
-              <Legend formatter={v => v === 'withReinvest' ? 'Mit Reinvestition' : 'Ohne Reinvestition'} wrapperStyle={{ fontSize: 12 }} />
-              <Area type="monotone" dataKey="withReinvest" stroke="#10b981" fill="url(#gradWith)" strokeWidth={2} />
-              <Area type="monotone" dataKey="withoutReinvest" stroke="#94a3b8" fill="url(#gradWithout)" strokeWidth={1.5} strokeDasharray="4 3" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        {snowball.length > 10 && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-            {[5, 10, 20].map(y => {
-              const row = snowball.find(r => r.year === snowball[0].year + y);
-              if (!row) return null;
-              const diff = row.withReinvest - row.withoutReinvest;
+          <div className="mb-4 flex flex-wrap gap-1.5">
+            {reached.map((a) => {
+              const Icon = ACHIEVEMENT_ICON[a.id] ?? Check;
               return (
-                <div key={y} className="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 text-center">
-                  <div className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1">Nach {y} Jahren</div>
-                  <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">+{fmt(diff)}</div>
-                  <div className="text-xs text-emerald-500/70 mt-0.5">durch Reinvestition</div>
-                </div>
+                <span key={a.id} title={a.description} className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-medium ${TONE.success.soft} ${TONE.success.text}`}>
+                  <Icon size={13} />{a.label}
+                </span>
               );
             })}
           </div>
         )}
+        <p className="label mb-2">Nächste Ziele</p>
+        <ul className="space-y-3">
+          {(showAll ? next : next.slice(0, NEXT_SHOWN)).map((a) => {
+            const Icon = ACHIEVEMENT_ICON[a.id] ?? Target;
+            return (
+              <li key={a.id} className="flex items-center gap-3">
+                <Icon size={16} className="shrink-0 text-zinc-500" />
+                <div className="min-w-0 flex-1">
+                  <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+                    <span className="truncate font-medium text-zinc-200">{a.label} <span className="font-normal text-zinc-500">· {a.description}</span></span>
+                    <span className="shrink-0 tabular-nums text-zinc-400">{a.current} / {a.target}</span>
+                  </div>
+                  <ProgressBar value={a.progress} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        {next.length > NEXT_SHOWN && (
+          <div className="mt-3">
+            <TextButton onClick={() => setShowAll((s) => !s)}>{showAll ? 'Weniger anzeigen' : `Alle ${next.length} anzeigen`}</TextButton>
+          </div>
+        )}
       </Card>
 
-      {/* Zukunftsausblick */}
-      <Card title="Blick in die Zukunft" sub={`Bei 5 % Dividendenwachstum + 6 % Kurszuwachs + ${fmtNum(ASSUMED_MONTHLY_INVESTMENT)} €/Monat Investment`}>
-        <div className="grid grid-cols-2 gap-3 mt-3">
-          <div className="rounded-xl border border-blue-100 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wider text-blue-500 mb-2">Heute</div>
-            <div className="text-2xl font-bold text-slate-800 dark:text-zinc-200">{fmt(totals.totalMonthlyDiv)}</div>
-            <div className="text-xs text-slate-400 dark:text-zinc-500 mt-0.5">monatliche Dividende</div>
-          </div>
-          <div className="rounded-xl border border-emerald-100 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/20 p-4">
-            <div className="text-xs font-semibold uppercase tracking-wider text-emerald-500 mb-2">In 5 Jahren</div>
-            <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{fmt(future5Monthly)}</div>
-            <div className="text-xs text-emerald-500/60 mt-0.5">monatliche Dividende (proj.)</div>
-          </div>
+      <Card title="Der Schneeball-Effekt" sub="Depotwert mit vs. ohne Reinvestition der Dividenden, 20 Jahre">
+        <ResponsiveContainer width="100%" height={240}>
+          <AreaChart data={snowball} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+            <CartesianGrid {...GRID} vertical={false} />
+            <XAxis dataKey="year" {...AXIS} minTickGap={24} />
+            <YAxis {...AXIS} tickFormatter={fmtK} width={52} />
+            <Tooltip content={(p) => <ChartTooltip {...p} formatValue={(v) => fmt(v)} names={{ withReinvest: 'Mit Reinvestition', withoutReinvest: 'Ohne' }} />} />
+            <Area type="monotone" dataKey="withoutReinvest" stroke={MUTED} fill={MUTED} fillOpacity={0.08} strokeWidth={1.5} strokeDasharray="4 3" isAnimationActive={false} />
+            <Area type="monotone" dataKey="withReinvest" stroke={TONE.success.hex} fill={TONE.success.hex} fillOpacity={0.12} strokeWidth={2} isAnimationActive={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+        <div className="mb-3 mt-1 flex justify-center gap-4 text-xs text-zinc-400">
+          <span className="flex items-center gap-1.5"><span className="h-0.5 w-3" style={{ background: TONE.success.hex }} />Mit Reinvestition</span>
+          <span className="flex items-center gap-1.5"><span className="h-0.5 w-3" style={{ background: MUTED }} />Ohne</span>
         </div>
-        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-3 text-center leading-relaxed">
-          {future5Monthly > totals.totalMonthlyDiv * 1.5
-            ? `In 5 Jahren könntest du ${fmt(future5Monthly)} pro Monat an Dividenden erhalten – das ${fmtNum(future5Monthly / totals.totalMonthlyDiv, 1)}x deines aktuellen Einkommens.`
-            : `Dein passives Einkommen wächst stetig. Jeder investierte Euro und jede reinvestierte Dividende bringt dich deinem Ziel näher.`
-          }
-        </p>
+        <TileGrid cols={3}>
+          {[5, 10, 20].map((y) => {
+            const row = snowball[y];
+            return row ? <MiniStat key={y} label={`Nach ${y} Jahren`} value={`+${fmt(row.withReinvest - row.withoutReinvest)}`} sub="durch Reinvestition" tone="success" /> : null;
+          })}
+        </TileGrid>
       </Card>
 
-      <p className="text-xs text-slate-400 dark:text-zinc-500 bg-slate-50 dark:bg-zinc-900/50 border border-slate-100 dark:border-zinc-800 rounded-xl px-4 py-3 text-center leading-relaxed">
-        Alle Berechnungen basieren auf den aktuellen Depotdaten. Preisgrenzen für Vergleiche sind Richtwerte. Die Zukunftsprognosen sind Modellrechnungen und keine Garantie.
-      </p>
-    </div>
+      <Note>
+        Schneeball und Ausblick nutzen die Annahmen aus „Ausblick“ ({fmtPct(assumptions.dividendGrowthRate, 1)} Dividendenwachstum,
+        {' '}{fmtPct(assumptions.capitalGrowthRate, 1)} Kurszuwachs, {fmt(assumptions.monthlySavings)} pro Monat). Vergleichspreise sind Richtwerte.
+      </Note>
+    </>
   );
 }

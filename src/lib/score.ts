@@ -27,3 +27,7 @@ export const TONE: Record<Tone, { text: string; soft: string; bar: string; strok
   warning: { text: 'text-amber-400',   soft: 'bg-amber-950/30 border-amber-900/50',   bar: 'bg-amber-500',   stroke: 'stroke-amber-500',   hex: '#f59e0b' },
   danger:  { text: 'text-red-400',     soft: 'bg-red-950/30 border-red-900/50',       bar: 'bg-red-500',     stroke: 'stroke-red-500',     hex: '#ef4444' },
 };
+
+/** Monthly cash-flow regularity from its coefficient of variation (%). */
+export const cashflowTone = (cv: number): Tone => (cv < 30 ? 'success' : cv < 60 ? 'warning' : 'danger');
+export const cashflowLabel = (cv: number) => (cv < 30 ? 'Gleichmäßig' : cv < 60 ? 'Schwankend' : 'Unregelmäßig');

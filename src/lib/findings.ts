@@ -2,6 +2,7 @@ import type { DepotPosition } from './types';
 import { computeTotals, computeMonthlyCalendar, topDividendContributors } from './calculations';
 import { computeFreibetrag } from './insights';
 import { fmtNum } from './format';
+import { YIELD_HIGH, MAX_WEIGHT } from './risk';
 
 export interface Finding {
   id: string;
@@ -78,13 +79,13 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
     });
   }
 
-  // Yield > 6 %
-  const highYield = active.filter((p) => p.yield > 6);
+  // Hoher Yield
+  const highYield = active.filter((p) => p.yield > YIELD_HIGH);
   if (highYield.length > 0) {
     findings.push({
       id: 'high-yield',
       category: 'warning',
-      title: `${highYield.length} Position(en) mit Yield > 6 %`,
+      title: `${highYield.length} Position(en) mit Yield > ${fmtNum(YIELD_HIGH, 1)} %`,
       detail: `Hohe Yields können auf Substanzverzehr oder erhöhtes Risiko hinweisen: ${highYield.map((p) => `${p.symbol} (${fmtNum(p.yield, 1)} %)`).join(', ')}. Prüfe die Dividendenkontinuität.`,
       symbols: highYield.map((p) => p.symbol),
     });
@@ -118,7 +119,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
 
   // Hoher Wert, niedriger Score
   const highValueLowScore = active
-    .filter((p) => p.portfolioWeight > 5 && p.dividendScore < 50)
+    .filter((p) => p.portfolioWeight > MAX_WEIGHT && p.dividendScore < 50)
     .sort((a, b) => b.portfolioWeight - a.portfolioWeight);
   if (highValueLowScore.length > 0) {
     findings.push({
@@ -173,7 +174,7 @@ export function generateFindings(positions: DepotPosition[]): Finding[] {
 
   // Sparplan-Check: Hohe Gewichtung + weiter bespart
   const overweightSaved = positions.filter(
-    (p) => p.portfolioWeight > 8 && p.sparbetrag > 0 && p.wert > 0
+    (p) => p.portfolioWeight > MAX_WEIGHT && p.sparbetrag > 0 && p.wert > 0
   );
   if (overweightSaved.length > 0) {
     findings.push({

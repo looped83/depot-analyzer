@@ -1,6 +1,8 @@
-import type { DepotPosition } from './types';
+import type { DepotPosition, ProjectionParams } from './types';
 import { computeTotals, computeMonthlyCalendar, computeProjection, topDividendContributors, ASSUMED_MONTHLY_INVESTMENT } from './calculations';
-import { fmtNum } from './format';
+import { fmt, fmtNum } from './format';
+import { fieldCoverage } from './quality';
+import { riskTone, isDividendTrap, MAX_WEIGHT } from './risk';
 
 export interface HealthDimension {
   key: string;
@@ -25,7 +27,6 @@ export interface Achievement {
   id: string;
   label: string;
   description: string;
-  icon: string;
   reached: boolean;
   progress: number;
   current: string;
@@ -51,7 +52,6 @@ export function computeHealthScore(positions: DepotPosition[]): {
   const active = positions.filter(p => p.wert > 0);
   const calendar = computeMonthlyCalendar(positions);
   const totalWert = active.reduce((s, p) => s + p.wert, 0);
-  const total = positions.length || 1;
 
   const hhi = active.reduce((s, p) => s + p.portfolioWeight ** 2, 0);
   const divScore = hhi < 500 ? 100 : hhi < 1000 ? 80 : hhi < 1500 ? 60 : hhi < 2500 ? 40 : 20;
@@ -64,16 +64,12 @@ export function computeHealthScore(positions: DepotPosition[]): {
   const growthScore = weightedCagr >= 10 ? 100 : weightedCagr >= 7 ? 80
     : weightedCagr >= 5 ? 65 : weightedCagr >= 3 ? 45 : 25;
 
-  const withYield = positions.filter(p => p.yield > 0).length;
-  const withIsin = positions.filter(p => !!p.isin).length;
-  const withPrio = positions.filter(p => !!p.prio).length;
-  const withMonths = positions.filter(p => !!p.ausschuettungsmonate).length;
-  const dataQuality = ((withYield / total + withIsin / total + withPrio / total + withMonths / total) / 4) * 100;
+  // Same field coverage as the Qualität tab, so "Datenqualität" reads identically everywhere.
+  const dataQuality = fieldCoverage(positions).avg;
 
-  const riskPositions = active.filter(p =>
-    p.yield > 9 || (p.cagr5j < 0 && p.cagr5j !== 0) || p.status === 'Verkauf');
-  const watchPositions = active.filter(p =>
-    p.yield > 6.5 || (p.cagr5j > 0 && p.cagr5j < 2) || p.status === 'Beobachten');
+  // Same traffic-light classification as the Sicherheit tab.
+  const riskPositions = active.filter(p => riskTone(p) === 'danger');
+  const watchPositions = active.filter(p => riskTone(p) === 'warning');
   const riskPct = active.length > 0 ? (riskPositions.length / active.length) * 100 : 0;
   const watchPct = active.length > 0 ? (watchPositions.length / active.length) * 100 : 0;
   const riskScore = Math.max(0, 100 - riskPct * 5 - watchPct * 2);
@@ -186,7 +182,7 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
     });
   }
 
-  const overweightSaved = active.filter(p => p.portfolioWeight > 8 && p.sparbetrag > 0);
+  const overweightSaved = active.filter(p => p.portfolioWeight > MAX_WEIGHT && p.sparbetrag > 0);
   for (const p of overweightSaved) {
     recommendations.push({
       id: `overweight-${p.symbol}`, priority: 'medium',
@@ -209,12 +205,12 @@ export function generateRecommendations(positions: DepotPosition[]): ActionRecom
     });
   }
 
-  const traps = active.filter(p => p.yield > 6 && p.cagr5j < 2 && p.cagr5j >= 0);
+  const traps = active.filter(isDividendTrap);
   if (traps.length > 0) {
     recommendations.push({
       id: 'dividend-traps', priority: 'high',
       title: 'Mögliche Dividend Traps prüfen',
-      description: `${traps.map(p => p.symbol).join(', ')} haben hohe Yields (>6 %) aber kaum Dividendenwachstum. Das kann auf eine bevorstehende Kürzung hindeuten.`,
+      description: `${traps.map(p => p.symbol).join(', ')} haben hohe Yields (> 6,5 %), aber kaum Dividendenwachstum. Das kann auf eine bevorstehende Kürzung hindeuten.`,
       impact: 'Risikominimierung, Kapitalschutz',
       effort: 'mittel', symbols: traps.map(p => p.symbol),
     });
@@ -331,39 +327,34 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
     {
       id: 'first-100-monthly', label: '100 € / Monat',
       description: 'Erste 100 € monatliche Dividende',
-      icon: '🎯',
       reached: totals.totalMonthlyDiv >= 100,
       progress: Math.min(100, (totals.totalMonthlyDiv / 100) * 100),
-      current: `${fmtNum(totals.totalMonthlyDiv)} €`, target: '100 €',
+      current: fmt(totals.totalMonthlyDiv), target: '100 €',
     },
     {
       id: 'first-250-monthly', label: '250 € / Monat',
       description: '250 € monatliche Dividende',
-      icon: '💪',
       reached: totals.totalMonthlyDiv >= 250,
       progress: Math.min(100, (totals.totalMonthlyDiv / 250) * 100),
-      current: `${fmtNum(totals.totalMonthlyDiv)} €`, target: '250 €',
+      current: fmt(totals.totalMonthlyDiv), target: '250 €',
     },
     {
       id: 'first-500-monthly', label: '500 € / Monat',
       description: '500 € monatliche Dividende',
-      icon: '🚀',
       reached: totals.totalMonthlyDiv >= 500,
       progress: Math.min(100, (totals.totalMonthlyDiv / 500) * 100),
-      current: `${fmtNum(totals.totalMonthlyDiv)} €`, target: '500 €',
+      current: fmt(totals.totalMonthlyDiv), target: '500 €',
     },
     {
       id: 'first-1000-monthly', label: '1.000 € / Monat',
       description: '1.000 € monatliche Dividende – ein Meilenstein!',
-      icon: '🏆',
       reached: totals.totalMonthlyDiv >= 1000,
       progress: Math.min(100, (totals.totalMonthlyDiv / 1000) * 100),
-      current: `${fmtNum(totals.totalMonthlyDiv)} €`, target: '1.000 €',
+      current: fmt(totals.totalMonthlyDiv), target: '1.000 €',
     },
     {
       id: 'twelve-months', label: '12 Monate Cashflow',
       description: 'In jedem Monat Dividende erhalten',
-      icon: '📅',
       reached: monthsWithIncome >= 12,
       progress: (monthsWithIncome / 12) * 100,
       current: `${monthsWithIncome} Monate`, target: '12 Monate',
@@ -371,7 +362,6 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
     {
       id: 'ten-positions', label: '10 Positionen',
       description: '10 aktive Positionen im Depot',
-      icon: '📊',
       reached: active.length >= 10,
       progress: Math.min(100, (active.length / 10) * 100),
       current: `${active.length}`, target: '10',
@@ -379,7 +369,6 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
     {
       id: 'twenty-positions', label: '20 Positionen',
       description: '20 aktive Positionen im Depot',
-      icon: '🎲',
       reached: active.length >= 20,
       progress: Math.min(100, (active.length / 20) * 100),
       current: `${active.length}`, target: '20',
@@ -387,7 +376,6 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
     {
       id: 'depot-10k', label: '10k € Depot',
       description: 'Depotwert über 10.000 €',
-      icon: '💰',
       reached: totals.totalWert >= 10000,
       progress: Math.min(100, (totals.totalWert / 10000) * 100),
       current: `${fmtNum(totals.totalWert / 1000, 1)}k`, target: '10k',
@@ -395,7 +383,6 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
     {
       id: 'depot-50k', label: '50k € Depot',
       description: 'Depotwert über 50.000 €',
-      icon: '💎',
       reached: totals.totalWert >= 50000,
       progress: Math.min(100, (totals.totalWert / 50000) * 100),
       current: `${fmtNum(totals.totalWert / 1000, 1)}k`, target: '50k',
@@ -403,7 +390,6 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
     {
       id: 'depot-100k', label: '100k € Depot',
       description: 'Depotwert über 100.000 €',
-      icon: '👑',
       reached: totals.totalWert >= 100000,
       progress: Math.min(100, (totals.totalWert / 100000) * 100),
       current: `${fmtNum(totals.totalWert / 1000, 1)}k`, target: '100k',
@@ -411,7 +397,6 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
     {
       id: 'monthly-payers-5', label: '5 Monatszahler',
       description: '5 monatliche Dividendenzahler',
-      icon: '🔄',
       reached: monthlyPayers >= 5,
       progress: Math.min(100, (monthlyPayers / 5) * 100),
       current: `${monthlyPayers}`, target: '5',
@@ -419,15 +404,13 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
     {
       id: 'freibetrag', label: 'Freibetrag',
       description: '2.000 € Sparerpauschbetrag ausgeschöpft (verheiratet)',
-      icon: '🏛️',
       reached: totals.totalAnnualDiv >= 2000,
       progress: Math.min(100, (totals.totalAnnualDiv / 2000) * 100),
-      current: `${fmtNum(totals.totalAnnualDiv)} €`, target: '2.000 €/Jahr',
+      current: fmt(totals.totalAnnualDiv), target: '2.000 €/Jahr',
     },
     {
       id: 'prio-a-five', label: '5 Prio-A',
       description: '5 Kernpositionen mit Prio A',
-      icon: '⭐',
       reached: prioACount >= 5,
       progress: Math.min(100, (prioACount / 5) * 100),
       current: `${prioACount}`, target: '5',
@@ -435,7 +418,6 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
     {
       id: 'multi-broker', label: 'Multi-Broker',
       description: 'Depot auf 2+ Broker verteilt',
-      icon: '🏦',
       reached: brokers >= 2,
       progress: Math.min(100, (brokers / 2) * 100),
       current: `${brokers}`, target: '2+',
@@ -443,19 +425,17 @@ export function computeAchievements(positions: DepotPosition[]): Achievement[] {
   ];
 }
 
-export function computeSnowballEffect(positions: DepotPosition[], years = 20): {
+export function computeSnowballEffect(
+  positions: DepotPosition[],
+  years = 20,
+  params: Omit<ProjectionParams, 'reinvest'> = { dividendGrowthRate: 5, monthlySavings: ASSUMED_MONTHLY_INVESTMENT, capitalGrowthRate: 6 },
+): {
   year: number;
   withReinvest: number;
   withoutReinvest: number;
   dividendWith: number;
   dividendWithout: number;
 }[] {
-  const params = {
-    dividendGrowthRate: 5,
-    monthlySavings: ASSUMED_MONTHLY_INVESTMENT,
-    capitalGrowthRate: 6,
-  };
-
   const withR = computeProjection(positions, { ...params, reinvest: true }, years);
   const withoutR = computeProjection(positions, { ...params, reinvest: false }, years);
 

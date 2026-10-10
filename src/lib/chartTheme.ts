@@ -1,29 +1,34 @@
-// Shared chart design tokens – used in all tabs
+// Shared chart tokens (dark UI only).
 
+// Categorical order, validated for the dark surface (lightness band, CVD separation).
+// Assigned in fixed order and never cycled: a 9th slice folds into "Sonstige".
 export const PALETTE = [
-  '#3b82f6', // blue-500
-  '#10b981', // emerald-500
-  '#f59e0b', // amber-500
-  '#8b5cf6', // violet-500
-  '#06b6d4', // cyan-500
-  '#f97316', // orange-500
-  '#ec4899', // pink-500
-  '#84cc16', // lime-500
-  '#ef4444', // red-500
-  '#6366f1', // indigo-500
+  '#3b82f6', // blue
+  '#059669', // emerald
+  '#d97706', // amber
+  '#8b5cf6', // violet
+  '#0891b2', // cyan
+  '#ea580c', // orange
+  '#db2777', // pink
+  '#65a30d', // lime
 ];
+export const OTHER_COLOR = '#52525b'; // zinc-600, for the folded "Sonstige" slice
 
 export const AXIS = {
-  tick: { fontSize: 11, fill: '#94a3b8' },
+  tick: { fontSize: 11, fill: '#71717a' },
   axisLine: false as const,
   tickLine: false as const,
 };
 
 export const GRID = {
   strokeDasharray: '3 3' as const,
-  strokeOpacity: 0.08,
-  stroke: '#94a3b8',
+  stroke: '#27272a',
 };
 
-// Neutral cursor rectangle for bar charts — replaces the default white hover fill
-export const BAR_CURSOR = { fill: 'rgba(0,0,0,0.05)' };
+// Neutral strokes: reference lines, secondary series, polar grid, mark outlines.
+export const MUTED = '#71717a';   // zinc-500
+export const SURFACE = '#18181b'; // zinc-900, card background – used as gap/outline around marks
+export const POLAR_GRID = '#3f3f46';
+
+// Subtle hover band for bar charts on the dark surface.
+export const BAR_CURSOR = { fill: 'rgba(255,255,255,0.04)' };

@@ -1,93 +1,95 @@
-import React, { useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Info } from 'lucide-react';
 
-interface Props {
+interface CardProps {
   title?: string;
-  sub?: string;
+  sub?: ReactNode;
   info?: string;
-  headerRight?: React.ReactNode;
-  children: React.ReactNode;
+  /** Right-aligned header slot (search field, segmented control, …). */
+  action?: ReactNode;
+  /** Body without padding – for tables that run edge to edge. */
+  flush?: boolean;
+  /** Anchor target for teaser jumps from other tabs. */
+  id?: string;
   className?: string;
-  pad?: boolean;
+  children: ReactNode;
 }
 
-export function Card({ title, sub, info, headerRight, children, className = '', pad = true }: Props) {
+export function Card({ title, sub, info, action, flush, id, className = '', children }: CardProps) {
+  const hasHeader = Boolean(title || action);
+  const body = flush ? 'pt-3' : hasHeader ? 'px-4 pb-4 pt-3 sm:px-5 sm:pb-5' : 'p-4 sm:p-5';
   return (
-    <div className={`bg-white dark:bg-zinc-900 rounded-2xl border border-slate-100 dark:border-zinc-800 shadow-sm ${className}`}>
-      {(title || sub || headerRight) && (
-        <div className="px-5 pt-5 pb-0">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              {title && <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200 truncate">{title}</h3>}
+    <section id={id} className={`card scroll-mt-20 min-w-0 ${className}`}>
+      {hasHeader && (
+        <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 pt-4 sm:px-5 sm:pt-5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              {title && <h2 className="text-sm font-semibold text-zinc-100">{title}</h2>}
               {info && <InfoTip text={info} />}
             </div>
-            {headerRight && <div className="shrink-0">{headerRight}</div>}
+            {sub && <p className="mt-0.5 text-xs text-zinc-500">{sub}</p>}
           </div>
-          {sub && <p className="mt-0.5 text-xs text-slate-400 dark:text-zinc-500">{sub}</p>}
-        </div>
+          {action}
+        </header>
       )}
-      <div className={pad ? 'p-5' : ''}>{children}</div>
-    </div>
+      <div className={body}>{children}</div>
+    </section>
   );
 }
 
-// Page-level heading shown above a tab's tiles, so each subpage carries its own title.
-export function PageHeading({ title }: { title: string }) {
-  return <h1 className="text-xl font-semibold text-slate-900 dark:text-white">{title}</h1>;
-}
+const TIP_WIDTH = 224;
 
+/** Info icon with an explanation. Hover (mouse) or tap/focus (touch, keyboard) opens it. */
 export function InfoTip({ text }: { text: string }) {
-  const [open, setOpen] = useState(false);
+  const btn = useRef<HTMLButtonElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const show = () => {
+    const r = btn.current?.getBoundingClientRect();
+    if (!r) return;
+    // Fixed + clamped to the viewport so tips near the screen edge stay readable.
+    const left = Math.min(Math.max(8, r.left + r.width / 2 - TIP_WIDTH / 2), window.innerWidth - TIP_WIDTH - 8);
+    setPos({ top: r.top - 6, left });
+  };
+  const hide = () => setPos(null);
+
+  useEffect(() => {
+    if (!pos) return;
+    window.addEventListener('scroll', hide, { passive: true, once: true });
+    return () => window.removeEventListener('scroll', hide);
+  }, [pos]);
+
   return (
-    <span className="relative inline-flex">
+    <>
       <button
+        ref={btn}
         type="button"
-        onClick={() => setOpen(o => !o)}
-        // Hover only for real mice: on touch, the emulated mouseenter would open the tip
-        // and the following click would immediately toggle it closed again.
-        onPointerEnter={(e) => e.pointerType === 'mouse' && setOpen(true)}
-        onPointerLeave={(e) => e.pointerType === 'mouse' && setOpen(false)}
-        onBlur={() => setOpen(false)}
-        className="text-slate-300 dark:text-zinc-600 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
         aria-label="Info"
+        aria-expanded={pos !== null}
+        onClick={() => (pos ? hide() : show())}
+        // Hover only for real mice: on touch, the emulated mouseenter would open the tip
+        // and the following click would toggle it closed again.
+        onPointerEnter={(e) => e.pointerType === 'mouse' && show()}
+        onPointerLeave={(e) => e.pointerType === 'mouse' && hide()}
+        onBlur={hide}
+        className="-m-1 p-1 text-zinc-600 transition-colors hover:text-blue-400"
       >
         <Info size={13} />
       </button>
-      {open && (
-        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-56 px-3 py-2 rounded-xl bg-slate-800 dark:bg-zinc-700 text-white text-[11px] leading-relaxed shadow-xl pointer-events-none">
+      {pos && (
+        <span
+          role="tooltip"
+          style={{ top: pos.top, left: pos.left, width: TIP_WIDTH }}
+          className="pointer-events-none fixed z-50 -translate-y-full rounded-xl bg-zinc-700 px-3 py-2 text-[11px] normal-case tracking-normal leading-relaxed text-white shadow-xl"
+        >
           {text}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 dark:bg-zinc-700 rotate-45 -mt-1" />
-        </div>
+        </span>
       )}
-    </span>
+    </>
   );
 }
 
-// Reusable status badge
-export function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    Aufbau:     'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
-    Erledigt:   'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
-    Pause:      'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400',
-    Beobachten: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
-    Verkauf:    'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-400',
-  };
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${map[status] ?? 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
-      {status}
-    </span>
-  );
-}
-
-// Reusable prio badge
-export function PrioBadge({ prio }: { prio: string | null }) {
-  if (!prio) return <span className="text-slate-300 dark:text-zinc-600">—</span>;
-  const map: Record<string, string> = {
-    A: 'text-emerald-600 dark:text-emerald-400',
-    B: 'text-blue-600 dark:text-blue-400',
-    C: 'text-amber-600 dark:text-amber-400',
-    D: 'text-orange-600 dark:text-orange-400',
-    E: 'text-red-500 dark:text-red-400',
-  };
-  return <span className={`text-xs font-bold ${map[prio] ?? ''}`}>{prio}</span>;
+/** Small footnote for assumptions and disclaimers. */
+export function Note({ children }: { children: ReactNode }) {
+  return <p className="px-1 text-xs leading-relaxed text-zinc-500">{children}</p>;
 }
